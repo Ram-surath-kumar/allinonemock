@@ -14,8 +14,18 @@ export interface Permission {
   category: 'student' | 'staff' | 'finance' | 'academic' | 'facility';
 }
 
+export interface Organization {
+  id: number;
+  org_id: number;
+  org_code: string;
+  org_name: string;
+}
+
 export interface User {
   id: string;
+  loopid?: string;
+  org_id?: number;
+  user_id?: number;
   name: string;
   email: string;
   role: UserRole;
@@ -24,6 +34,7 @@ export interface User {
   createdAt: Date;
   status: 'active' | 'inactive';
   avatar?: string;
+  organization?: Organization;
 }
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
@@ -65,7 +76,18 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
   admin: PERMISSIONS.map(p => p.id),
   vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_finance', 'view_staff', 'manage_staff'],
   teacher: ['view_students', 'manage_attendance', 'view_grades', 'edit_grades', 'view_staff'],
-  student: ['view_grades'],
+  student: [], // Students can only view their own data, no additional permissions needed
+  housekeeping: ['manage_facilities'],
+  librarian: ['view_students', 'manage_library'],
+  accountant: ['view_students', 'view_finance', 'manage_finance'],
+};
+
+// Permissions that are allowed for each role
+export const ROLE_ALLOWED_PERMISSIONS: Record<UserRole, string[]> = {
+  admin: PERMISSIONS.map(p => p.id), // Admins can have all permissions
+  vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_finance', 'view_staff', 'manage_staff'],
+  teacher: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_staff'], // Teachers cannot view/manage finance
+  student: [], // Students cannot have any permissions (they can only view their own data by default)
   housekeeping: ['manage_facilities'],
   librarian: ['view_students', 'manage_library'],
   accountant: ['view_students', 'view_finance', 'manage_finance'],

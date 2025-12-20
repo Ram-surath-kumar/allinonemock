@@ -1,7 +1,6 @@
 import { MoreHorizontal, Pencil, Trash2, Shield } from 'lucide-react';
-import { User, ROLE_LABELS, ROLE_HIERARCHY } from '@/types/erp';
+import { User, ROLE_LABELS } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,20 +24,7 @@ interface UserTableProps {
 }
 
 export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
-  const { currentUser, canManageRole } = useAuth();
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'default';
-      case 'vice_head':
-        return 'secondary';
-      case 'teacher':
-        return 'outline';
-      default:
-        return 'outline';
-    }
-  };
+  const { canManageRole } = useAuth();
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
@@ -48,7 +34,6 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
             <TableHead className="font-semibold">User</TableHead>
             <TableHead className="font-semibold">Role</TableHead>
             <TableHead className="font-semibold">Department</TableHead>
-            <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="font-semibold">Permissions</TableHead>
             <TableHead className="text-right font-semibold">Actions</TableHead>
           </TableRow>
@@ -60,7 +45,7 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
             return (
               <TableRow 
                 key={user.id}
-                className="animate-fade-in"
+                className="animate-fade-in-up hover:bg-muted/50 transition-colors duration-200"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <TableCell>
@@ -75,20 +60,12 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
+                  <span className="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-muted/50 text-foreground border border-border/50">
                     {ROLE_LABELS[user.role]}
-                  </Badge>
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.department || '-'}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={user.status === 'active' ? 'default' : 'secondary'}
-                    className={user.status === 'active' ? 'bg-success hover:bg-success/90' : ''}
-                  >
-                    {user.status}
-                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

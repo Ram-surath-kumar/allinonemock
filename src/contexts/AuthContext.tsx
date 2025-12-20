@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, ROLE_HIERARCHY, ROLE_DEFAULT_PERMISSIONS } from '@/types/erp';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   currentUser: User | null;
-  login: (role: UserRole) => void;
+  login: (role: UserRole | string) => void; // Can accept role or user ID
   logout: () => void;
   canManageRole: (targetRole: UserRole) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -11,84 +12,202 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MOCK_USERS: Record<UserRole, User> = {
-  admin: {
-    id: '1',
-    name: 'Dr. Sarah Johnson',
-    email: 'admin@school.edu',
-    role: 'admin',
-    permissions: ROLE_DEFAULT_PERMISSIONS.admin,
-    department: 'Administration',
-    createdAt: new Date('2020-01-15'),
-    status: 'active',
-  },
-  vice_head: {
-    id: '2',
-    name: 'Prof. Michael Chen',
-    email: 'vicehead@school.edu',
-    role: 'vice_head',
-    permissions: ROLE_DEFAULT_PERMISSIONS.vice_head,
-    department: 'Academic Affairs',
-    createdAt: new Date('2021-03-20'),
-    status: 'active',
-  },
-  teacher: {
-    id: '3',
-    name: 'Ms. Emily Parker',
-    email: 'teacher@school.edu',
-    role: 'teacher',
-    permissions: ROLE_DEFAULT_PERMISSIONS.teacher,
-    department: 'Science',
-    createdAt: new Date('2022-08-01'),
-    status: 'active',
-  },
-  student: {
-    id: '4',
-    name: 'Alex Thompson',
-    email: 'student@school.edu',
-    role: 'student',
-    permissions: ROLE_DEFAULT_PERMISSIONS.student,
-    department: 'Grade 10',
-    createdAt: new Date('2023-09-01'),
-    status: 'active',
-  },
-  housekeeping: {
-    id: '5',
-    name: 'John Martinez',
-    email: 'maintenance@school.edu',
-    role: 'housekeeping',
-    permissions: ROLE_DEFAULT_PERMISSIONS.housekeeping,
-    department: 'Facilities',
-    createdAt: new Date('2021-06-15'),
-    status: 'active',
-  },
-  librarian: {
-    id: '6',
-    name: 'Lisa Wong',
-    email: 'library@school.edu',
-    role: 'librarian',
-    permissions: ROLE_DEFAULT_PERMISSIONS.librarian,
-    department: 'Library',
-    createdAt: new Date('2020-09-01'),
-    status: 'active',
-  },
-  accountant: {
-    id: '7',
-    name: 'Robert Davis',
-    email: 'accounts@school.edu',
-    role: 'accountant',
-    permissions: ROLE_DEFAULT_PERMISSIONS.accountant,
-    department: 'Finance',
-    createdAt: new Date('2019-11-10'),
-    status: 'active',
-  },
+// Map role to email for login
+const ROLE_EMAIL_MAP: Record<UserRole, string> = {
+  admin: 'admin@school.edu',
+  vice_head: 'vicehead@school.edu',
+  teacher: 'teacher@school.edu',
+  student: 'student@school.edu',
+  housekeeping: 'maintenance@school.edu',
+  librarian: 'library@school.edu',
+  accountant: 'accounts@school.edu',
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(MOCK_USERS.admin);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (role: UserRole) => {
-    setCurrentUser(MOCK_USERS[role]);
+  // Load admin user by default on mount
+  useEffect(() => {
+    loadUser('admin');
+  }, []);
+
+  const loadUserById = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Fetch organization if org_id exists
+        let organization = undefined;
+        if (data.org_id) {
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', data.org_id)
+            .single();
+          
+          if (orgData) {
+            organization = {
+              id: orgData.id,
+              org_id: orgData.org_id,
+              org_code: orgData.org_code,
+              org_name: orgData.org_name,
+            };
+          }
+        }
+
+        const user: User = {
+          id: data.id,
+          loopid: data.loopid,
+          org_id: data.org_id,
+          user_id: data.user_id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          permissions: data.permissions || [],
+          department: data.department,
+          createdAt: new Date(data.created_at),
+          status: data.status as 'active' | 'inactive',
+          avatar: data.avatar,
+          organization,
+        };
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.error('Error loading user by ID:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUserByOrgAndUserId = async (orgName: string, userId: number) => {
+    try {
+      // First get the organization
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('org_name', orgName)
+        .single();
+
+      if (orgError) throw orgError;
+      if (!orgData) throw new Error('Organization not found');
+
+      // Then get the user
+      const { data, error } = await supabase
+        .from('users')
+        .select('*, organizations(*)')
+        .eq('org_id', orgData.id)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const user: User = {
+          id: data.id,
+          loopid: data.loopid,
+          org_id: data.org_id,
+          user_id: data.user_id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          permissions: data.permissions || [],
+          department: data.department,
+          createdAt: new Date(data.created_at),
+          status: data.status as 'active' | 'inactive',
+          avatar: data.avatar,
+          organization: data.organizations ? {
+            id: data.organizations.id,
+            org_id: data.organizations.org_id,
+            org_code: data.organizations.org_code,
+            org_name: data.organizations.org_name,
+          } : undefined,
+        };
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.error('Error loading user by org and user_id:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUser = async (role: UserRole) => {
+    try {
+      const email = ROLE_EMAIL_MAP[role];
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Fetch organization if org_id exists
+        let organization = undefined;
+        if (data.org_id) {
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', data.org_id)
+            .single();
+          
+          if (orgData) {
+            organization = {
+              id: orgData.id,
+              org_id: orgData.org_id,
+              org_code: orgData.org_code,
+              org_name: orgData.org_name,
+            };
+          }
+        }
+
+        const user: User = {
+          id: data.id,
+          loopid: data.loopid,
+          org_id: data.org_id,
+          user_id: data.user_id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          permissions: data.permissions || [],
+          department: data.department,
+          createdAt: new Date(data.created_at),
+          status: data.status as 'active' | 'inactive',
+          avatar: data.avatar,
+          organization,
+        };
+        setCurrentUser(user);
+      }
+    } catch (error) {
+      console.error('Error loading user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (roleOrUserId: UserRole | string, orgName?: string, userId?: number) => {
+    // If orgName and userId are provided, use the new format
+    if (orgName && userId) {
+      await loadUserByOrgAndUserId(orgName, userId);
+      return;
+    }
+
+    // Check if it's a UUID (user ID) or a role
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roleOrUserId);
+    
+    if (isUUID) {
+      await loadUserById(roleOrUserId);
+    } else {
+      await loadUser(roleOrUserId as UserRole);
+    }
   };
 
   const logout = () => {

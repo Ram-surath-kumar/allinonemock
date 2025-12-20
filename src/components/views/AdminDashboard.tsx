@@ -42,15 +42,11 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
         />
       </div>
 
-      {/* Activity and Quick Actions */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <RecentActivity />
-        </div>
-        <div>
-          <QuickActions onAddUser={onAddUser} />
-        </div>
-      </div>
+      {/* Quick Actions - Horizontal */}
+      <QuickActions onAddUser={onAddUser} />
+
+      {/* Recent Activity */}
+      <RecentActivity />
     </div>
   );
 }
