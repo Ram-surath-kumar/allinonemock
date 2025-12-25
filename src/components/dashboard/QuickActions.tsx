@@ -77,20 +77,20 @@ export function QuickActions({ onAddUser }: QuickActionsProps) {
   };
 
   return (
-    <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-6 shadow-lg backdrop-blur-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-1.5 w-10 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
-        <h3 className="text-xl font-bold text-foreground tracking-tight">Quick Actions</h3>
+    <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-4 sm:p-6 shadow-lg backdrop-blur-sm">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="h-1.5 w-8 sm:w-10 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
+        <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">Quick Actions</h3>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {filteredActions.map((action, index) => {
           const Icon = action.icon;
           return (
             <Button
               key={action.label}
               variant="outline"
-              className="group h-auto flex-col items-start gap-3 p-5 text-left hover:bg-gradient-to-br hover:from-primary/10 hover:to-primary/5 hover:border-primary/50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 animate-fade-in-up bg-background/80 backdrop-blur-sm border-2"
+              className="group h-auto flex-col items-start gap-2 sm:gap-3 p-4 sm:p-5 text-left hover:bg-gradient-to-br hover:from-primary/10 hover:to-primary/5 hover:border-primary/50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 animate-fade-in-up bg-background/80 backdrop-blur-sm border-2"
               style={{ animationDelay: `${index * 50}ms` }}
               onClick={
                 action.label === 'Add User' 

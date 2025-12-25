@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Search, Check, X } from 'lucide-react';
+import { Bell, Search, Check, X, Menu, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { AIAssistantDialog } from '@/components/ai/AIAssistantDialog';
 
 interface Notification {
   id: string;
@@ -24,14 +25,16 @@ interface Notification {
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  onMenuClick?: () => void;
 }
 
-export function Header({ title, subtitle }: HeaderProps) {
+export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -163,20 +166,45 @@ export function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-md px-6 shadow-sm sticky top-0 z-40">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    <header className="flex h-14 md:h-16 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-md px-3 sm:px-4 md:px-6 shadow-sm sticky top-0 z-40">
+      <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+        {onMenuClick && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMenuClick}
+            className="md:hidden h-9 w-9"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{title}</h1>
+          {subtitle && <p className="text-xs md:text-sm text-muted-foreground truncate">{subtitle}</p>}
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative">
+      <div className="flex items-center gap-2 md:gap-4">
+        <div className="relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input 
             placeholder="Search..." 
-            className="w-64 pl-9"
+            className="w-48 md:w-64 pl-9"
           />
         </div>
+
+        {/* AI Assistant Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setAiDialogOpen(true)}
+          className="relative group"
+          title="AI Assistant"
+        >
+          <Sparkles className="h-5 w-5 text-primary animate-pulse group-hover:animate-spin transition-all duration-300 group-hover:scale-110" />
+          <span className="absolute inset-0 rounded-full bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
+        </Button>
         
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -262,6 +290,9 @@ export function Header({ title, subtitle }: HeaderProps) {
           </PopoverContent>
         </Popover>
       </div>
+
+      {/* AI Assistant Dialog */}
+      <AIAssistantDialog open={aiDialogOpen} onOpenChange={setAiDialogOpen} />
     </header>
   );
 }

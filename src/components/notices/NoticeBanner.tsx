@@ -168,8 +168,8 @@ export function NoticeBanner() {
   };
 
   return (
-    <Alert className={cn('mb-6 animate-fade-in-up border-2', getAlertClassName())}>
-      <div className="flex items-start gap-3">
+    <Alert className={cn('mb-4 sm:mb-6 animate-fade-in-up border-2', getAlertClassName())}>
+      <div className="flex items-start gap-2 sm:gap-3">
         <div className={cn(
           'mt-0.5 shrink-0',
           unreadNotice.type === 'success' && 'text-success',
@@ -180,29 +180,29 @@ export function NoticeBanner() {
           {getIcon()}
         </div>
         <div className="flex-1 min-w-0">
-          <AlertTitle className="font-semibold text-base mb-1">
+          <AlertTitle className="font-semibold text-sm sm:text-base mb-1">
             {unreadNotice.title}
           </AlertTitle>
-          <AlertDescription className="text-sm">
+          <AlertDescription className="text-xs sm:text-sm">
             {unreadNotice.message}
           </AlertDescription>
         </div>
-        <div className="flex items-start gap-2 shrink-0">
+        <div className="flex items-start gap-1 sm:gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={markAsRead}
-            className="h-8 text-xs"
+            className="h-7 sm:h-8 text-xs hidden sm:inline-flex"
           >
             Mark as Read
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7 sm:h-8 sm:w-8"
             onClick={dismiss}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </div>

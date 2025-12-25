@@ -80,8 +80,8 @@ export function RecentActivity() {
   };
 
   return (
-    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card to-card/95 p-6 shadow-md backdrop-blur-sm">
-      <h3 className="text-lg font-bold text-foreground mb-1">Recent Activity</h3>
+    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card to-card/95 p-4 sm:p-6 shadow-md backdrop-blur-sm">
+      <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">Recent Activity</h3>
       
       {loading ? (
         <div className="mt-6 space-y-4">

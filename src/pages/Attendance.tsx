@@ -63,6 +63,20 @@ export function Attendance() {
     }
   }, [teacherDepartmentIds]);
 
+  // Listen for attendance updates from AI assistant
+  useEffect(() => {
+    const handleAttendanceUpdate = () => {
+      if (selectedDate && students.length > 0) {
+        loadAttendanceForDate();
+      }
+    };
+
+    window.addEventListener('attendance-updated', handleAttendanceUpdate);
+    return () => {
+      window.removeEventListener('attendance-updated', handleAttendanceUpdate);
+    };
+  }, [selectedDate, students]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -388,20 +402,20 @@ export function Attendance() {
   return (
     <div className="space-y-6">
       {/* Header with filters */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 w-full"
             />
           </div>
 
           <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <Filter className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Filter by department" />
             </SelectTrigger>
@@ -433,24 +447,24 @@ export function Attendance() {
           </Popover>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
             <Checkbox
               id="hide-marked"
               checked={hideMarked}
               onCheckedChange={(checked) => setHideMarked(checked as boolean)}
             />
-            <Label htmlFor="hide-marked" className="cursor-pointer">
+            <Label htmlFor="hide-marked" className="cursor-pointer text-sm">
               Hide already marked students
             </Label>
           </div>
 
           {canManageAttendance && selectedStudentIds.size > 0 && (
-            <div className="flex gap-2 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto animate-fade-in-up">
               <Button
                 onClick={() => markAttendance('present')}
                 size="sm"
-                className="bg-green-500 hover:bg-green-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                className="bg-green-500 hover:bg-green-600 transition-all duration-200 hover:scale-105 active:scale-95 w-full sm:w-auto"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Mark {selectedStudentIds.size} as Present
@@ -459,7 +473,7 @@ export function Attendance() {
                 onClick={() => markAttendance('absent')}
                 size="sm"
                 variant="destructive"
-                className="transition-all duration-200 hover:scale-105 active:scale-95"
+                className="transition-all duration-200 hover:scale-105 active:scale-95 w-full sm:w-auto"
               >
                 <XCircle className="mr-2 h-4 w-4" />
                 Mark {selectedStudentIds.size} as Absent
@@ -492,7 +506,7 @@ export function Attendance() {
 
       {/* Students grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="rounded-lg border border-border bg-card p-4 space-y-3 animate-pulse">
               <div className="flex items-center gap-2">
@@ -512,7 +526,7 @@ export function Attendance() {
           ) : (
             <>
               {canManageAttendance && filteredStudents.length > 0 && (
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0}
@@ -522,7 +536,7 @@ export function Attendance() {
                       Select all ({filteredStudents.length})
                     </Label>
                   </div>
-                  <div className="flex items-center gap-2 border border-border rounded-lg p-1 ml-auto">
+                  <div className="flex items-center gap-2 border border-border rounded-lg p-1 sm:ml-auto">
                     <Button
                       variant={viewMode === 'grid' ? 'default' : 'ghost'}
                       size="sm"
@@ -543,7 +557,7 @@ export function Attendance() {
                 </div>
               )}
               {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredStudents.map((student, index) => {
                   const attendance = getAttendanceStatus(student.id);
                   const isSelected = selectedStudentIds.has(student.id);

@@ -109,7 +109,7 @@ export function EditStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Edit Student Information</DialogTitle>
           <DialogDescription>

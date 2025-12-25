@@ -126,10 +126,12 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     const currentTab = pathToTab[currentPath] || 'dashboard';
     
     // Navigate to new user's URL with current tab
-    navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
-    
-    // Login the user
-    await login('', user.organization.org_name, user.user_id);
+    if (user.user_id && user.organization?.org_name) {
+      navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
+      
+      // Login the user
+      await login('', user.organization.org_name, user.user_id);
+    }
   };
 
   return (

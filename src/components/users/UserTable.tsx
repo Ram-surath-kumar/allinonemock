@@ -28,7 +28,8 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-      <Table>
+      <div className="overflow-x-auto">
+        <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="font-semibold">User</TableHead>
@@ -106,6 +107,7 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

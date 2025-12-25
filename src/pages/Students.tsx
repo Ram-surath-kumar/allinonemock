@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Pencil } from 'lucide-react';
+import { Search, Pencil, LayoutGrid, List } from 'lucide-react';
 import { User } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ export function Students() {
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [teacherDepartmentIds, setTeacherDepartmentIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const canEdit = hasPermission('edit_students');
   const canViewAttendance = hasPermission('view_students') || hasPermission('manage_attendance');
@@ -225,16 +226,35 @@ export function Students() {
 
   return (
     <div className="space-y-6">
-      {/* Header with search */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
+      {/* Header with search and view toggle */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
+        <div className="relative flex-1 min-w-0 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search students..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 w-full"
           />
+        </div>
+        {/* View toggle - only show on desktop */}
+        <div className="hidden md:flex items-center gap-2 border border-border rounded-lg p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="h-8 w-8 p-0"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            className="h-8 w-8 p-0"
+          >
+            <List className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -282,6 +302,7 @@ export function Students() {
           onViewAttendance={handleViewAttendance}
           canEdit={canEdit}
           canViewAttendance={canViewAttendance}
+          viewMode={viewMode}
         />
       )}
 

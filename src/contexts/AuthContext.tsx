@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   currentUser: User | null;
-  login: (role: UserRole | string) => void; // Can accept role or user ID
+  login: (roleOrUserId: UserRole | string, orgName?: string, userId?: number) => Promise<void>; // Can accept role, user ID, or orgName + userId
   logout: () => void;
   canManageRole: (targetRole: UserRole) => boolean;
   hasPermission: (permission: string) => boolean;
