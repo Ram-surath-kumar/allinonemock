@@ -2,7 +2,7 @@ import { apiCache, getCacheKey } from './cache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
   data: T | null;
   error: string | null;
 }
@@ -98,7 +98,7 @@ class ApiClient {
     org_id?: string;
     user_id?: string;
     email?: string;
-  }) {
+  }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -106,42 +106,42 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request(`/users${query ? `?${query}` : ''}`);
+    return this.request<any[]>(`/users${query ? `?${query}` : ''}`);
   }
 
-  async getUserById(id: string) {
-    return this.request(`/users/${id}`);
+  async getUserById(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/users/${id}`);
   }
 
-  async getUsersByDepartments(departmentIds: string[], role?: string, status?: string) {
-    return this.request('/users/by-departments', {
+  async getUsersByDepartments(departmentIds: string[], role?: string, status?: string): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/users/by-departments', {
       method: 'POST',
       body: JSON.stringify({ department_ids: departmentIds, role, status }),
     });
   }
 
-  async createUser(userData: any) {
-    return this.request('/users', {
+  async createUser(userData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  async updateUser(id: string, userData: any) {
-    return this.request(`/users/${id}`, {
+  async updateUser(id: string, userData: any): Promise<ApiResponse<any>> {
+    return this.request<any>(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   }
 
-  async deleteUser(id: string) {
-    return this.request(`/users/${id}`, {
+  async deleteUser(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/users/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Organizations
-  async getOrganizations(params?: { org_name?: string; id?: string }) {
+  async getOrganizations(params?: { org_name?: string; id?: string }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -149,34 +149,34 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request(`/organizations${query ? `?${query}` : ''}`);
+    return this.request<any[]>(`/organizations${query ? `?${query}` : ''}`);
   }
 
   // Departments
-  async getDepartments(params?: { id?: string; ids?: string[] }) {
+  async getDepartments(params?: { id?: string; ids?: string[] }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params?.id) queryParams.append('id', params.id);
     if (params?.ids) {
       params.ids.forEach(id => queryParams.append('ids', id));
     }
     const query = queryParams.toString();
-    return this.request(`/departments${query ? `?${query}` : ''}`);
+    return this.request<any[]>(`/departments${query ? `?${query}` : ''}`);
   }
 
-  async createDepartment(departmentData: any) {
-    return this.request('/departments', {
+  async createDepartment(departmentData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/departments', {
       method: 'POST',
       body: JSON.stringify(departmentData),
     });
   }
 
   // Teacher Departments
-  async getTeacherDepartments(teacherId: string) {
-    return this.request(`/teacher-departments/${teacherId}`);
+  async getTeacherDepartments(teacherId: string): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>(`/teacher-departments/${teacherId}`);
   }
 
-  async updateTeacherDepartments(teacherId: string, departmentIds: string[]) {
-    return this.request('/teacher-departments', {
+  async updateTeacherDepartments(teacherId: string, departmentIds: string[]): Promise<ApiResponse<any>> {
+    return this.request<any>('/teacher-departments', {
       method: 'POST',
       body: JSON.stringify({ teacher_id: teacherId, department_ids: departmentIds }),
     });
@@ -187,7 +187,7 @@ class ApiClient {
     date?: string;
     student_id?: string;
     student_ids?: string[];
-  }) {
+  }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params?.date) queryParams.append('date', params.date);
     if (params?.student_id) queryParams.append('student_id', params.student_id);
@@ -195,54 +195,54 @@ class ApiClient {
       params.student_ids.forEach(id => queryParams.append('student_ids', id));
     }
     const query = queryParams.toString();
-    return this.request(`/attendance${query ? `?${query}` : ''}`);
+    return this.request<any[]>(`/attendance${query ? `?${query}` : ''}`);
   }
 
-  async markAttendance(records: any[]) {
-    return this.request('/attendance', {
+  async markAttendance(records: any[]): Promise<ApiResponse<any>> {
+    return this.request<any>('/attendance', {
       method: 'POST',
       body: JSON.stringify(records),
     });
   }
 
   // Notifications
-  async getNotifications(params?: { user_id?: string; read?: boolean; limit?: number }) {
+  async getNotifications(params?: { user_id?: string; read?: boolean; limit?: number }): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params?.user_id) queryParams.append('user_id', params.user_id);
     if (params?.read !== undefined) queryParams.append('read', String(params.read));
     if (params?.limit) queryParams.append('limit', String(params.limit));
     const query = queryParams.toString();
-    return this.request(`/notifications${query ? `?${query}` : ''}`);
+    return this.request<any[]>(`/notifications${query ? `?${query}` : ''}`);
   }
 
-  async createNotification(notificationData: any) {
-    return this.request('/notifications', {
+  async createNotification(notificationData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/notifications', {
       method: 'POST',
       body: JSON.stringify(notificationData),
     });
   }
 
-  async markNotificationAsRead(id: string) {
-    return this.request(`/notifications/${id}/read`, {
+  async markNotificationAsRead(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/notifications/${id}/read`, {
       method: 'PUT',
     });
   }
 
-  async markAllNotificationsAsRead(userId: string) {
-    return this.request('/notifications/read-all', {
+  async markAllNotificationsAsRead(userId: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/notifications/read-all', {
       method: 'PUT',
       body: JSON.stringify({ user_id: userId }),
     });
   }
 
   // Activities
-  async getActivities(limit?: number) {
+  async getActivities(limit?: number): Promise<ApiResponse<any[]>> {
     const query = limit ? `?limit=${limit}` : '';
-    return this.request(`/activities${query}`);
+    return this.request<any[]>(`/activities${query}`);
   }
 
-  async createActivity(activityData: any) {
-    return this.request('/activities', {
+  async createActivity(activityData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/activities', {
       method: 'POST',
       body: JSON.stringify(activityData),
     });
@@ -250,5 +250,4 @@ class ApiClient {
 }
 
 export const api = new ApiClient(API_BASE_URL);
-export type { ApiResponse };
 
