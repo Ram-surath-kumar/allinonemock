@@ -76,8 +76,17 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        card: "var(--shadow-card)",
-        elevated: "var(--shadow-elevated)",
+        'sm': 'var(--shadow-sm)',
+        'card': 'var(--shadow-card)',
+        'md': 'var(--shadow-md)',
+        'elevated': 'var(--shadow-elevated)',
+        'lg': 'var(--shadow-lg)',
+        'xl': 'var(--shadow-xl)',
+        '2xl': 'var(--shadow-2xl)',
+        'glow': 'var(--shadow-glow)',
+        'depth-1': 'var(--shadow-card)',
+        'depth-2': 'var(--shadow-elevated)',
+        'depth-3': 'var(--shadow-lg)',
       },
       keyframes: {
         "accordion-down": {
@@ -92,6 +101,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "shimmer": "shimmer 2s infinite",
+        "float": "float 3s ease-in-out infinite",
+        "glow": "glow 2s ease-in-out infinite alternate",
       },
     },
   },

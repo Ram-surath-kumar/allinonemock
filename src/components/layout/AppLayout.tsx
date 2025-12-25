@@ -4,6 +4,7 @@ import { Header } from './Header';
 import { NoticeBanner } from '@/components/notices/NoticeBanner';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AIAssistantChat } from '@/components/ai/AIAssistantChat';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -18,9 +19,9 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate }
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex h-screen w-64 flex-col bg-gradient-to-b from-sidebar via-sidebar to-sidebar/95 text-sidebar-foreground shadow-xl border-r border-sidebar-border/50">
+      <aside className="hidden md:flex h-screen flex-col text-sidebar-foreground">
         <Sidebar currentPath={currentPath} onNavigate={onNavigate} />
       </aside>
 
@@ -38,11 +39,16 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate }
 
       <div className="flex flex-1 flex-col overflow-hidden w-full md:w-auto">
         <Header title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6 lg:p-8" role="main">
           <NoticeBanner />
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
+      
+      {/* Floating AI Chat Assistant */}
+      <AIAssistantChat onNavigate={onNavigate} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { User } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { toast } from 'sonner';
 import { StudentTable } from '@/components/students/StudentTable';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
@@ -26,8 +26,12 @@ export function Students() {
   const canViewAttendance = hasPermission('view_students') || hasPermission('manage_attendance');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    // Only load data when component is mounted (i.e., when Students tab is active)
+    if (currentUser) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id]); // Only reload if user changes
 
   const loadData = async () => {
     try {
@@ -63,35 +67,53 @@ export function Students() {
         }
 
         // Filter students by teacher's departments
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'student')
-          .eq('status', 'active')
-          .in('department_id', deptIdsToUse)
-          .order('created_at', { ascending: false });
+        const response = await api.getUsersByDepartments(deptIdsToUse, 'student', 'active');
+        if (response.error) throw new Error(response.error);
+        const data = response.data as Array<{
+          id: string;
+          loopid?: string;
+          org_id?: number;
+          user_id?: number;
+          name: string;
+          email: string;
+          role: string;
+          permissions?: string[];
+          department_id?: string;
+          department?: string;
+          created_at: string;
+          status: string;
+          avatar?: string;
+        }> | null;
 
-        if (error) throw error;
-
-        if (data) {
+        if (data && Array.isArray(data)) {
           // Fetch department names separately for students with department_id
-          const departmentIds = [...new Set(data.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-          let deptMap = new Map<string, string>();
+          const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id as string))];
+          const deptMap = new Map<string, string>();
           
           if (departmentIds.length > 0) {
-            const { data: deptData, error: deptError } = await supabase
-              .from('departments')
-              .select('id, name')
-              .in('id', departmentIds);
-            
-            if (!deptError && deptData) {
-              deptData.forEach((dept: any) => {
+            const deptResponse = await api.getDepartments({ ids: departmentIds });
+            if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
+              deptResponse.data.forEach((dept: { id: string; name: string }) => {
                 deptMap.set(dept.id, dept.name);
               });
             }
           }
 
-          const mappedStudents: User[] = data.map((row: any) => ({
+          const mappedStudents: User[] = data.map((row: {
+            id: string;
+            loopid?: string;
+            org_id?: number;
+            user_id?: number;
+            name: string;
+            email: string;
+            role: string;
+            permissions?: string[];
+            department_id?: string;
+            department?: string;
+            created_at: string;
+            status: string;
+            avatar?: string;
+          }) => ({
             id: row.id,
             loopid: row.loopid,
             org_id: row.org_id,
@@ -111,34 +133,53 @@ export function Students() {
       }
 
       // For non-teachers (admin, vice_head, etc.), show all students
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'student')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+      const response = await api.getUsers({ role: 'student', status: 'active' });
+      if (response.error) throw new Error(response.error);
+      const data = response.data as Array<{
+        id: string;
+        loopid?: string;
+        org_id?: number;
+        user_id?: number;
+        name: string;
+        email: string;
+        role: string;
+        permissions?: string[];
+        department_id?: string;
+        department?: string;
+        created_at: string;
+        status: string;
+        avatar?: string;
+      }> | null;
 
-      if (error) throw error;
-
-      if (data) {
+      if (data && Array.isArray(data)) {
         // Fetch department names separately for students with department_id
-        const departmentIds = [...new Set(data.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-        let deptMap = new Map<string, string>();
+        const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id as string))];
+        const deptMap = new Map<string, string>();
         
         if (departmentIds.length > 0) {
-          const { data: deptData, error: deptError } = await supabase
-            .from('departments')
-            .select('id, name')
-            .in('id', departmentIds);
-          
-          if (!deptError && deptData) {
-            deptData.forEach((dept: any) => {
+          const deptResponse = await api.getDepartments({ ids: departmentIds });
+          if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
+            deptResponse.data.forEach((dept: { id: string; name: string }) => {
               deptMap.set(dept.id, dept.name);
             });
           }
         }
 
-        const mappedStudents: User[] = data.map((row: any) => ({
+        const mappedStudents: User[] = data.map((row: {
+          id: string;
+          loopid?: string;
+          org_id?: number;
+          user_id?: number;
+          name: string;
+          email: string;
+          role: string;
+          permissions?: string[];
+          department_id?: string;
+          department?: string;
+          created_at: string;
+          status: string;
+          avatar?: string;
+        }) => ({
           id: row.id,
           loopid: row.loopid,
           org_id: row.org_id,
@@ -167,6 +208,7 @@ export function Students() {
     if (currentUser?.role === 'teacher' && teacherDepartmentIds.length > 0) {
       fetchStudents(teacherDepartmentIds);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacherDepartmentIds]);
 
   const filteredStudents = students.filter(student => {
@@ -202,25 +244,23 @@ export function Students() {
     if (!selectedStudent) return;
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: updatedData.name,
-          email: updatedData.email,
-          department_id: updatedData.department_id,
-        })
-        .eq('id', selectedStudent.id);
+      const response = await api.updateUser(selectedStudent.id, {
+        name: updatedData.name,
+        email: updatedData.email,
+        department_id: updatedData.department_id,
+      });
 
-      if (error) throw error;
+      if (response.error) throw new Error(response.error);
 
       // Refresh students list
       await fetchStudents(teacherDepartmentIds);
       setEditDialogOpen(false);
       setSelectedStudent(null);
       toast.success('Student information updated successfully');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating student:', error);
-      toast.error(error.message || 'Failed to update student');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update student';
+      toast.error(errorMessage);
     }
   };
 

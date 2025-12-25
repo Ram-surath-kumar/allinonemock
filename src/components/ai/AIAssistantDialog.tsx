@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { callGeminiAPI, AIAction, AIContext } from '@/services/gemini';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -36,14 +36,9 @@ export function AIAssistantDialog({ open, onOpenChange }: AIAssistantDialogProps
 
   const loadStudents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email, department_id, role')
-        .eq('role', 'student')
-        .eq('status', 'active')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const response = await api.getUsers({ role: 'student', status: 'active' });
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       if (data) {
         // Fetch department names
@@ -51,13 +46,9 @@ export function AIAssistantDialog({ open, onOpenChange }: AIAssistantDialogProps
         let deptMap = new Map<string, string>();
         
         if (departmentIds.length > 0) {
-          const { data: deptData, error: deptError } = await supabase
-            .from('departments')
-            .select('id, name')
-            .in('id', departmentIds);
-          
-          if (!deptError && deptData) {
-            deptData.forEach((dept: any) => {
+          const deptResponse = await api.getDepartments({ ids: departmentIds });
+          if (!deptResponse.error && deptResponse.data) {
+            deptResponse.data.forEach((dept: any) => {
               deptMap.set(dept.id, dept.name);
             });
           }
@@ -92,21 +83,14 @@ export function AIAssistantDialog({ open, onOpenChange }: AIAssistantDialogProps
 
       try {
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
-        const { error } = await supabase
-          .from('attendance')
-          .upsert(
-            {
-              student_id: action.student_id,
-              date: dateStr,
-              status: action.status,
-              marked_by: currentUser?.id || null,
-            },
-            {
-              onConflict: 'student_id,date',
-            }
-          );
+        const response = await api.markAttendance([{
+          student_id: action.student_id,
+          date: dateStr,
+          status: action.status,
+          marked_by: currentUser?.id || null,
+        }]);
 
-        if (error) throw error;
+        if (response.error) throw new Error(response.error);
 
         toast.success(`Marked ${action.student_name} as ${action.status}`);
         

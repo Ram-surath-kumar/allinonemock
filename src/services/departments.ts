@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { api } from './api';
 
 export interface Department {
   id: string;
@@ -9,13 +9,9 @@ export interface Department {
 
 export async function fetchDepartments(): Promise<Department[]> {
   try {
-    const { data, error } = await supabase
-      .from('departments')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    const response = await api.getDepartments();
+    if (response.error) throw new Error(response.error);
+    return response.data || [];
   } catch (error) {
     console.error('Error fetching departments:', error);
     throw error;
@@ -24,17 +20,13 @@ export async function fetchDepartments(): Promise<Department[]> {
 
 export async function createDepartment(name: string, createdBy: string): Promise<Department> {
   try {
-    const { data, error } = await supabase
-      .from('departments')
-      .insert({
-        name,
-        created_by: createdBy,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const response = await api.createDepartment({
+      name,
+      created_by: createdBy,
+    });
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('No data returned');
+    return response.data;
   } catch (error) {
     console.error('Error creating department:', error);
     throw error;
@@ -43,13 +35,9 @@ export async function createDepartment(name: string, createdBy: string): Promise
 
 export async function fetchTeacherDepartments(teacherId: string): Promise<string[]> {
   try {
-    const { data, error } = await supabase
-      .from('teacher_departments')
-      .select('department_id')
-      .eq('teacher_id', teacherId);
-
-    if (error) throw error;
-    return data?.map(d => d.department_id) || [];
+    const response = await api.getTeacherDepartments(teacherId);
+    if (response.error) throw new Error(response.error);
+    return response.data?.map((d: any) => d.department_id) || [];
   } catch (error) {
     console.error('Error fetching teacher departments:', error);
     throw error;
@@ -58,27 +46,8 @@ export async function fetchTeacherDepartments(teacherId: string): Promise<string
 
 export async function updateTeacherDepartments(teacherId: string, departmentIds: string[]): Promise<void> {
   try {
-    // Delete existing associations
-    const { error: deleteError } = await supabase
-      .from('teacher_departments')
-      .delete()
-      .eq('teacher_id', teacherId);
-
-    if (deleteError) throw deleteError;
-
-    // Insert new associations
-    if (departmentIds.length > 0) {
-      const { error: insertError } = await supabase
-        .from('teacher_departments')
-        .insert(
-          departmentIds.map(deptId => ({
-            teacher_id: teacherId,
-            department_id: deptId,
-          }))
-        );
-
-      if (insertError) throw insertError;
-    }
+    const response = await api.updateTeacherDepartments(teacherId, departmentIds);
+    if (response.error) throw new Error(response.error);
   } catch (error) {
     console.error('Error updating teacher departments:', error);
     throw error;

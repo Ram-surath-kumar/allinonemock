@@ -1,16 +1,16 @@
-import { supabase } from '@/lib/supabase';
+import { api } from './api';
 
 // Helper to create notifications for admins when activities occur
 const createNotificationForAdmins = async (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
   try {
     // Get all admin users
-    const { data: admins } = await supabase
-      .from('users')
-      .select('id')
-      .in('role', ['admin', 'vice_head']);
+    const usersResponse = await api.getUsers({ role: 'admin' });
+    if (usersResponse.error) return;
+    
+    const admins = usersResponse.data?.filter((u: any) => ['admin', 'vice_head'].includes(u.role)) || [];
 
-    if (admins && admins.length > 0) {
-      const notifications = admins.map(admin => ({
+    if (admins.length > 0) {
+      const notifications = admins.map((admin: any) => ({
         user_id: admin.id,
         title,
         message,
@@ -18,9 +18,10 @@ const createNotificationForAdmins = async (title: string, message: string, type:
         read: false,
       }));
 
-      await supabase
-        .from('notifications')
-        .insert(notifications);
+      // Create notifications in parallel
+      await Promise.all(
+        notifications.map(notification => api.createNotification(notification))
+      );
     }
   } catch (error) {
     console.error('Error creating notifications:', error);
@@ -75,19 +76,17 @@ const getColorClass = (iconName: string): string => {
 export const createActivity = async (params: CreateActivityParams): Promise<void> => {
   try {
     const now = new Date();
-    const { error } = await supabase
-      .from('activities')
-      .insert({
-        icon_name: params.iconName,
-        title: params.title,
-        description: params.description,
-        time_ago: params.timeAgo || getTimeAgo(now), // Will be "Just now" for new activities
-        color_class: params.colorClass || getColorClass(params.iconName),
-      });
+    const response = await api.createActivity({
+      icon_name: params.iconName,
+      title: params.title,
+      description: params.description,
+      time_ago: params.timeAgo || getTimeAgo(now), // Will be "Just now" for new activities
+      color_class: params.colorClass || getColorClass(params.iconName),
+    });
 
-    if (error) {
-      console.error('Error creating activity:', error);
-      throw error;
+    if (response.error) {
+      console.error('Error creating activity:', response.error);
+      throw new Error(response.error);
     }
   } catch (error) {
     console.error('Failed to create activity:', error);

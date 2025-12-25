@@ -33,10 +33,10 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // Fetch users from Supabase
+  // Only fetch users when component is mounted (i.e., when User Management tab is active)
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, []); // Only load once when component mounts
 
   const fetchUsers = async () => {
     try {

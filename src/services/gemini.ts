@@ -38,6 +38,36 @@ export interface AIContext {
   availableActions: string[];
 }
 
+export interface AnalyticsData {
+  attendance?: {
+    current: number;
+    trend: 'up' | 'down' | 'stable';
+    prediction: number;
+    insights: string[];
+  };
+  finance?: {
+    current: number;
+    trend: 'up' | 'down' | 'stable';
+    prediction: number;
+    insights: string[];
+  };
+  students?: {
+    current: number;
+    trend: 'up' | 'down' | 'stable';
+    prediction: number;
+    insights: string[];
+  };
+}
+
+export interface DataQueryIntent {
+  queryType: 'attendance_check' | 'student_count' | 'attendance_list' | 'student_info' | 'general';
+  student_name?: string;
+  department?: string;
+  date?: string;
+  status?: string;
+  confidence: number;
+}
+
 async function tryGeminiModel(
   model: string,
   systemPrompt: string,
@@ -139,6 +169,177 @@ Now parse: ${prompt}`;
   throw lastError || new Error('All Gemini models failed');
 }
 
+// New function to parse data query intent
+export async function parseDataQueryIntent(
+  prompt: string,
+  students: StudentData[],
+  currentDate: string
+): Promise<DataQueryIntent> {
+  const systemPrompt = `You are an AI assistant that understands questions about school data. Parse the question and return ONLY valid JSON, no markdown, no explanations.
+
+Available students:
+${students.length > 0 ? students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
+
+Current date: ${currentDate}
+
+Query types:
+1. attendance_check - Check if a student is present/absent on a specific date (e.g., "is laxman present today")
+2. student_count - Count students by department or criteria (e.g., "how many students in bsc comp sci")
+3. attendance_list - List attendance for multiple students
+4. student_info - Get information about a student
+5. general - Other queries
+
+Return ONLY this JSON structure (no markdown, no code blocks):
+{"queryType":"attendance_check","student_name":"Laxman","date":"2024-01-15","confidence":0.95}
+
+Examples:
+Input: "is laxman present today"
+Output: {"queryType":"attendance_check","student_name":"Laxman","date":"${currentDate}","confidence":0.9}
+
+Input: "how many students are there in bsc comp science"
+Output: {"queryType":"student_count","department":"BSC Comp Science","confidence":0.95}
+
+Input: "show me students in computer science"
+Output: {"queryType":"student_count","department":"Computer Science","confidence":0.85}
+
+Now parse: ${prompt}`;
+
+  let lastError: Error | null = null;
+  
+  for (const model of MODEL_OPTIONS) {
+    try {
+      const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (text) {
+        let jsonText = text.trim();
+        
+        // Extract JSON
+        if (jsonText.includes('```')) {
+          const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+          if (jsonMatch) jsonText = jsonMatch[1];
+        } else {
+          const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
+          if (jsonObjectMatch) jsonText = jsonObjectMatch[0];
+        }
+
+        const parsed = JSON.parse(jsonText);
+        
+        // Find student by name if provided
+        if (parsed.student_name) {
+          const matchingStudents = students.filter(
+            s => s.name.toLowerCase().includes(parsed.student_name.toLowerCase())
+          );
+          if (matchingStudents.length === 1) {
+            parsed.student_id = matchingStudents[0].id;
+            parsed.student_name = matchingStudents[0].name;
+          }
+        }
+
+        return {
+          queryType: parsed.queryType || 'general',
+          student_name: parsed.student_name,
+          department: parsed.department,
+          date: parsed.date || currentDate,
+          status: parsed.status,
+          confidence: parsed.confidence || 0.5,
+        };
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
+        continue;
+      }
+      break;
+    }
+  }
+
+  // Fallback
+  try {
+    const data = await tryGeminiModel('gemini-pro', systemPrompt, 'v1');
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (text) {
+      let jsonText = text.trim();
+      const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (jsonObjectMatch) {
+        jsonText = jsonObjectMatch[0];
+        const parsed = JSON.parse(jsonText);
+        return {
+          queryType: parsed.queryType || 'general',
+          student_name: parsed.student_name,
+          department: parsed.department,
+          date: parsed.date || currentDate,
+          status: parsed.status,
+          confidence: parsed.confidence || 0.5,
+        };
+      }
+    }
+  } catch (error) {
+    // Ignore
+  }
+
+  throw lastError || new Error('Failed to parse query intent');
+}
+
+// New function for analytics queries
+export async function callGeminiAnalytics(
+  query: string,
+  data: {
+    attendance?: { current: number; historical: number[] };
+    finance?: { current: number; historical: number[] };
+    students?: { current: number; historical: number[] };
+  }
+): Promise<string> {
+  const systemPrompt = `You are an AI analytics assistant for a school ERP system. Analyze the provided data and provide insights, predictions, and recommendations.
+
+Current Data:
+${data.attendance ? `Attendance: Current ${data.attendance.current}%, Historical: ${data.attendance.historical.join(', ')}` : ''}
+${data.finance ? `Finance: Current $${data.finance.current.toLocaleString()}, Historical: $${data.finance.historical.map(v => v.toLocaleString()).join(', $')}` : ''}
+${data.students ? `Students: Current ${data.students.current}, Historical: ${data.students.historical.join(', ')}` : ''}
+
+Query: ${query}
+
+Provide a concise, actionable response with:
+1. Key insights from the data
+2. Trends and patterns
+3. Predictions for the next period
+4. Recommendations
+
+Keep the response under 200 words and be specific with numbers.`;
+
+  let lastError: Error | null = null;
+  
+  for (const model of MODEL_OPTIONS) {
+    try {
+      const response = await tryGeminiModel(model, systemPrompt, 'v1beta');
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (text) {
+        return text.trim();
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
+        continue;
+      }
+      break;
+    }
+  }
+
+  // Fallback to v1
+  try {
+    const response = await tryGeminiModel('gemini-pro', systemPrompt, 'v1');
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (text) {
+      return text.trim();
+    }
+  } catch (error) {
+    // Ignore
+  }
+
+  throw lastError || new Error('Failed to generate analytics');
+}
+
 function parseAIResponse(text: string, context: AIContext): AIAction {
   try {
 
@@ -225,4 +426,3 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
     };
   }
 }
-

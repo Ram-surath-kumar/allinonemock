@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { User, BookOpen, CreditCard, Calendar, LucideIcon } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
+import { useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Activity {
   id: string;
@@ -21,27 +24,31 @@ const iconMap: Record<string, LucideIcon> = {
 export function RecentActivity() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const isDashboardActive = location.pathname === '/' || location.pathname.endsWith('/dashboard');
 
   useEffect(() => {
+    if (!isDashboardActive) {
+      setLoading(false);
+      return;
+    }
+
     fetchActivities();
-    // Refresh activities every minute to update time ago
     const interval = setInterval(() => {
-      fetchActivities();
-    }, 60000); // Update every minute
+      if (isDashboardActive) {
+        fetchActivities();
+      }
+    }, 120000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isDashboardActive]);
 
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
+      const response = await api.getActivities(10);
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       if (data) {
         const getTimeAgo = (createdAt: string): string => {
@@ -67,7 +74,7 @@ export function RecentActivity() {
           icon: iconMap[row.icon_name] || User,
           title: row.title,
           description: row.description,
-          time: getTimeAgo(row.created_at), // Calculate dynamically from created_at
+          time: getTimeAgo(row.created_at),
           color: row.color_class,
         }));
         setActivities(mappedActivities);
@@ -80,45 +87,88 @@ export function RecentActivity() {
   };
 
   return (
-    <div className="rounded-xl border border-border/50 bg-gradient-to-br from-card to-card/95 p-4 sm:p-6 shadow-md backdrop-blur-sm">
-      <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">Recent Activity</h3>
+    <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Recent Activity">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="h-0.5 w-6 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
+        <h3 className="text-sm font-semibold text-foreground">Recent Activity</h3>
+      </div>
       
       {loading ? (
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4" role="status" aria-label="Loading activities">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-4 animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
-              <div className="h-10 w-10 rounded-lg bg-muted" />
+            <div key={i} className="flex gap-4" style={{ animationDelay: `${i * 100}ms` }}>
+              <Skeleton className="h-12 w-12 rounded-full" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-48 bg-muted rounded" />
-                <div className="h-3 w-32 bg-muted rounded" />
+                <Skeleton className="h-4 w-48 rounded-lg" />
+                <Skeleton className="h-3 w-32 rounded-lg" />
               </div>
-              <div className="h-3 w-16 bg-muted rounded" />
+              <Skeleton className="h-3 w-16 rounded-lg" />
             </div>
           ))}
+          <span className="sr-only">Loading recent activities...</span>
         </div>
       ) : activities.length === 0 ? (
-        <div className="mt-6 text-sm text-muted-foreground animate-fade-in">No recent activities</div>
+        <div className="text-sm text-muted-foreground animate-fade-in text-center py-8">
+          No recent activities
+        </div>
       ) : (
-        <div className="mt-6 space-y-4">
-          {activities.map((activity, index) => {
-            const Icon = activity.icon;
-            return (
-              <div 
-                key={activity.id} 
-                className="group flex gap-4 animate-fade-in-up hover:bg-muted/50 p-3 rounded-xl transition-all duration-200 hover:shadow-sm"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-md transition-transform duration-200 group-hover:scale-110 ${activity.color}`}>
-                  <Icon className="h-5 w-5" />
+        <div className="relative">
+          {/* Timeline line - centered on icon */}
+          <div className="absolute left-[24px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-transparent" />
+          
+          <div className="space-y-5">
+            {activities.map((activity, index) => {
+              const Icon = activity.icon;
+              return (
+                <div 
+                  key={activity.id} 
+                  className={cn(
+                    "relative flex gap-4 animate-fade-in-up group",
+                    "hover:bg-muted/30 p-3 rounded-xl transition-all duration-200",
+                    "hover:scale-[1.01] hover:-translate-y-0.5"
+                  )}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Timeline dot - centered */}
+                  <div className="relative z-10 flex-shrink-0 w-12 flex items-center justify-center">
+                    <div className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-full",
+                      "border-2 border-background shadow-md",
+                      "transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg",
+                      activity.color || "bg-gradient-to-br from-primary/20 to-primary/10"
+                    )}>
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    {/* Glow effect */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-full opacity-0 group-hover:opacity-100",
+                      "transition-opacity duration-200 blur-xl",
+                      "bg-primary/30"
+                    )} />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {activity.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground truncate mt-1">
+                        {activity.description}
+                      </p>
+                    </div>
+                    
+                    {/* Time label - right aligned */}
+                    <div className="flex-shrink-0">
+                      <p className="text-xs text-muted-foreground whitespace-nowrap font-medium">
+                        {activity.time}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                  <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
-                </div>
-                <p className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

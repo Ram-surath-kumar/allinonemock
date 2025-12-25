@@ -3,7 +3,7 @@ import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 
 interface Notice {
@@ -25,18 +25,17 @@ export function NoticeBanner() {
     if (!currentUser) return;
 
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .eq('read', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      const response = await api.getNotifications({ 
+        user_id: currentUser.id, 
+        read: false, 
+        limit: 1 
+      });
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+      if (response.error && !response.error.includes('not found') && !response.error.includes('PGRST116')) {
+        throw new Error(response.error);
       }
+
+      const data = response.data && response.data.length > 0 ? response.data[0] : null;
 
       if (data && !dismissedNoticeIds.has(data.id)) {
         setUnreadNotice({
@@ -62,10 +61,10 @@ export function NoticeBanner() {
 
     fetchLatestUnreadNotice();
     
-    // Poll for new notices every 30 seconds
+    // Poll for new notices every 60 seconds (reduced frequency)
     const interval = setInterval(() => {
       fetchLatestUnreadNotice();
-    }, 30000);
+    }, 60000);
 
     // Listen for custom events to refresh notices
     const handleRefresh = () => {
@@ -86,12 +85,8 @@ export function NoticeBanner() {
     if (!unreadNotice) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', unreadNotice.id);
-
-      if (error) throw error;
+      const response = await api.markNotificationAsRead(unreadNotice.id);
+      if (response.error) throw new Error(response.error);
 
       // Add to dismissed set
       setDismissedNoticeIds(prev => new Set(prev).add(unreadNotice.id));

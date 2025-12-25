@@ -5,23 +5,38 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Lazy load pages
-const Dashboard = lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
-const UserManagement = lazy(() => import('@/pages/UserManagement').then(module => ({ default: module.UserManagement })));
-const Students = lazy(() => import('@/pages/Students').then(module => ({ default: module.Students })));
-const Attendance = lazy(() => import('@/pages/Attendance').then(module => ({ default: module.Attendance })));
+// Lazy load pages with better code splitting
+const Dashboard = lazy(() => 
+  import('@/pages/Dashboard').then(module => ({ default: module.Dashboard }))
+);
+const UserManagement = lazy(() => 
+  import('@/pages/UserManagement').then(module => ({ default: module.UserManagement }))
+);
+const Students = lazy(() => 
+  import('@/pages/Students').then(module => ({ default: module.Students }))
+);
+const Attendance = lazy(() => 
+  import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
+);
 
-// Loading fallback component
+// Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
-  <div className="space-y-6 animate-fade-in">
-    <div className="space-y-2">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-64" />
+  <div className="space-y-6 animate-fade-in" role="status" aria-label="Loading page">
+    <div className="space-y-3">
+      <Skeleton className="h-8 w-48 rounded-xl" />
+      <Skeleton className="h-4 w-64 rounded-lg" />
     </div>
-    <div className="grid gap-4">
-      <Skeleton className="h-32 w-full" />
-      <Skeleton className="h-32 w-full" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+      ))}
     </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {[...Array(2)].map((_, i) => (
+        <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+      ))}
+    </div>
+    <span className="sr-only">Loading content...</span>
   </div>
 );
 
@@ -172,7 +187,7 @@ function AppContent() {
       case '/facilities':
       case '/settings':
         return (
-          <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-card animate-fade-in">
+          <div className="flex items-center justify-center h-64 rounded-2xl border border-border bg-card animate-fade-in shadow-depth-1" role="region" aria-label={getPageTitle()}>
             <div className="text-center">
               <h2 className="text-xl font-semibold text-foreground">{getPageTitle()}</h2>
               <p className="mt-2 text-muted-foreground">

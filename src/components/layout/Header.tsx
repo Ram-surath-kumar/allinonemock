@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Bell, Search, Check, X, Menu, Sparkles } from 'lucide-react';
+import { Bell, Search, Check, X, Menu, Sparkles, Moon, Sun, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
-import { AIAssistantDialog } from '@/components/ai/AIAssistantDialog';
+import { useTheme } from 'next-themes';
+import { ROLE_LABELS } from '@/types/erp';
 
 interface Notification {
   id: string;
@@ -30,63 +38,64 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const { currentUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) return;
 
-    fetchNotifications();
-    
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(() => {
+    if (open) {
       fetchNotifications();
-    }, 30000);
+    } else {
+      fetchNotifications();
+    }
 
-    // Listen for custom events to refresh notifications
-    // Use a debounce to prevent multiple rapid refreshes
     let refreshTimeout: NodeJS.Timeout | null = null;
     const handleRefresh = () => {
       if (refreshTimeout) {
         clearTimeout(refreshTimeout);
       }
       refreshTimeout = setTimeout(() => {
-        fetchNotifications();
-      }, 500); // Debounce by 500ms
+        if (open) {
+          fetchNotifications();
+        }
+      }, 500);
     };
 
     window.addEventListener('notification-sent', handleRefresh);
     window.addEventListener('notification-read', handleRefresh);
 
     return () => {
-      clearInterval(interval);
       if (refreshTimeout) {
         clearTimeout(refreshTimeout);
       }
       window.removeEventListener('notification-sent', handleRefresh);
       window.removeEventListener('notification-read', handleRefresh);
     };
-  }, [currentUser]);
+  }, [currentUser, open]);
 
   const fetchNotifications = async () => {
     if (!currentUser) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const response = await api.getNotifications({ 
+        user_id: currentUser.id, 
+        limit: 10 
+      });
 
-      if (error) throw error;
+      if (response.error) throw new Error(response.error);
 
-      if (data) {
-        const mappedNotifications: Notification[] = data.map((row) => ({
+      if (response.data) {
+        const mappedNotifications: Notification[] = response.data.map((row: any) => ({
           id: row.id,
           title: row.title,
           message: row.message,
@@ -106,12 +115,8 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-
-      if (error) throw error;
+      const response = await api.markNotificationAsRead(notificationId);
+      if (response.error) throw new Error(response.error);
 
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -126,13 +131,8 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
     if (!currentUser) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', currentUser.id)
-        .eq('read', false);
-
-      if (error) throw error;
+      const response = await api.markAllNotificationsAsRead(currentUser.id);
+      if (response.error) throw new Error(response.error);
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
@@ -165,50 +165,67 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
     return `${Math.floor(diffInSeconds / 86400)}d ago`;
   };
 
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   return (
-    <header className="flex h-14 md:h-16 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-md px-3 sm:px-4 md:px-6 shadow-sm sticky top-0 z-40">
-      <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+    <header className="flex h-16 md:h-18 items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern" role="banner">
+      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
         {onMenuClick && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden h-9 w-9"
+            className="md:hidden h-9 w-9 rounded-xl"
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-base md:text-lg font-semibold text-foreground truncate">{title}</h1>
-          {subtitle && <p className="text-xs md:text-sm text-muted-foreground truncate">{subtitle}</p>}
+          <h1 className="text-sm md:text-base font-semibold text-foreground truncate">{title}</h1>
+          {currentUser && (
+            <p className="text-xs text-muted-foreground truncate">
+              Welcome back {currentUser.name}
+            </p>
+          )}
+          {!currentUser && subtitle && (
+            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Pill Search Bar */}
         <div className="relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input 
             placeholder="Search..." 
-            className="w-48 md:w-64 pl-9"
+            className="w-48 md:w-64 pl-9 pr-4 h-9 rounded-full bg-background/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all"
+            aria-label="Search"
           />
         </div>
 
-        {/* AI Assistant Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setAiDialogOpen(true)}
-          className="relative group"
-          title="AI Assistant"
-        >
-          <Sparkles className="h-5 w-5 text-primary animate-pulse group-hover:animate-spin transition-all duration-300 group-hover:scale-110" />
-          <span className="absolute inset-0 rounded-full bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
-        </Button>
+        {/* Theme Toggle */}
+        {mounted && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="h-9 w-9 rounded-xl hover-lift"
+            title="Toggle theme"
+            aria-label="Toggle theme"
+          >
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+        )}
         
+        {/* Notifications */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-1 -top-1 h-5 w-5 flex items-center justify-center rounded-full p-0 text-xs bg-destructive text-destructive-foreground border-2 border-background">
@@ -217,8 +234,8 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-0">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <PopoverContent align="end" className="w-80 p-0 glass-modern">
+            <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
               <h3 className="font-semibold text-sm">Notifications</h3>
               {unreadCount > 0 && (
                 <Button
@@ -241,7 +258,7 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
                   No notifications
                 </div>
               ) : (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/50">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
@@ -289,10 +306,42 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* Profile Chip */}
+        {currentUser && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-9 px-2 md:px-3 rounded-full gap-2 hover:bg-muted/50"
+              >
+                <Avatar className="h-7 w-7 border-2 border-primary/20">
+                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs font-semibold">
+                    {getInitials(currentUser.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-xs font-semibold text-foreground leading-none">
+                    {currentUser.name.split(' ')[0]}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
+                    {ROLE_LABELS[currentUser.role]}
+                  </span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 glass-modern">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-semibold">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                <p className="text-xs text-muted-foreground mt-1">{ROLE_LABELS[currentUser.role]}</p>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
-      {/* AI Assistant Dialog */}
-      <AIAssistantDialog open={aiDialogOpen} onOpenChange={setAiDialogOpen} />
     </header>
   );
 }

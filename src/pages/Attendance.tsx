@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { toast } from 'sonner';
 import { fetchDepartments, fetchTeacherDepartments, Department } from '@/services/departments';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -45,10 +45,11 @@ export function Attendance() {
   const isAdminOrViceHead = currentUser?.role === 'admin' || currentUser?.role === 'vice_head';
 
   useEffect(() => {
+    // Only load data when component is mounted (i.e., when Attendance tab is active)
     if (currentUser) {
       loadData();
     }
-  }, [currentUser]);
+  }, [currentUser?.id]); // Only reload if user changes
 
   useEffect(() => {
     if (selectedDate && students.length > 0) {
@@ -116,15 +117,9 @@ export function Attendance() {
         }
 
         // Filter students by teacher's departments
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'student')
-          .eq('status', 'active')
-          .in('department_id', deptIdsToUse)
-          .order('name', { ascending: true });
-
-        if (error) throw error;
+        const response = await api.getUsersByDepartments(deptIdsToUse, 'student', 'active');
+        if (response.error) throw new Error(response.error);
+        const data = response.data;
 
         if (data) {
           // Fetch department names separately
@@ -132,13 +127,9 @@ export function Attendance() {
           let deptMap = new Map<string, string>();
           
           if (departmentIds.length > 0) {
-            const { data: deptData, error: deptError } = await supabase
-              .from('departments')
-              .select('id, name')
-              .in('id', departmentIds);
-            
-            if (!deptError && deptData) {
-              deptData.forEach((dept: any) => {
+            const deptResponse = await api.getDepartments({ ids: departmentIds });
+            if (!deptResponse.error && deptResponse.data) {
+              deptResponse.data.forEach((dept: any) => {
                 deptMap.set(dept.id, dept.name);
               });
             }
@@ -166,14 +157,9 @@ export function Attendance() {
       }
 
       // For non-teachers (admin, vice_head, etc.), show all students
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'student')
-        .eq('status', 'active')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const response = await api.getUsers({ role: 'student', status: 'active' });
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       if (data) {
         // Fetch department names separately
@@ -181,13 +167,9 @@ export function Attendance() {
         let deptMap = new Map<string, string>();
         
         if (departmentIds.length > 0) {
-          const { data: deptData, error: deptError } = await supabase
-            .from('departments')
-            .select('id, name')
-            .in('id', departmentIds);
-          
-          if (!deptError && deptData) {
-            deptData.forEach((dept: any) => {
+          const deptResponse = await api.getDepartments({ ids: departmentIds });
+          if (!deptResponse.error && deptResponse.data) {
+            deptResponse.data.forEach((dept: any) => {
               deptMap.set(dept.id, dept.name);
             });
           }
@@ -224,13 +206,9 @@ export function Attendance() {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const studentIds = students.map(s => s.id);
 
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('date', dateStr)
-        .in('student_id', studentIds);
-
-      if (error) throw error;
+      const response = await api.getAttendance({ date: dateStr, student_ids: studentIds });
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       const recordsMap = new Map<string, AttendanceRecord>();
       data?.forEach((record: any) => {
@@ -312,13 +290,8 @@ export function Attendance() {
       }));
 
       // Use upsert to handle both insert and update
-      const { error } = await supabase
-        .from('attendance')
-        .upsert(records, {
-          onConflict: 'student_id,date',
-        });
-
-      if (error) throw error;
+      const response = await api.markAttendance(records);
+      if (response.error) throw new Error(response.error);
 
       // Refresh attendance records
       await loadAttendanceForDate();
