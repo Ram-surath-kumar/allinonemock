@@ -45,7 +45,7 @@ interface AddUserDialogProps {
   onAdd: (user: {
     name: string;
     email?: string;
-    role: UserRole;
+    role: string; // Changed to string to support custom roles
     permissions: string[];
     department_id?: string;
     department_ids?: string[];
@@ -54,7 +54,7 @@ interface AddUserDialogProps {
   onAddMultiple?: (users: Array<{
     name: string;
     email?: string;
-    role: UserRole;
+    role: string; // Changed to string to support custom roles
     permissions: string[];
     department_id?: string;
     department_ids?: string[];
@@ -65,9 +65,7 @@ interface AddUserDialogProps {
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().optional(), // Email is optional for all roles - will be auto-generated
-  role: z.enum(['admin', 'vice_head', 'teacher', 'student', 'housekeeping', 'librarian', 'accountant'] as const, {
-    required_error: 'Please select a role',
-  }),
+  role: z.string().min(1, 'Please select a role'), // Accept any string to support custom roles
   department_id: z.string().optional(),
   department_ids: z.array(z.string()).optional(),
   permissions: z.array(z.string()),
@@ -92,10 +90,18 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface CustomRole {
+  id: string;
+  name: string;
+  permissions: string[];
+}
+
 export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddUserDialogProps) {
   const { currentUser, canManageRole } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const [loadingCustomRoles, setLoadingCustomRoles] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('manual');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -104,6 +110,12 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
   const [userPrompt, setUserPrompt] = useState('');
 
   const availableRoles = (Object.keys(ROLE_LABELS) as UserRole[]).filter(r => canManageRole(r));
+  
+  // Combine default roles with custom roles
+  const allAvailableRoles = [
+    ...availableRoles.map(r => ({ id: r, name: ROLE_LABELS[r], isCustom: false })),
+    ...customRoles.map(r => ({ id: r.id, name: r.name, isCustom: true, permissions: r.permissions }))
+  ];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -124,6 +136,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
   useEffect(() => {
     if (open) {
       loadDepartments();
+      loadCustomRoles();
       form.reset();
       setSelectedFile(null);
       setExtractedStudents([]);
@@ -145,27 +158,62 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
     }
   };
 
+  const loadCustomRoles = async () => {
+    try {
+      setLoadingCustomRoles(true);
+      const response = await api.getCustomRoles();
+      if (response.error) throw new Error(response.error);
+      
+      if (response.data && Array.isArray(response.data)) {
+        setCustomRoles(response.data as CustomRole[]);
+      }
+    } catch (error) {
+      console.error('Error loading custom roles:', error);
+      // Don't show error toast - custom roles are optional
+    } finally {
+      setLoadingCustomRoles(false);
+    }
+  };
+
   useEffect(() => {
     if (watchedRole) {
-      const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[watchedRole] || [];
-      form.setValue('permissions', defaultPermissions);
+      // Check if it's a custom role
+      const customRole = customRoles.find(r => r.id === watchedRole);
+      if (customRole) {
+        // Use custom role permissions
+        form.setValue('permissions', customRole.permissions);
+      } else {
+        // Use default role permissions
+        const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[watchedRole as UserRole] || [];
+        form.setValue('permissions', defaultPermissions);
+      }
       form.setValue('department_id', '');
       form.setValue('department_ids', []);
     }
-  }, [watchedRole, form]);
+  }, [watchedRole, form, customRoles]);
 
   const togglePermission = (permissionId: string, currentPermissions: string[]) => {
-    // Only allow toggling permissions that are allowed for the current role
-    const allowedPerms = ROLE_ALLOWED_PERMISSIONS[watchedRole] || [];
-    if (!allowedPerms.includes(permissionId)) {
-      return; // Don't allow toggling disallowed permissions
+    // Check if it's a custom role
+    const customRole = customRoles.find(r => r.id === watchedRole);
+    if (customRole) {
+      // For custom roles, allow all permissions
+      const newPermissions = currentPermissions.includes(permissionId)
+        ? currentPermissions.filter(p => p !== permissionId)
+        : [...currentPermissions, permissionId];
+      form.setValue('permissions', newPermissions);
+    } else {
+      // For default roles, only allow toggling permissions that are allowed for the role
+      const allowedPerms = ROLE_ALLOWED_PERMISSIONS[watchedRole as UserRole] || [];
+      if (!allowedPerms.includes(permissionId)) {
+        return; // Don't allow toggling disallowed permissions
+      }
+      
+      const filtered = currentPermissions.filter(p => allowedPerms.includes(p)); // Remove any disallowed permissions
+      const newPermissions = filtered.includes(permissionId)
+        ? filtered.filter(p => p !== permissionId)
+        : [...filtered, permissionId];
+      form.setValue('permissions', newPermissions);
     }
-    
-    const filtered = currentPermissions.filter(p => allowedPerms.includes(p)); // Remove any disallowed permissions
-    const newPermissions = filtered.includes(permissionId)
-      ? filtered.filter(p => p !== permissionId)
-      : [...filtered, permissionId];
-    form.setValue('permissions', newPermissions);
   };
 
   const toggleDepartment = (deptId: string, currentDeptIds: string[]) => {
@@ -405,7 +453,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
           <TabsContent value="manual" className="mt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -419,27 +467,8 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
                         className={form.formState.errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email *</FormLabel>
-                    <FormControl>
-              <Input
-                type="email"
-                placeholder="user@school.edu or leave empty if using loopid"
-                        {...field}
-                        className={form.formState.errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
-                      />
-                    </FormControl>
                     <FormDescription className="text-xs">
-                      Email is optional - will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all users
+                      Email will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all users
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -468,9 +497,9 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
                 </SelectTrigger>
                       </FormControl>
                 <SelectContent>
-                  {availableRoles.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {ROLE_LABELS[r]}
+                  {allAvailableRoles.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -572,7 +601,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddU
               )}
           </div>
 
-            {watchedRole && watchedRole !== 'student' && Object.keys(groupedPermissions).length > 0 && (
+            {watchedRole && watchedRole !== 'student' && (customRoles.find(r => r.id === watchedRole) || !['student'].includes(watchedRole)) && Object.keys(groupedPermissions).length > 0 && (
               <FormField
                 control={form.control}
                 name="permissions"

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { User, BookOpen, CreditCard, Calendar, LucideIcon } from 'lucide-react';
-import { api } from '@/services/api';
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 interface Activity {
   id: string;
@@ -22,6 +22,7 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export function RecentActivity() {
+  const { dashboardData, loading: dashboardLoading } = useDashboard();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -33,58 +34,40 @@ export function RecentActivity() {
       return;
     }
 
-    fetchActivities();
-    const interval = setInterval(() => {
-      if (isDashboardActive) {
-        fetchActivities();
-      }
-    }, 120000);
+    // Use consolidated dashboard data instead of separate API call
+    if (dashboardData?.recentActivities) {
+      const getTimeAgo = (createdAt: string): string => {
+        const now = new Date();
+        const created = new Date(createdAt);
+        const diffInSeconds = Math.floor((now.getTime() - created.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) {
+          const minutes = Math.floor(diffInSeconds / 60);
+          return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
+        }
+        if (diffInSeconds < 86400) {
+          const hours = Math.floor(diffInSeconds / 3600);
+          return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+        }
+        const days = Math.floor(diffInSeconds / 86400);
+        return days === 1 ? '1 day ago' : `${days} days ago`;
+      };
 
-    return () => clearInterval(interval);
-  }, [isDashboardActive]);
-
-  const fetchActivities = async () => {
-    try {
-      setLoading(true);
-      const response = await api.getActivities(10);
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
-
-      if (data) {
-        const getTimeAgo = (createdAt: string): string => {
-          const now = new Date();
-          const created = new Date(createdAt);
-          const diffInSeconds = Math.floor((now.getTime() - created.getTime()) / 1000);
-          
-          if (diffInSeconds < 60) return 'Just now';
-          if (diffInSeconds < 3600) {
-            const minutes = Math.floor(diffInSeconds / 60);
-            return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
-          }
-          if (diffInSeconds < 86400) {
-            const hours = Math.floor(diffInSeconds / 3600);
-            return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-          }
-          const days = Math.floor(diffInSeconds / 86400);
-          return days === 1 ? '1 day ago' : `${days} days ago`;
-        };
-
-        const mappedActivities: Activity[] = data.map((row) => ({
-          id: row.id,
-          icon: iconMap[row.icon_name] || User,
-          title: row.title,
-          description: row.description,
-          time: getTimeAgo(row.created_at),
-          color: row.color_class,
-        }));
-        setActivities(mappedActivities);
-      }
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    } finally {
+      const mappedActivities: Activity[] = (dashboardData.recentActivities as any[]).map((row: any) => ({
+        id: row.id || String(Math.random()),
+        icon: iconMap[row.icon_name] || User,
+        title: row.title || row.action || 'Activity',
+        description: row.description || row.details || '',
+        time: getTimeAgo(row.created_at || new Date().toISOString()),
+        color: row.color_class || 'bg-primary/20',
+      }));
+      setActivities(mappedActivities);
+      setLoading(false);
+    } else if (!dashboardLoading) {
       setLoading(false);
     }
-  };
+  }, [dashboardData, dashboardLoading, isDashboardActive]);
 
   return (
     <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Recent Activity">

@@ -1,0 +1,17 @@
+server:
+  port: 3001
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: schoolsphere-admin-backend
+
+# Supabase Configuration
+supabase:
+  url: ${SUPABASE_URL:https://vzkbyzpqnojhlazwopvz.supabase.co}
+  anon-key: ${SUPABASE_ANON_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2J5enBxbm9qaGxhendvcHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMTk2MTMsImV4cCI6MjA4MTc5NTYxM30.ledQxA84HlYEQyUTmp2VJ7U4lRkLMqKCYieQNL_ObuY}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+
+# CORS is configured in CorsConfig.java
+

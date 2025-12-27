@@ -6,13 +6,17 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
 import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
 import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
-import { getDashboardStats, getGrowthData, DashboardStats } from '@/services/dashboard';
+import { getDashboardStats, getGrowthData, getConsolidatedGrowthData, DashboardStats } from '@/services/dashboard';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 interface AdminDashboardProps {
   onAddUser: () => void;
 }
 
 export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
+  const { currentUser } = useAuth();
+  const { dashboardData, loading: dashboardLoading, refreshDashboard } = useDashboard();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [changeTexts, setChangeTexts] = useState<{
@@ -30,12 +34,50 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
   const [growthMetric, setGrowthMetric] = useState<'students' | 'staff' | 'attendance' | 'fees'>('students');
   const [staffModalOpen, setStaffModalOpen] = useState(false);
 
+  // Extract stats from consolidated dashboard data
   useEffect(() => {
-    fetchStats();
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (dashboardData) {
+      try {
+        // Extract stats from consolidated response
+        const dashboardStats = dashboardData.stats as Record<string, unknown>;
+        const students = dashboardData.students as unknown[] || [];
+
+        const totalStudents = typeof dashboardStats.totalStudents === 'number' 
+          ? dashboardStats.totalStudents 
+          : students.length;
+        
+        const totalStaff = typeof dashboardStats.totalStaff === 'number' 
+          ? dashboardStats.totalStaff 
+          : 0;
+
+        const attendanceRate = typeof dashboardStats.attendanceRate === 'number'
+          ? dashboardStats.attendanceRate
+          : 0;
+
+        const feeCollectionPercentage = typeof dashboardStats.feeCollectionPercentage === 'number'
+          ? dashboardStats.feeCollectionPercentage
+          : 0;
+
+        const feeCollection = typeof dashboardStats.feeCollection === 'number' 
+          ? dashboardStats.feeCollection 
+          : 0;
+
+        setStats({
+          totalStudents,
+          totalStaff,
+          attendanceRate,
+          feeCollection,
+          feeCollectionPercentage,
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Error processing dashboard data:', error);
+        setLoading(false);
+      }
+    } else if (!dashboardLoading) {
+      setLoading(false);
+    }
+  }, [dashboardData, dashboardLoading]);
 
   useEffect(() => {
     if (stats) {
@@ -43,18 +85,6 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
       fetchSparklineData();
     }
   }, [stats]);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const data = await getDashboardStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchChangeTexts = async () => {
     try {
@@ -142,7 +172,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
         />
         <StatsCard
           title="Staff Members"
-          value={loading ? '...' : formatNumber(stats?.staffMembers || 0)}
+          value={loading ? '...' : formatNumber(stats?.totalStaff || 0)}
           change={changeTexts.staff}
           changeType={changeTexts.staff?.startsWith('+') ? 'positive' : changeTexts.staff?.startsWith('-') ? 'negative' : 'neutral'}
           icon={Users}

@@ -170,51 +170,73 @@ export function Attendance() {
     try {
       setLoading(true);
       
-      // Load departments
-      const depts = await fetchDepartments();
-      setDepartments(depts);
-
-      // Load teacher departments if user is a teacher
-      let teacherDeptIds: string[] = [];
-      if (currentUser?.role === 'teacher' && currentUser.id) {
-        teacherDeptIds = await fetchTeacherDepartments(currentUser.id);
-        setTeacherDepartmentIds(teacherDeptIds);
+      // Use consolidated API to get all data in one call
+      const response = await api.getAttendancePageData(
+        currentUser?.id,
+        currentUser?.role,
+        format(selectedDate, 'yyyy-MM-dd')
+      );
+      
+      if (response.error) {
+        throw new Error(response.error);
       }
-
-      // Load students with teacher department IDs
-      await loadStudents(teacherDeptIds);
+      
+      if (response.data) {
+        // Set departments
+        const deptData = response.data.departments as Department[];
+        setDepartments(deptData);
+        
+        // Set teacher department IDs
+        if (response.data.teacherDepartmentIds) {
+          setTeacherDepartmentIds(response.data.teacherDepartmentIds);
+        }
+        
+        // Set students
+        const studentsData = response.data.students as User[];
+        setStudents(studentsData);
+        
+        // Set attendance records
+        if (response.data.attendanceRecords) {
+          const recordsMap = new Map<string, AttendanceRecord>();
+          (response.data.attendanceRecords as AttendanceRecord[]).forEach(record => {
+            recordsMap.set(record.student_id, record);
+          });
+          setAttendanceRecords(recordsMap);
+        }
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.role, currentUser?.id, loadStudents]);
+  }, [currentUser?.role, currentUser?.id, selectedDate]);
 
   const loadAttendanceForDate = useCallback(async () => {
     if (!selectedDate || students.length === 0) return;
 
     try {
+      // Use consolidated API to reload attendance data
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const studentIds = students.map(s => s.id);
-
-      const response = await api.getAttendance({ date: dateStr, student_ids: studentIds });
+      const response = await api.getAttendancePageData(
+        currentUser?.id,
+        currentUser?.role,
+        dateStr
+      );
+      
       if (response.error) throw new Error(response.error);
-      const data = response.data as ApiAttendanceRecord[] | undefined;
-
-      const recordsMap = new Map<string, AttendanceRecord>();
-      data?.forEach((record: ApiAttendanceRecord) => {
-        recordsMap.set(record.student_id, {
-          student_id: record.student_id,
-          date: record.date,
-          status: record.status,
+      
+      if (response.data?.attendanceRecords) {
+        const recordsMap = new Map<string, AttendanceRecord>();
+        (response.data.attendanceRecords as AttendanceRecord[]).forEach(record => {
+          recordsMap.set(record.student_id, record);
         });
-      });
-      setAttendanceRecords(recordsMap);
+        setAttendanceRecords(recordsMap);
+      }
     } catch (error) {
       console.error('Error loading attendance:', error);
     }
-  }, [selectedDate, students]);
+  }, [selectedDate, students, currentUser?.id, currentUser?.role]);
 
   useEffect(() => {
     // Only load data when component is mounted (i.e., when Attendance tab is active)
@@ -315,7 +337,7 @@ export function Attendance() {
         marked_by: currentUser?.id || null,
       }));
 
-      // Use upsert to handle both insert and update
+      // Use consolidated attendance mark endpoint
       const response = await api.markAttendance(records);
       if (response.error) throw new Error(response.error);
 

@@ -2,6 +2,24 @@ import { apiCache, getCacheKey } from './cache';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+// Consolidated API endpoints - use these instead of multiple separate calls
+interface DashboardData {
+  stats: Record<string, unknown>;
+  recentActivities: unknown[];
+  students: unknown[];
+  departments: unknown[];
+  notifications: unknown[];
+  userInfo: Record<string, unknown>;
+}
+
+interface AttendancePageData {
+  students: unknown[];
+  departments: unknown[];
+  attendanceRecords: unknown[];
+  teacherDepartmentIds: string[];
+  userInfo: Record<string, unknown>;
+}
+
 export interface ApiResponse<T = any> {
   data: T | null;
   error: string | null;
@@ -235,6 +253,19 @@ class ApiClient {
     });
   }
 
+  async updateDepartment(id: string, departmentData: { name?: string }) {
+    return this.request(`/departments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(departmentData),
+    });
+  }
+
+  async deleteDepartment(id: string) {
+    return this.request(`/departments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Teacher Departments
   async getTeacherDepartments(teacherId: string): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(`/teacher-departments/${teacherId}`);
@@ -318,6 +349,107 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(activitiesData),
     });
+  }
+
+  // ==================== CONSOLIDATED ENDPOINTS ====================
+  // Use these endpoints to reduce API calls from frontend
+
+  /**
+   * Get all dashboard data in a single API call
+   * Combines: stats, activities, students, departments, notifications, user info
+   */
+  async getDashboardData(userId?: string, role?: string): Promise<ApiResponse<DashboardData>> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (role) params.append('role', role);
+    const query = params.toString();
+    return this.request<DashboardData>(`/dashboard${query ? `?${query}` : ''}`);
+  }
+
+  /**
+   * Get all attendance page data in a single API call
+   * Combines: students, departments, attendance records, teacher departments, user info
+   */
+  async getAttendancePageData(
+    userId?: string, 
+    role?: string, 
+    date?: string
+  ): Promise<ApiResponse<AttendancePageData>> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (role) params.append('role', role);
+    if (date) params.append('date', date);
+    const query = params.toString();
+    return this.request<AttendancePageData>(`/attendance/page-data${query ? `?${query}` : ''}`);
+  }
+
+  /**
+   * Mark attendance using consolidated endpoint with validation
+   */
+  async markAttendance(records: AttendanceRecord[]): Promise<ApiResponse<unknown>> {
+    return this.request('/attendance/mark', {
+      method: 'POST',
+      body: JSON.stringify({ records }),
+    });
+  }
+
+  // Growth Data Endpoints
+  async getGrowthData(metric: string, period: string = 'month'): Promise<ApiResponse<any>> {
+    return this.request(`/growth?metric=${metric}&period=${period}`);
+  }
+
+  async getStaffGrowthByRole(role: string, period: string = 'month'): Promise<ApiResponse<any>> {
+    return this.request(`/growth/staff-by-role?role=${role}&period=${period}`);
+  }
+
+  async getStaffBreakdown(): Promise<ApiResponse<any>> {
+    return this.request('/growth/staff-breakdown');
+  }
+
+  /**
+   * Get all growth data (students, staff, attendance) for all periods (week, month) in a single call
+   * This reduces API calls from 6 to 1
+   */
+  async getConsolidatedGrowthData(): Promise<ApiResponse<any>> {
+    return this.request('/growth/consolidated');
+  }
+
+  // Custom Roles Endpoints
+  async getCustomRoles(): Promise<ApiResponse<any[]>> {
+    return this.request('/roles');
+  }
+
+  async getCustomRoleById(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/roles/${id}`);
+  }
+
+  async createCustomRole(roleData: { name: string; permissions: string[]; created_by?: string }): Promise<ApiResponse<any>> {
+    return this.request('/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData),
+    });
+  }
+
+  async updateCustomRole(id: string, roleData: { name?: string; permissions?: string[] }): Promise<ApiResponse<any>> {
+    return this.request(`/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(roleData),
+    });
+  }
+
+  async deleteCustomRole(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/roles/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Finance Endpoints
+  async getFinanceData(userId?: string, role?: string): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (role) params.append('role', role);
+    const query = params.toString();
+    return this.request(`/finance${query ? `?${query}` : ''}`);
   }
 }
 

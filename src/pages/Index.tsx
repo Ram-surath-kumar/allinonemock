@@ -36,6 +36,9 @@ const FeePayment = lazy(() =>
 const Tools = lazy(() => 
   import('@/pages/Tools').then(module => ({ default: module.Tools }))
 );
+const Finance = lazy(() => 
+  import('@/pages/Finance').then(module => ({ default: module.Finance }))
+);
 
 // Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
@@ -312,8 +315,13 @@ function AppContent() {
             <Tools />
           </Suspense>
         );
-      case '/academics':
       case '/finance':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Finance />
+          </Suspense>
+        );
+      case '/academics':
       case '/facilities':
       case '/settings':
         return (

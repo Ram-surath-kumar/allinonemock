@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { DashboardProvider, useDashboard } from '@/contexts/DashboardContext';
 import { AdminDashboard } from '@/components/views/AdminDashboard';
 import { TeacherDashboard } from '@/components/views/TeacherDashboard';
 import { StudentDashboard } from '@/components/views/StudentDashboard';
@@ -8,8 +9,9 @@ interface DashboardProps {
   onAddUser: () => void;
 }
 
-export function Dashboard({ onAddUser }: DashboardProps) {
+function DashboardContent({ onAddUser }: DashboardProps) {
   const { currentUser } = useAuth();
+  const { dashboardData, loading } = useDashboard();
 
   if (!currentUser) {
     return (
@@ -19,7 +21,16 @@ export function Dashboard({ onAddUser }: DashboardProps) {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
+
   // Render different dashboards based on role
+  // Dashboard data is loaded via DashboardProvider when this component mounts
   switch (currentUser.role) {
     case 'admin':
     case 'vice_head':
@@ -44,4 +55,13 @@ export function Dashboard({ onAddUser }: DashboardProps) {
     default:
       return <StudentDashboard />;
   }
+}
+
+export function Dashboard({ onAddUser }: DashboardProps) {
+  // Wrap in DashboardProvider to load data only when dashboard is displayed
+  return (
+    <DashboardProvider>
+      <DashboardContent onAddUser={onAddUser} />
+    </DashboardProvider>
+  );
 }
