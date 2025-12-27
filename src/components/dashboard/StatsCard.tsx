@@ -12,6 +12,7 @@ interface StatsCardProps {
   gradient?: string;
   sparklineData?: number[];
   showChart?: boolean;
+  onClick?: () => void;
 }
 
 // Generate sample sparkline data if not provided
@@ -34,6 +35,7 @@ export function StatsCard({
   gradient = 'from-blue-500/20 via-purple-500/20 to-pink-500/20',
   sparklineData,
   showChart = true,
+  onClick,
   ...props 
 }: StatsCardProps & { style?: React.CSSProperties }) {
   const chartData = sparklineData || generateSparklineData();
@@ -96,16 +98,18 @@ export function StatsCard({
   return (
     <div 
       className={cn(
-        "group relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-5",
+        "group relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5",
         "shadow-depth-2 hover:shadow-depth-3 transition-all duration-300",
         "hover:scale-[1.02] hover:-translate-y-0.5",
-        "overflow-hidden animate-fade-in-up cursor-pointer",
+        "overflow-hidden animate-fade-in-up",
+        onClick ? "cursor-pointer" : "",
         "glass-modern",
         `hover:${theme.hoverBorder}`
       )}
       style={props.style}
       role="article"
       aria-label={`${title}: ${value}`}
+      onClick={onClick}
     >
       {/* Subtle Gradient Background on Hover */}
       <div className={cn(
@@ -115,26 +119,26 @@ export function StatsCard({
       
       {/* Content */}
       <div className="relative z-10">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground mb-2" aria-label={title}>{title}</p>
-            <p className="text-xl sm:text-2xl font-bold text-foreground mb-1.5" aria-label={`Value: ${value}`}>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5" aria-label={title}>{title}</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground mb-1" aria-label={`Value: ${value}`}>
               {value}
             </p>
-            {change && (
-              <div className="flex items-center gap-1.5 mt-2" aria-label={`Change: ${change}`}>
+          {change && (
+              <div className="flex items-center gap-1.5 mt-1.5" aria-label={`Change: ${change}`}>
                 {isPositive && <TrendingUp className="h-3.5 w-3.5 text-success" aria-hidden="true" />}
                 {isNegative && <TrendingDown className="h-3.5 w-3.5 text-destructive" aria-hidden="true" />}
                 <span className={cn(
                   "text-xs sm:text-sm font-semibold",
                   isPositive && "text-success",
                   isNegative && "text-destructive",
-                  changeType === 'neutral' && "text-muted-foreground"
-                )}>
-                  {change}
+              changeType === 'neutral' && "text-muted-foreground"
+            )}>
+              {change}
                 </span>
               </div>
-            )}
+          )}
           </div>
           
           {/* Animated Icon */}

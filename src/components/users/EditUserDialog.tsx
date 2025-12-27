@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, UserRole, ROLE_LABELS, ROLE_HIERARCHY, PERMISSIONS, ROLE_DEFAULT_PERMISSIONS, ROLE_ALLOWED_PERMISSIONS, Permission } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,10 +49,12 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [customRoles, setCustomRoles] = useState<any[]>([]);
 
   useEffect(() => {
     if (open) {
       loadDepartments();
+      loadCustomRoles();
     }
   }, [open]);
 
@@ -62,10 +65,9 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
       setRole(user.role);
       
       // Filter permissions to only include allowed ones for the role
-      const allowedPerms = ROLE_ALLOWED_PERMISSIONS[user.role] || [];
+      // Note: We'll update this after custom roles are loaded
       const userPerms = user.permissions || [];
-      const filteredPerms = userPerms.filter(p => allowedPerms.includes(p));
-      setSelectedPermissions(filteredPerms);
+      setSelectedPermissions(userPerms);
       
       // Load department for student or teacher departments
       if (user.role === 'student') {
@@ -89,6 +91,18 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
       toast.error('Failed to load departments');
     } finally {
       setLoadingDepartments(false);
+    }
+  };
+
+  const loadCustomRoles = async () => {
+    // Custom roles feature not implemented yet
+    setCustomRoles([]);
+        // After loading custom roles, filter permissions if user is already set
+        if (user) {
+      const allowedPerms = ROLE_ALLOWED_PERMISSIONS[user.role] || [];
+          const userPerms = user.permissions || [];
+          const filteredPerms = userPerms.filter(p => allowedPerms.includes(p));
+          setSelectedPermissions(filteredPerms);
     }
   };
 
@@ -116,7 +130,8 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
     }
   };
 
-  const availableRoles = (Object.keys(ROLE_LABELS) as UserRole[]).filter(r => canManageRole(r));
+  const builtInRoles = (Object.keys(ROLE_LABELS) as UserRole[]).filter(r => canManageRole(r));
+  const availableRoles = [...builtInRoles, ...customRoles.map(cr => cr.name as UserRole)];
 
   const handleRoleChange = (newRole: UserRole) => {
     const previousRole = role;
@@ -144,6 +159,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
 
   const togglePermission = (permissionId: string) => {
     // Only allow toggling permissions that are allowed for the current role
+    if (!role) return;
     const allowedPerms = ROLE_ALLOWED_PERMISSIONS[role] || [];
     if (!allowedPerms.includes(permissionId)) {
       return; // Don't allow toggling disallowed permissions
@@ -167,7 +183,8 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
 
     // Check if user can manage this role
     if (!canManageRole(role)) {
-      toast.error(`You cannot assign the ${ROLE_LABELS[role]} role. You can only manage roles below yours in the hierarchy.`);
+      const roleLabel = role in ROLE_LABELS ? ROLE_LABELS[role as keyof typeof ROLE_LABELS] : role;
+      toast.error(`You cannot assign the ${roleLabel} role. You can only manage roles below yours in the hierarchy.`);
       return;
     }
 
@@ -265,9 +282,14 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }: EditUserD
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableRoles.map((r) => (
+                  {builtInRoles.map((r) => (
                     <SelectItem key={r} value={r}>
                       {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                  {customRoles.map((cr) => (
+                    <SelectItem key={cr.id} value={cr.name}>
+                      {cr.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

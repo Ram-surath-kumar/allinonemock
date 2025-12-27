@@ -197,18 +197,18 @@ export function QuickActions({ onAddUser }: QuickActionsProps) {
   return (
     <div className="space-y-3">
       {/* Quick Actions */}
-      <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-4 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Quick Actions">
+      <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Quick Actions">
         <div className="flex items-center gap-2 mb-3">
           <div className="h-0.5 w-6 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
           <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
-        </div>
-        
+      </div>
+      
         <div className="grid grid-cols-4 gap-2">
-          {filteredActions.map((action, index) => {
-            const Icon = action.icon;
-            return (
+        {filteredActions.map((action, index) => {
+          const Icon = action.icon;
+          return (
               <button
-                key={action.label}
+              key={action.label}
                 onClick={() => handleAction(action)}
                 className={cn(
                   "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
@@ -228,7 +228,7 @@ export function QuickActions({ onAddUser }: QuickActionsProps) {
             );
           })}
         </div>
-      </div>
+              </div>
 
       {/* AI Actions */}
       <div className="rounded-2xl border border-border/30 bg-gradient-to-br from-card/80 via-card/70 to-primary/5 backdrop-blur-xl p-4 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="AI Actions">
@@ -236,7 +236,7 @@ export function QuickActions({ onAddUser }: QuickActionsProps) {
           <div className="h-0.5 w-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></div>
           <Sparkles className="h-3.5 w-3.5 text-pink-500" />
           <h3 className="text-sm font-semibold text-foreground">AI Actions</h3>
-        </div>
+              </div>
         
         <div className="grid grid-cols-3 gap-2">
           {aiActions.map((action, index) => {
@@ -260,8 +260,8 @@ export function QuickActions({ onAddUser }: QuickActionsProps) {
                   {action.label}
                 </span>
               </button>
-            );
-          })}
+          );
+        })}
         </div>
       </div>
 

@@ -1,54 +1,175 @@
+import { useState, useEffect } from 'react';
 import { Users, GraduationCap, DollarSign, TrendingUp } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
+import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
+import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
+import { getDashboardStats, getGrowthData, DashboardStats } from '@/services/dashboard';
 
 interface AdminDashboardProps {
   onAddUser: () => void;
 }
 
 export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [changeTexts, setChangeTexts] = useState<{
+    students?: string;
+    staff?: string;
+    attendance?: string;
+    fees?: string;
+  }>({});
+  const [sparklineData, setSparklineData] = useState<{
+    students?: number[];
+    staff?: number[];
+    attendance?: number[];
+  }>({});
+  const [growthModalOpen, setGrowthModalOpen] = useState(false);
+  const [growthMetric, setGrowthMetric] = useState<'students' | 'staff' | 'attendance' | 'fees'>('students');
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchStats();
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (stats) {
+      fetchChangeTexts();
+      fetchSparklineData();
+    }
+  }, [stats]);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchChangeTexts = async () => {
+    try {
+      const [studentsGrowth, staffGrowth, attendanceGrowth] = await Promise.all([
+        getGrowthData('students', 'month').catch(() => null),
+        getGrowthData('staff', 'month').catch(() => null),
+        getGrowthData('attendance', 'month').catch(() => null),
+      ]);
+
+      setChangeTexts({
+        students: studentsGrowth 
+          ? `${studentsGrowth.change >= 0 ? '+' : ''}${studentsGrowth.changePercent.toFixed(1)}% from last month`
+          : undefined,
+        staff: staffGrowth
+          ? `${staffGrowth.change >= 0 ? '+' : ''}${staffGrowth.changePercent.toFixed(1)}% from last month`
+          : undefined,
+        attendance: attendanceGrowth
+          ? `${attendanceGrowth.change >= 0 ? '+' : ''}${attendanceGrowth.changePercent.toFixed(1)}% from last month`
+          : undefined,
+        fees: stats?.feeCollectionPercentage 
+          ? `${stats.feeCollectionPercentage.toFixed(0)}% collected`
+          : undefined,
+      });
+    } catch (error) {
+      console.error('Error fetching change texts:', error);
+    }
+  };
+
+  const fetchSparklineData = async () => {
+    try {
+      const [studentsData, staffData, attendanceData] = await Promise.all([
+        getGrowthData('students', 'week').catch(() => null),
+        getGrowthData('staff', 'week').catch(() => null),
+        getGrowthData('attendance', 'week').catch(() => null),
+      ]);
+
+      setSparklineData({
+        students: studentsData?.data.map(d => d.value) || [],
+        staff: staffData?.data.map(d => d.value) || [],
+        attendance: attendanceData?.data.map(d => d.value) || [],
+      });
+    } catch (error) {
+      console.error('Error fetching sparkline data:', error);
+    }
+  };
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num);
+  };
+
+  const formatCurrency = (num: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
+
+  const formatPercent = (num: number) => {
+    return `${num.toFixed(1)}%`;
+  };
+
+  const handleCardClick = (metric: 'students' | 'staff' | 'attendance' | 'fees') => {
+    if (metric === 'staff') {
+      setStaffModalOpen(true);
+    } else {
+      setGrowthMetric(metric);
+      setGrowthModalOpen(true);
+    }
+  };
+
   return (
-    <div className="space-y-5 animate-fade-in" role="main" aria-label="Admin Dashboard">
+    <div className="space-y-3 animate-fade-in" role="main" aria-label="Admin Dashboard">
       {/* Hero Analytics Strip - Stats Grid */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Students"
-          value="2,847"
-          change="+12% from last month"
-          changeType="positive"
+          value={loading ? '...' : formatNumber(stats?.totalStudents || 0)}
+          change={changeTexts.students}
+          changeType={changeTexts.students?.startsWith('+') ? 'positive' : changeTexts.students?.startsWith('-') ? 'negative' : 'neutral'}
           icon={GraduationCap}
           gradient="from-blue-500/20 via-purple-500/20 to-pink-500/20"
-          sparklineData={[85, 88, 90, 87, 92, 94, 96]}
+          sparklineData={sparklineData.students}
+          onClick={() => handleCardClick('students')}
         />
         <StatsCard
           title="Staff Members"
-          value="156"
-          change="+3 new this week"
-          changeType="positive"
+          value={loading ? '...' : formatNumber(stats?.staffMembers || 0)}
+          change={changeTexts.staff}
+          changeType={changeTexts.staff?.startsWith('+') ? 'positive' : changeTexts.staff?.startsWith('-') ? 'negative' : 'neutral'}
           icon={Users}
           gradient="from-green-500/20 via-emerald-500/20 to-teal-500/20"
-          sparklineData={[150, 152, 153, 154, 155, 156, 156]}
+          sparklineData={sparklineData.staff}
+          onClick={() => handleCardClick('staff')}
         />
         <StatsCard
           title="Fee Collection"
-          value="$284,500"
-          change="92% collected"
+          value={loading ? '...' : formatCurrency(stats?.feeCollection || 0)}
+          change={changeTexts.fees}
           changeType="neutral"
           icon={DollarSign}
           gradient="from-yellow-500/20 via-orange-500/20 to-red-500/20"
-          sparklineData={[250000, 260000, 270000, 275000, 280000, 282000, 284500]}
+          sparklineData={[]}
           showChart={false}
+          onClick={() => handleCardClick('fees')}
         />
         <StatsCard
           title="Attendance Rate"
-          value="94.2%"
-          change="+2.1% from last week"
-          changeType="positive"
+          value={loading ? '...' : formatPercent(stats?.attendanceRate || 0)}
+          change={changeTexts.attendance}
+          changeType={changeTexts.attendance?.startsWith('+') ? 'positive' : changeTexts.attendance?.startsWith('-') ? 'negative' : 'neutral'}
           icon={TrendingUp}
           gradient="from-purple-500/20 via-pink-500/20 to-rose-500/20"
-          sparklineData={[90, 91, 92, 93, 93.5, 94, 94.2]}
+          sparklineData={sparklineData.attendance}
+          onClick={() => handleCardClick('attendance')}
         />
       </div>
 
@@ -60,6 +181,36 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
 
       {/* Recent Activity - Timeline */}
       <RecentActivity />
+
+      {/* Growth Chart Modals */}
+      <GrowthChartModal
+        open={growthModalOpen}
+        onOpenChange={setGrowthModalOpen}
+        title={
+          growthMetric === 'students' ? 'Total Students' :
+          growthMetric === 'attendance' ? 'Attendance Rate' :
+          growthMetric === 'fees' ? 'Fee Collection' :
+          'Growth'
+        }
+        metric={growthMetric}
+        currentValue={stats ? (
+          growthMetric === 'students' ? stats.totalStudents :
+          growthMetric === 'attendance' ? stats.attendanceRate :
+          growthMetric === 'fees' ? stats.feeCollection :
+          0
+        ) : 0}
+        formatValue={
+          growthMetric === 'fees' ? formatCurrency :
+          growthMetric === 'attendance' ? formatPercent :
+          formatNumber
+        }
+      />
+
+      {/* Staff Breakdown Modal */}
+      <StaffBreakdownModal
+        open={staffModalOpen}
+        onOpenChange={setStaffModalOpen}
+      />
     </div>
   );
 }

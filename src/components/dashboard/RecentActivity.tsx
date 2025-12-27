@@ -87,8 +87,8 @@ export function RecentActivity() {
   };
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Recent Activity">
-      <div className="flex items-center gap-2 mb-4">
+    <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Recent Activity">
+      <div className="flex items-center gap-2 mb-3">
         <div className="h-0.5 w-6 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
         <h3 className="text-sm font-semibold text-foreground">Recent Activity</h3>
       </div>
@@ -116,19 +116,19 @@ export function RecentActivity() {
           {/* Timeline line - centered on icon */}
           <div className="absolute left-[24px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/20 to-transparent" />
           
-          <div className="space-y-5">
-            {activities.map((activity, index) => {
-              const Icon = activity.icon;
-              return (
-                <div 
-                  key={activity.id} 
+          <div className="space-y-3">
+          {activities.map((activity, index) => {
+            const Icon = activity.icon;
+            return (
+              <div 
+                key={activity.id} 
                   className={cn(
                     "relative flex gap-4 animate-fade-in-up group",
-                    "hover:bg-muted/30 p-3 rounded-xl transition-all duration-200",
+                    "hover:bg-muted/30 p-2.5 rounded-xl transition-all duration-200",
                     "hover:scale-[1.01] hover:-translate-y-0.5"
                   )}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                   {/* Timeline dot - centered */}
                   <div className="relative z-10 flex-shrink-0 w-12 flex items-center justify-center">
                     <div className={cn(
@@ -145,18 +145,18 @@ export function RecentActivity() {
                       "transition-opacity duration-200 blur-xl",
                       "bg-primary/30"
                     )} />
-                  </div>
+                </div>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                         {activity.title}
                       </p>
                       <p className="text-sm text-muted-foreground truncate mt-1">
                         {activity.description}
                       </p>
-                    </div>
+                </div>
                     
                     {/* Time label - right aligned */}
                     <div className="flex-shrink-0">
@@ -165,9 +165,9 @@ export function RecentActivity() {
                       </p>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+              </div>
+            );
+          })}
           </div>
         </div>
       )}

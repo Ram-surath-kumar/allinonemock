@@ -94,12 +94,19 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
 
       if (response.error) throw new Error(response.error);
 
-      if (response.data) {
-        const mappedNotifications: Notification[] = response.data.map((row: any) => ({
+      if (Array.isArray(response.data)) {
+        const mappedNotifications: Notification[] = response.data.map((row: {
+          id: string;
+          title: string;
+          message: string;
+          type: 'info' | 'success' | 'warning' | 'error';
+          read: boolean;
+          created_at: string;
+        }) => ({
           id: row.id,
           title: row.title,
           message: row.message,
-          type: row.type as 'info' | 'success' | 'warning' | 'error',
+          type: row.type,
           read: row.read,
           created_at: row.created_at,
         }));
@@ -183,7 +190,9 @@ export function Header({ title, subtitle, onMenuClick }: HeaderProps) {
           </Button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm md:text-base font-semibold text-foreground truncate">{title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm md:text-base font-semibold text-foreground truncate">{title}</h1>
+          </div>
           {currentUser && (
             <p className="text-xs text-muted-foreground truncate">
               Welcome back {currentUser.name}

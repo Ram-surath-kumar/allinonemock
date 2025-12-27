@@ -34,29 +34,44 @@ import {
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { fetchDepartments, Department } from '@/services/departments';
+import { extractStudentDataFromFile, ExtractedStudentData } from '@/services/gemini';
+import { Sparkles, Upload, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (user: {
     name: string;
-    email: string;
+    email?: string;
     role: UserRole;
     permissions: string[];
     department_id?: string;
     department_ids?: string[];
+    loopid?: string;
   }) => void;
+  onAddMultiple?: (users: Array<{
+    name: string;
+    email?: string;
+    role: UserRole;
+    permissions: string[];
+    department_id?: string;
+    department_ids?: string[];
+    loopid?: string;
+  }>) => Promise<void>;
 }
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().optional(), // Email is optional for all roles - will be auto-generated
   role: z.enum(['admin', 'vice_head', 'teacher', 'student', 'housekeeping', 'librarian', 'accountant'] as const, {
     required_error: 'Please select a role',
   }),
   department_id: z.string().optional(),
   department_ids: z.array(z.string()).optional(),
   permissions: z.array(z.string()),
+  loopid: z.string().optional(),
 }).refine((data) => {
   if (data.role === 'student') {
     return !!data.department_id && data.department_id.length > 0;
@@ -77,10 +92,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps) {
+export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }: AddUserDialogProps) {
   const { currentUser, canManageRole } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('manual');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedStudents, setExtractedStudents] = useState<Array<ExtractedStudentData & { department_id?: string; selected: boolean }>>([]);
+  const [addingStudents, setAddingStudents] = useState(false);
+  const [userPrompt, setUserPrompt] = useState('');
 
   const availableRoles = (Object.keys(ROLE_LABELS) as UserRole[]).filter(r => canManageRole(r));
 
@@ -89,10 +110,11 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
     defaultValues: {
       name: '',
       email: '',
-      role: undefined as any,
+      role: undefined as UserRole | undefined,
       department_id: '',
       department_ids: [],
       permissions: [],
+      loopid: '',
     },
     mode: 'onChange',
   });
@@ -103,6 +125,10 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
     if (open) {
       loadDepartments();
       form.reset();
+      setSelectedFile(null);
+      setExtractedStudents([]);
+      setUserPrompt('');
+      setActiveTab('manual');
     }
   }, [open, form]);
 
@@ -150,11 +176,13 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
   };
 
   const onSubmit = (values: FormValues) => {
+    // Email is optional - will be auto-generated as org_id + user_id @loopverse.in
     onAdd({
       name: values.name,
-      email: values.email,
+      email: values.email || undefined,
       role: values.role,
       permissions: values.permissions,
+      loopid: values.loopid,
       ...(values.role === 'student' ? { department_id: values.department_id } : {}),
       ...(values.role === 'teacher' ? { department_ids: values.department_ids || [] } : {}),
     });
@@ -162,6 +190,171 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
     form.reset();
     onOpenChange(false);
     toast.success('User added successfully');
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setExtractedStudents([]);
+    }
+  };
+
+  const handleExtractData = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file first');
+      return;
+    }
+
+    try {
+      setExtracting(true);
+      const extracted = await extractStudentDataFromFile(selectedFile, userPrompt);
+      
+      // Parse user prompt to extract department name if mentioned
+      let promptDepartment: string | null = null;
+      if (userPrompt) {
+        // Look for patterns like "to CPEI department", "to CPEI", "CPEI department", etc.
+        const deptMatch = userPrompt.match(/(?:to|in|department|dept)[\s:]*([A-Za-z0-9\s]+?)(?:\s+department|\s+dept|$|,|\.)/i);
+        if (deptMatch) {
+          promptDepartment = deptMatch[1].trim();
+        } else {
+          // Try to find department name directly (e.g., "CPEI", "Computer Science")
+          const words = userPrompt.split(/\s+/);
+          for (const word of words) {
+            const dept = departments.find(d => 
+              d.name.toLowerCase().includes(word.toLowerCase()) ||
+              word.toLowerCase().includes(d.name.toLowerCase())
+            );
+            if (dept) {
+              promptDepartment = dept.name;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Map department names to department IDs
+      const studentsWithDeptIds = await Promise.all(
+        extracted.map(async (student) => {
+          let department_id = student.department_id;
+          let department_name = student.department;
+          
+          // If user prompt specifies a department, use that
+          if (promptDepartment) {
+            const dept = departments.find(
+              d => d.name.toLowerCase() === promptDepartment!.toLowerCase() ||
+                   d.name.toLowerCase().includes(promptDepartment!.toLowerCase()) ||
+                   promptDepartment!.toLowerCase().includes(d.name.toLowerCase())
+            );
+            if (dept) {
+              department_id = dept.id;
+              department_name = dept.name;
+            } else {
+              // If department not found, use the prompt text as department name
+              department_name = promptDepartment;
+            }
+          }
+          
+          // If department name is provided but not department_id, try to find it
+          if (department_name && !department_id) {
+            const dept = departments.find(
+              d => d.name.toLowerCase().includes(department_name!.toLowerCase()) ||
+                   department_name!.toLowerCase().includes(d.name.toLowerCase())
+            );
+            department_id = dept?.id;
+          }
+
+          return {
+            ...student,
+            department: department_name || student.department,
+            department_id,
+            selected: true, // All selected by default
+          };
+        })
+      );
+
+      setExtractedStudents(studentsWithDeptIds);
+      toast.success(`Extracted ${studentsWithDeptIds.length} student(s) from file`);
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to extract student data from file';
+      
+      // Provide more helpful error messages
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('No students found') || errorMessage.includes('No valid student data')) {
+        userFriendlyMessage = 'No student data found in the file. Please ensure the file contains student names and IDs. Try a different file or check the file format.';
+      } else if (errorMessage.includes('parse') || errorMessage.includes('JSON')) {
+        userFriendlyMessage = 'AI returned data in unexpected format. Please try again or use a different file.';
+      } else if (errorMessage.includes('No response')) {
+        userFriendlyMessage = 'AI service is not responding. Please try again in a moment.';
+      }
+      
+      toast.error(userFriendlyMessage, { duration: 5000 });
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const handleAddExtractedStudents = async () => {
+    const selected = extractedStudents.filter(s => s.selected);
+    if (selected.length === 0) {
+      toast.error('Please select at least one student to add');
+      return;
+    }
+
+    try {
+      setAddingStudents(true);
+      
+      if (onAddMultiple) {
+        // Add all students at once using bulk insert
+        // Note: loopid will be auto-generated as org_id + user_id when user is created
+        const usersToAdd = selected.map(student => ({
+          name: student.name,
+          role: 'student' as UserRole,
+          permissions: [],
+          department_id: student.department_id,
+        }));
+        
+        await onAddMultiple(usersToAdd);
+        // Clear extracted students after successful add
+        setExtractedStudents([]);
+        setSelectedFile(null);
+        setUserPrompt('');
+      } else {
+        // Add one by one
+        // Note: loopid will be auto-generated as org_id + user_id when user is created
+        for (const student of selected) {
+          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between adds
+          onAdd({
+            name: student.name,
+            role: 'student',
+            permissions: [],
+            department_id: student.department_id,
+          });
+        }
+        toast.success(`Added ${selected.length} student(s) successfully`);
+      }
+
+      // Reset
+      setSelectedFile(null);
+      setExtractedStudents([]);
+      setActiveTab('manual');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error adding students:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add students';
+      toast.error(errorMessage);
+    } finally {
+      setAddingStudents(false);
+    }
+  };
+
+  const toggleStudentSelection = (index: number) => {
+    setExtractedStudents(prev =>
+      prev.map((student, i) =>
+        i === index ? { ...student, selected: !student.selected } : student
+      )
+    );
   };
 
   // Get allowed permissions for the selected role
@@ -192,14 +385,24 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-            Create a new user account and assign their role and permissions.
+            Create a new user account manually or use AI to extract data from files/images.
           </DialogDescription>
         </DialogHeader>
 
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'manual' | 'ai')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+            <TabsTrigger value="ai" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Add with AI
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="manual" className="mt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
@@ -230,11 +433,14 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
                     <FormControl>
               <Input
                 type="email"
-                placeholder="user@school.edu"
+                placeholder="user@school.edu or leave empty if using loopid"
                         {...field}
                         className={form.formState.errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Email is optional - will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all users
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -275,6 +481,26 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
               />
 
               {watchedRole === 'student' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="loopid"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loop ID</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., 10334343 or g:10334343"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Email will be auto-generated as loopid@loopverse.in
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 <FormField
                   control={form.control}
                   name="department_id"
@@ -303,6 +529,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
                     </FormItem>
                   )}
                 />
+                </>
               )}
               {watchedRole === 'teacher' && (
                 <FormField
@@ -409,6 +636,156 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
           </DialogFooter>
         </form>
         </Form>
+          </TabsContent>
+
+          <TabsContent value="ai" className="mt-4 space-y-4">
+            <div className="space-y-4">
+
+{/* File Upload */}
+<div className="space-y-2">
+                <Label>Upload File</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
+                      onChange={handleFileSelect}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  {selectedFile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setExtractedStudents([]);
+                        setUserPrompt('');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {selectedFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                  </p>
+                )}
+              </div>
+              
+              {/* User Prompt Input */}
+              <div className="space-y-2">
+                <Label htmlFor="user-prompt">Instructions (Optional)</Label>
+                <textarea
+                  id="user-prompt"
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  placeholder="e.g., Add the students present in the attachment to CPEI department"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide instructions for the AI. For example: "Add all students to CPEI department" or "Assign students to Computer Science"
+                </p>
+              </div>
+
+              {/* Extract Button */}
+              {selectedFile && (
+                <Button
+                  onClick={handleExtractData}
+                  disabled={extracting}
+                  className="w-full"
+                >
+                  {extracting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Extracting Data...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Extract Student Data
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* Extracted Students Table */}
+              {extractedStudents.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Extracted Students ({extractedStudents.filter(s => s.selected).length} selected)</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setExtractedStudents(prev => prev.map(s => ({ ...s, selected: !s.selected })));
+                      }}
+                    >
+                      {extractedStudents.every(s => s.selected) ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border border-border overflow-hidden max-h-[400px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={extractedStudents.every(s => s.selected)}
+                              onCheckedChange={(checked) => {
+                                setExtractedStudents(prev => prev.map(s => ({ ...s, selected: !!checked })));
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Department</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {extractedStudents.map((student, index) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <Checkbox
+                                checked={student.selected}
+                                onCheckedChange={() => toggleStudentSelection(index)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableCell>
+                              {student.department || (student.department_id && departments.find(d => d.id === student.department_id)?.name) || '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      {extractedStudents.filter(s => s.selected).length} student(s) will be added
+                    </p>
+                    <Button
+                      onClick={handleAddExtractedStudents}
+                      disabled={addingStudents || extractedStudents.filter(s => s.selected).length === 0}
+                    >
+                      {addingStudents ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding Students...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Add Selected Students
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

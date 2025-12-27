@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, CheckCircle2, XCircle, Calendar, LayoutGrid, List } from 'lucide-react';
 import { User } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,32 @@ interface AttendanceRecord {
   status: 'present' | 'absent' | 'late' | 'excused';
 }
 
+interface ApiUser {
+  id: string;
+  loopid?: string;
+  org_id?: number;
+  user_id?: number;
+  name: string;
+  email: string;
+  role: string;
+  permissions?: string[];
+  department_id?: string;
+  created_at: string;
+  status: string;
+  avatar?: string;
+}
+
+interface ApiDepartment {
+  id: string;
+  name: string;
+}
+
+interface ApiAttendanceRecord {
+  student_id: string;
+  date: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+}
+
 export function Attendance() {
   const { currentUser, hasPermission } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
@@ -44,66 +70,7 @@ export function Attendance() {
   const canManageAttendance = hasPermission('manage_attendance');
   const isAdminOrViceHead = currentUser?.role === 'admin' || currentUser?.role === 'vice_head';
 
-  useEffect(() => {
-    // Only load data when component is mounted (i.e., when Attendance tab is active)
-    if (currentUser) {
-      loadData();
-    }
-  }, [currentUser?.id]); // Only reload if user changes
-
-  useEffect(() => {
-    if (selectedDate && students.length > 0) {
-      loadAttendanceForDate();
-    }
-  }, [selectedDate, students]);
-
-  // Reload students when teacher department IDs change
-  useEffect(() => {
-    if (currentUser?.role === 'teacher' && teacherDepartmentIds.length > 0) {
-      loadStudents(teacherDepartmentIds);
-    }
-  }, [teacherDepartmentIds]);
-
-  // Listen for attendance updates from AI assistant
-  useEffect(() => {
-    const handleAttendanceUpdate = () => {
-      if (selectedDate && students.length > 0) {
-        loadAttendanceForDate();
-      }
-    };
-
-    window.addEventListener('attendance-updated', handleAttendanceUpdate);
-    return () => {
-      window.removeEventListener('attendance-updated', handleAttendanceUpdate);
-    };
-  }, [selectedDate, students]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load departments
-      const depts = await fetchDepartments();
-      setDepartments(depts);
-
-      // Load teacher departments if user is a teacher
-      let teacherDeptIds: string[] = [];
-      if (currentUser?.role === 'teacher' && currentUser.id) {
-        teacherDeptIds = await fetchTeacherDepartments(currentUser.id);
-        setTeacherDepartmentIds(teacherDeptIds);
-      }
-
-      // Load students with teacher department IDs
-      await loadStudents(teacherDeptIds);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStudents = async (teacherDeptIds: string[] = []) => {
+  const loadStudents = useCallback(async (teacherDeptIds: string[] = []) => {
     try {
       // If teacher, we must filter by their assigned departments
       if (currentUser?.role === 'teacher') {
@@ -119,23 +86,23 @@ export function Attendance() {
         // Filter students by teacher's departments
         const response = await api.getUsersByDepartments(deptIdsToUse, 'student', 'active');
         if (response.error) throw new Error(response.error);
-        const data = response.data;
+        const data = response.data as ApiUser[] | undefined;
 
         if (data) {
           // Fetch department names separately
-          const departmentIds = [...new Set(data.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-          let deptMap = new Map<string, string>();
+          const departmentIds = [...new Set(data.filter((u: ApiUser) => u.department_id).map((u: ApiUser) => u.department_id))];
+          const deptMap = new Map<string, string>();
           
           if (departmentIds.length > 0) {
             const deptResponse = await api.getDepartments({ ids: departmentIds });
             if (!deptResponse.error && deptResponse.data) {
-              deptResponse.data.forEach((dept: any) => {
+              (deptResponse.data as ApiDepartment[]).forEach((dept: ApiDepartment) => {
                 deptMap.set(dept.id, dept.name);
               });
             }
           }
 
-          const mappedStudents: User[] = data.map((row: any) => ({
+          const mappedStudents: User[] = data.map((row: ApiUser) => ({
             id: row.id,
             loopid: row.loopid,
             org_id: row.org_id,
@@ -159,23 +126,23 @@ export function Attendance() {
       // For non-teachers (admin, vice_head, etc.), show all students
       const response = await api.getUsers({ role: 'student', status: 'active' });
       if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = response.data as ApiUser[] | undefined;
 
       if (data) {
         // Fetch department names separately
-        const departmentIds = [...new Set(data.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-        let deptMap = new Map<string, string>();
+        const departmentIds = [...new Set(data.filter((u: ApiUser) => u.department_id).map((u: ApiUser) => u.department_id))];
+        const deptMap = new Map<string, string>();
         
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
-            deptResponse.data.forEach((dept: any) => {
+            (deptResponse.data as ApiDepartment[]).forEach((dept: ApiDepartment) => {
               deptMap.set(dept.id, dept.name);
             });
           }
         }
 
-        const mappedStudents: User[] = data.map((row: any) => ({
+        const mappedStudents: User[] = data.map((row: ApiUser) => ({
           id: row.id,
           loopid: row.loopid,
           org_id: row.org_id,
@@ -197,9 +164,34 @@ export function Attendance() {
       console.error('Error loading students:', error);
       toast.error('Failed to load students');
     }
-  };
+  }, [currentUser?.role, teacherDepartmentIds]);
 
-  const loadAttendanceForDate = async () => {
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Load departments
+      const depts = await fetchDepartments();
+      setDepartments(depts);
+
+      // Load teacher departments if user is a teacher
+      let teacherDeptIds: string[] = [];
+      if (currentUser?.role === 'teacher' && currentUser.id) {
+        teacherDeptIds = await fetchTeacherDepartments(currentUser.id);
+        setTeacherDepartmentIds(teacherDeptIds);
+      }
+
+      // Load students with teacher department IDs
+      await loadStudents(teacherDeptIds);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser?.role, currentUser?.id, loadStudents]);
+
+  const loadAttendanceForDate = useCallback(async () => {
     if (!selectedDate || students.length === 0) return;
 
     try {
@@ -208,10 +200,10 @@ export function Attendance() {
 
       const response = await api.getAttendance({ date: dateStr, student_ids: studentIds });
       if (response.error) throw new Error(response.error);
-      const data = response.data;
+      const data = response.data as ApiAttendanceRecord[] | undefined;
 
       const recordsMap = new Map<string, AttendanceRecord>();
-      data?.forEach((record: any) => {
+      data?.forEach((record: ApiAttendanceRecord) => {
         recordsMap.set(record.student_id, {
           student_id: record.student_id,
           date: record.date,
@@ -222,12 +214,46 @@ export function Attendance() {
     } catch (error) {
       console.error('Error loading attendance:', error);
     }
-  };
+  }, [selectedDate, students]);
+
+  useEffect(() => {
+    // Only load data when component is mounted (i.e., when Attendance tab is active)
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser, loadData]);
+
+  useEffect(() => {
+    if (selectedDate && students.length > 0) {
+      loadAttendanceForDate();
+    }
+  }, [selectedDate, students, loadAttendanceForDate]);
+
+  // Reload students when teacher department IDs change
+  useEffect(() => {
+    if (currentUser?.role === 'teacher' && teacherDepartmentIds.length > 0) {
+      loadStudents(teacherDepartmentIds);
+    }
+  }, [teacherDepartmentIds, currentUser?.role, loadStudents]);
+
+  // Listen for attendance updates from AI assistant
+  useEffect(() => {
+    const handleAttendanceUpdate = () => {
+      if (selectedDate && students.length > 0) {
+        loadAttendanceForDate();
+      }
+    };
+
+    window.addEventListener('attendance-updated', handleAttendanceUpdate);
+    return () => {
+      window.removeEventListener('attendance-updated', handleAttendanceUpdate);
+    };
+  }, [selectedDate, students, loadAttendanceForDate]);
 
   const filteredStudents = students.filter(student => {
     // Department filter
     if (selectedDepartmentId !== 'all') {
-      const studentDeptId = (student as any).department_id;
+      const studentDeptId = (student as User & { department_id?: string }).department_id;
       if (!studentDeptId || studentDeptId !== selectedDepartmentId) {
         return false;
       }
@@ -297,9 +323,10 @@ export function Attendance() {
       await loadAttendanceForDate();
       setSelectedStudentIds(new Set());
       toast.success(`Marked ${selectedStudentIds.size} student(s) as ${status}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error marking attendance:', error);
-      toast.error(error.message || 'Failed to mark attendance');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to mark attendance';
+      toast.error(errorMessage);
     }
   };
 
@@ -309,29 +336,20 @@ export function Attendance() {
 
   const getStatusStyles = (status: string, isSelected: boolean) => {
     if (isSelected) {
-      // When selected, prioritize selection styling
-      if (status === 'present') {
-        return 'border-2 border-primary bg-green-50/30 dark:bg-green-950/10 ring-2 ring-primary ring-offset-1 rounded-lg';
-      } else if (status === 'absent') {
-        return 'border-2 border-primary bg-red-50/30 dark:bg-red-950/10 ring-2 ring-primary ring-offset-1 rounded-lg';
-      } else if (status === 'late') {
-        return 'border-2 border-primary bg-yellow-50/30 dark:bg-yellow-950/10 ring-2 ring-primary ring-offset-1 rounded-lg';
-      } else if (status === 'excused') {
-        return 'border-2 border-primary bg-blue-50/30 dark:bg-blue-950/10 ring-2 ring-primary ring-offset-1 rounded-lg';
-      }
-      return 'border-2 border-primary bg-primary/5 ring-2 ring-primary ring-offset-1 rounded-lg';
+      // When selected, use clean primary border with subtle background
+      return 'border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-lg shadow-sm';
     }
     
     // When not selected, show status with colored left border
     switch (status) {
       case 'present':
-        return 'border-l-4 border-l-green-500 bg-green-50/50 dark:bg-green-950/20 border-r border-t border-b border-border rounded-lg';
+        return 'border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 border-r border-t border-b border-border rounded-lg';
       case 'absent':
-        return 'border-l-4 border-l-red-500 bg-red-50/50 dark:bg-red-950/20 border-r border-t border-b border-border rounded-lg';
+        return 'border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 border-r border-t border-b border-border rounded-lg';
       case 'late':
-        return 'border-l-4 border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20 border-r border-t border-b border-border rounded-lg';
+        return 'border-l-4 border-l-yellow-500 bg-yellow-50/30 dark:bg-yellow-950/10 border-r border-t border-b border-border rounded-lg';
       case 'excused':
-        return 'border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 border-r border-t border-b border-border rounded-lg';
+        return 'border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/10 border-r border-t border-b border-border rounded-lg';
       default:
         return 'border border-border bg-card rounded-lg';
     }
@@ -373,24 +391,25 @@ export function Attendance() {
     : departments;
 
   return (
-    <div className="space-y-6">
-      {/* Header with filters */}
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+    <div className="space-y-4">
+      {/* Header with filters and actions */}
+      <div className="flex flex-col gap-3">
+        {/* First row: Search, Filters, Date */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-full"
+              className="pl-10 h-10"
             />
           </div>
 
           <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 h-10">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Filter by department" />
+              <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
@@ -404,9 +423,9 @@ export function Attendance() {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+              <Button variant="outline" className="w-full sm:w-[200px] h-10 justify-start text-left font-normal">
                 <Calendar className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, 'PPP') : 'Select date'}
+                {selectedDate ? format(selectedDate, 'MMM d, yyyy') : 'Select date'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -420,39 +439,79 @@ export function Attendance() {
           </Popover>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2">
+        {/* Second row: Options, Actions, View Toggle */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2.5">
             <Checkbox
               id="hide-marked"
               checked={hideMarked}
               onCheckedChange={(checked) => setHideMarked(checked as boolean)}
+                className="h-4 w-4"
             />
             <Label htmlFor="hide-marked" className="cursor-pointer text-sm">
-              Hide already marked students
+                Hide marked
             </Label>
           </div>
 
+            {canManageAttendance && filteredStudents.length > 0 && (
+              <div className="flex items-center gap-2.5">
+                <Checkbox
+                  checked={selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  className="h-4 w-4"
+                />
+                <Label className="text-sm text-muted-foreground cursor-pointer">
+                  Select all ({filteredStudents.length})
+                </Label>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5">
           {canManageAttendance && selectedStudentIds.size > 0 && (
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto animate-fade-in-up">
+              <div className="flex gap-2 animate-fade-in-up">
               <Button
                 onClick={() => markAttendance('present')}
                 size="sm"
-                className="bg-green-500 hover:bg-green-600 transition-all duration-200 hover:scale-105 active:scale-95 w-full sm:w-auto"
+                  className="bg-green-500 hover:bg-green-600 h-9 px-4"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Mark {selectedStudentIds.size} as Present
+                  Mark {selectedStudentIds.size} Present
               </Button>
               <Button
                 onClick={() => markAttendance('absent')}
                 size="sm"
                 variant="destructive"
-                className="transition-all duration-200 hover:scale-105 active:scale-95 w-full sm:w-auto"
+                  className="h-9 px-4"
               >
                 <XCircle className="mr-2 h-4 w-4" />
-                Mark {selectedStudentIds.size} as Absent
+                  Mark {selectedStudentIds.size} Absent
+                </Button>
+              </div>
+            )}
+            
+            {canManageAttendance && filteredStudents.length > 0 && (
+              <div className="flex items-center gap-1 border border-border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8 w-8 p-0"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-8 w-8 p-0"
+                >
+                  <List className="h-4 w-4" />
               </Button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -498,39 +557,8 @@ export function Attendance() {
             </div>
           ) : (
             <>
-              {canManageAttendance && filteredStudents.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={selectedStudentIds.size === filteredStudents.length && filteredStudents.length > 0}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                    <Label className="text-sm text-muted-foreground cursor-pointer">
-                      Select all ({filteredStudents.length})
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2 border border-border rounded-lg p-1 sm:ml-auto">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <LayoutGrid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
               {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredStudents.map((student, index) => {
                   const attendance = getAttendanceStatus(student.id);
                   const isSelected = selectedStudentIds.has(student.id);
@@ -538,9 +566,9 @@ export function Attendance() {
                   return (
                     <div
                       key={student.id}
-                      className={`relative rounded-lg p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${
+                      className={`relative rounded-xl p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${
                         isSelected 
-                          ? getStatusStyles(attendance?.status || '', true) + ' scale-105' 
+                          ? getStatusStyles(attendance?.status || '', true)
                           : attendance 
                             ? getStatusStyles(attendance.status, false) + ' hover:shadow-md hover:scale-[1.02]'
                             : 'border border-border bg-card hover:border-primary/50 hover:shadow-md hover:scale-[1.02]'
@@ -549,28 +577,29 @@ export function Attendance() {
                       onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
                     >
                       {canManageAttendance && (
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-3 right-3 z-10">
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleStudentSelection(student.id)}
                             onClick={(e) => e.stopPropagation()}
+                            className="bg-background"
                           />
                         </div>
                       )}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary shrink-0">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary shrink-0">
                             {student.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                          <p className="font-medium text-foreground text-sm truncate flex-1">
+                          <p className="font-medium text-foreground truncate flex-1">
                             {student.name}
                           </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                           {student.department || 'No department'}
                         </p>
                         {attendance && (
-                          <p className={`text-xs font-semibold ${
+                          <p className={`text-sm font-semibold ${
                             attendance.status === 'present' ? 'text-green-600 dark:text-green-400' :
                             attendance.status === 'absent' ? 'text-red-600 dark:text-red-400' :
                             attendance.status === 'late' ? 'text-yellow-600 dark:text-yellow-400' :
@@ -585,7 +614,7 @@ export function Attendance() {
                 })}
               </div>
               ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {filteredStudents.map((student, index) => {
                   const attendance = getAttendanceStatus(student.id);
                   const isSelected = selectedStudentIds.has(student.id);
@@ -593,12 +622,12 @@ export function Attendance() {
                   return (
                     <div
                       key={student.id}
-                      className={`relative p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${
+                      className={`relative p-4 rounded-xl transition-all duration-200 cursor-pointer animate-fade-in-up ${
                         isSelected 
                           ? getStatusStyles(attendance?.status || '', true)
                           : attendance 
                             ? getStatusStyles(attendance.status, false) + ' hover:shadow-md'
-                            : 'border border-border rounded-lg bg-card hover:border-primary/50 hover:shadow-md'
+                            : 'border border-border bg-card hover:border-primary/50 hover:shadow-md'
                       }`}
                       style={{ animationDelay: `${index * 50}ms` }}
                       onClick={() => canManageAttendance && toggleStudentSelection(student.id)}

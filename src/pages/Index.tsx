@@ -18,6 +18,24 @@ const Students = lazy(() =>
 const Attendance = lazy(() => 
   import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
 );
+const PersonalDetails = lazy(() => 
+  import('@/pages/student/PersonalDetails').then(module => ({ default: module.PersonalDetails }))
+);
+const GradesMarks = lazy(() => 
+  import('@/pages/student/GradesMarks').then(module => ({ default: module.GradesMarks }))
+);
+const AttendanceDetails = lazy(() => 
+  import('@/pages/student/AttendanceDetails').then(module => ({ default: module.AttendanceDetails }))
+);
+const Timetable = lazy(() => 
+  import('@/pages/student/Timetable').then(module => ({ default: module.Timetable }))
+);
+const FeePayment = lazy(() => 
+  import('@/pages/student/FeePayment').then(module => ({ default: module.FeePayment }))
+);
+const Tools = lazy(() => 
+  import('@/pages/Tools').then(module => ({ default: module.Tools }))
+);
 
 // Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
@@ -41,11 +59,12 @@ const PageLoader = () => (
 );
 
 function AppContent() {
-  const { currentUser, login } = useAuth();
+  const { currentUser, login, loading } = useAuth();
   const { orgName, userId, tab } = useParams<{ orgName?: string; userId?: string; tab?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Map tab names to paths
   const tabToPath: Record<string, string> = {
@@ -57,6 +76,12 @@ function AppContent() {
     'finance': '/finance',
     'facilities': '/facilities',
     'settings': '/settings',
+    'personal-details': '/student/personal-details',
+    'grades-marks': '/student/grades-marks',
+    'student-attendance': '/student/attendance',
+    'timetable': '/student/timetable',
+    'fee-payment': '/student/fee-payment',
+    'tools': '/tools',
   };
 
   const pathToTab: Record<string, string> = {
@@ -68,10 +93,18 @@ function AppContent() {
     '/finance': 'finance',
     '/facilities': 'facilities',
     '/settings': 'settings',
+    '/student/personal-details': 'personal-details',
+    '/student/grades-marks': 'grades-marks',
+    '/student/attendance': 'student-attendance',
+    '/student/timetable': 'timetable',
+    '/student/fee-payment': 'fee-payment',
+    '/tools': 'tools',
   };
 
   // Initialize from URL on mount
   useEffect(() => {
+    const initializeUser = async () => {
+      try {
     if (orgName && userId) {
       const userIdNum = parseInt(userId, 10);
       if (!isNaN(userIdNum)) {
@@ -82,6 +115,15 @@ function AppContent() {
       // Default to admin if no user and no URL params
       login('admin');
     }
+      } catch (error) {
+        console.error('Error initializing user:', error);
+      } finally {
+        // Set a timeout to ensure we don't wait forever
+        setTimeout(() => setIsInitializing(false), 1000);
+      }
+    };
+    
+    initializeUser();
   }, [orgName, userId]);
 
   // Update URL when user changes
@@ -100,19 +142,59 @@ function AppContent() {
   }, [currentUser?.organization?.org_name, currentUser?.user_id]);
 
   const handleNavigate = (path: string) => {
+    // For student routes, use the path directly or map to tab name
+    if (path.startsWith('/student/')) {
+      const tabName = pathToTab[path] || path.replace('/student/', '').replace(/-/g, '-');
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
+      }
+    } else {
     const tabName = pathToTab[path] || 'dashboard';
     if (currentUser?.organization && currentUser.user_id) {
       navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
     } else {
       navigate(path);
+      }
     }
   };
 
   // Get current path from URL
   const getCurrentPath = () => {
-    if (tab && tabToPath[tab]) {
+    // If we have a tab parameter, use it
+    if (tab) {
+      // Check if it's a direct path mapping
+      if (tabToPath[tab]) {
       return tabToPath[tab];
     }
+      // For standard routes like 'users', 'students', etc., map them directly
+      const standardPath = `/${tab}`;
+      if (pathToTab[standardPath]) {
+        return standardPath;
+      }
+    }
+    
+    // Fallback: try to extract from location pathname
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts.length >= 3) {
+      const lastPart = pathParts[pathParts.length - 1];
+      // Check if it's a known tab
+      if (tabToPath[lastPart]) {
+        return tabToPath[lastPart];
+      }
+      // Check if it's a standard route
+      const standardPath = `/${lastPart}`;
+      if (pathToTab[standardPath]) {
+        return standardPath;
+      }
+    }
+    
+    // Final fallback
+    if (location.pathname.startsWith('/student/')) {
+      return location.pathname;
+    }
+    
     return '/';
   };
 
@@ -141,6 +223,18 @@ function AppContent() {
         return 'Facilities';
       case '/settings':
         return 'Settings';
+      case '/student/personal-details':
+        return 'Personal Details';
+      case '/student/grades-marks':
+        return 'Grades & Marks';
+      case '/student/attendance':
+        return 'Attendance Details';
+      case '/student/timetable':
+        return 'Timetable';
+      case '/student/fee-payment':
+        return 'Fee Payment';
+      case '/tools':
+        return 'Tools';
       default:
         return 'Dashboard';
     }
@@ -182,6 +276,42 @@ function AppContent() {
             <Attendance />
           </Suspense>
         );
+      case '/student/personal-details':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <PersonalDetails />
+          </Suspense>
+        );
+      case '/student/grades-marks':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <GradesMarks />
+          </Suspense>
+        );
+      case '/student/attendance':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AttendanceDetails />
+          </Suspense>
+        );
+      case '/student/timetable':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Timetable />
+          </Suspense>
+        );
+      case '/student/fee-payment':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <FeePayment />
+          </Suspense>
+        );
+      case '/tools':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Tools />
+          </Suspense>
+        );
       case '/academics':
       case '/finance':
       case '/facilities':
@@ -204,6 +334,21 @@ function AppContent() {
         );
     }
   };
+
+  // Show loading state while initializing (but not forever)
+  useEffect(() => {
+    if (currentUser || !loading) {
+      setIsInitializing(false);
+    }
+  }, [currentUser, loading]);
+  
+  if (isInitializing && loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <PageLoader />
+      </div>
+    );
+  }
 
   return (
     <AppLayout

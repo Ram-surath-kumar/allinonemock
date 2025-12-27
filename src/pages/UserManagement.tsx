@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { createUserAddedActivity } from '@/services/activities';
+import { createUserAddedActivity, createBulkUserAddedActivities } from '@/services/activities';
 import { updateTeacherDepartments } from '@/services/departments';
 
 interface UserManagementProps {
@@ -51,8 +51,29 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
 
       if (data) {
         // Fetch department names separately for users with department_id
-        const departmentIds = [...new Set(data.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-        let deptMap = new Map<string, string>();
+        interface UserRow {
+          department_id?: string;
+          id: string;
+          loopid?: string;
+          org_id: number;
+          user_id: number;
+          name: string;
+          email: string;
+          role: string;
+          permissions: string[];
+          department?: string;
+          created_at: string;
+          status: string;
+          avatar?: string;
+        }
+        
+        interface DepartmentRow {
+          id: string;
+          name: string;
+        }
+        
+        const departmentIds = [...new Set(data.filter((u: UserRow) => u.department_id).map((u: UserRow) => u.department_id))];
+        const deptMap = new Map<string, string>();
         
         if (departmentIds.length > 0) {
           const { data: deptData, error: deptError } = await supabase
@@ -61,13 +82,13 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
             .in('id', departmentIds);
           
           if (!deptError && deptData) {
-            deptData.forEach((dept: any) => {
+            deptData.forEach((dept: DepartmentRow) => {
               deptMap.set(dept.id, dept.name);
             });
           }
         }
 
-        const mappedUsers: User[] = data.map((row: any) => ({
+        const mappedUsers: User[] = data.map((row: UserRow) => ({
           id: row.id,
           loopid: row.loopid,
           org_id: row.org_id,
@@ -100,27 +121,69 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
 
   const handleAddUser = async (newUser: {
     name: string;
-    email: string;
+    email?: string;
     role: UserRole;
     permissions: string[];
     department_id?: string;
     department_ids?: string[];
+    loopid?: string;
   }) => {
     try {
+      const email = newUser.email;
+      const loopid = newUser.loopid;
+
+      // Generate temporary email if not provided (will be updated after user_id is known)
+      let tempEmail = email;
+      if (!tempEmail) {
+        // For all roles, use temporary email - will be updated after user_id is known
+        tempEmail = `temp-${currentUser?.organization?.org_id || 'org'}-${Date.now()}@loopverse.in`;
+      }
+
       const { data, error } = await supabase
         .from('users')
         .insert({
           name: newUser.name,
-          email: newUser.email,
+          email: tempEmail, // Always provide email to satisfy NOT NULL constraint
           role: newUser.role,
           permissions: newUser.permissions,
           department_id: newUser.department_id || null,
+          loopid: loopid || null, // Will be updated after user_id is known
           status: 'active',
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // For all users: Generate email as org_id + user_id @loopverse.in
+      if (data && currentUser?.organization?.org_id && data.user_id) {
+        const generatedEmail = `${currentUser.organization.org_id}${data.user_id}@loopverse.in`;
+        
+        // For students, also generate loopid
+        const updateData: { email: string; loopid?: string } = newUser.role === 'student'
+          ? {
+              email: generatedEmail,
+              loopid: `${currentUser.organization.org_id}${data.user_id}`,
+            }
+          : { email: generatedEmail };
+        
+        // Update the user with generated email (and loopid for students)
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', data.id);
+
+        if (updateError) {
+          console.error('Error updating email and loopid:', updateError);
+          throw updateError;
+        } else {
+          // Update data object with new values
+          data.email = generatedEmail;
+          if (newUser.role === 'student') {
+            data.loopid = updateData.loopid;
+          }
+        }
+      }
 
       if (data) {
         // For teachers, update teacher_departments
@@ -169,9 +232,194 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
         
         toast.success(`User ${user.name} added successfully`);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding user:', error);
-      toast.error(error.message || 'Failed to add user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add user';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleAddMultipleUsers = async (users: Array<{
+    name: string;
+    email?: string;
+    role: UserRole;
+    permissions: string[];
+    department_id?: string;
+    department_ids?: string[];
+    loopid?: string;
+  }>) => {
+    try {
+      if (!currentUser?.organization?.org_id) {
+        throw new Error('Organization ID is required');
+      }
+
+      // Prepare users for bulk insert with temporary emails
+      const usersToInsert = users.map((user, index) => {
+        let tempEmail = user.email;
+        if (!tempEmail) {
+          // For all roles, generate unique temporary email - will be updated after user_id is known
+          tempEmail = `temp-${currentUser.organization.org_id}-${Date.now()}-${index}@loopverse.in`;
+        }
+
+        return {
+          name: user.name,
+          email: tempEmail,
+          role: user.role,
+          permissions: user.permissions || [],
+          department_id: user.department_id || null,
+          loopid: user.loopid || null,
+          status: 'active' as const,
+        };
+      });
+
+      // Bulk insert all users at once
+      const { data: insertedUsers, error: insertError } = await supabase
+        .from('users')
+        .insert(usersToInsert)
+        .select();
+
+      if (insertError) throw insertError;
+      if (!insertedUsers || insertedUsers.length === 0) {
+        throw new Error('No users were inserted');
+      }
+
+      // For all users, update email in batch (format: org_id + user_id @loopverse.in)
+      // For students, also update loopid
+      const userUpdates = insertedUsers
+        .map((user, index) => {
+          const originalUser = users[index];
+          if (user.user_id) {
+            const generatedEmail = `${currentUser.organization.org_id}${user.user_id}@loopverse.in`;
+            const update: { id: string; email: string; loopid?: string } = {
+              id: user.id,
+              email: generatedEmail,
+            };
+            // For students, also generate loopid
+            if (originalUser.role === 'student') {
+              update.loopid = `${currentUser.organization.org_id}${user.user_id}`;
+            }
+            return update;
+          }
+          return null;
+        })
+        .filter((update): update is { id: string; email: string; loopid?: string } => update !== null);
+
+      // Batch update all user emails (and loopids for students)
+      if (userUpdates.length > 0) {
+        // Use Promise.all to update all users in parallel
+        const updatePromises = userUpdates.map(update =>
+          supabase
+            .from('users')
+            .update({
+              email: update.email,
+              ...(update.loopid && { loopid: update.loopid }),
+            })
+            .eq('id', update.id)
+        );
+
+        const updateResults = await Promise.all(updatePromises);
+        const updateErrors = updateResults.filter(result => result.error);
+        
+        if (updateErrors.length > 0) {
+          console.error('Some email updates failed:', updateErrors);
+          // Update insertedUsers with new values for successful updates
+          userUpdates.forEach(update => {
+            const user = insertedUsers.find(u => u.id === update.id);
+            if (user) {
+              user.email = update.email;
+              if (update.loopid) {
+                user.loopid = update.loopid;
+              }
+            }
+          });
+        } else {
+          // Update all successfully
+          userUpdates.forEach(update => {
+            const user = insertedUsers.find(u => u.id === update.id);
+            if (user) {
+              user.email = update.email;
+              if (update.loopid) {
+                user.loopid = update.loopid;
+              }
+            }
+          });
+        }
+      }
+
+      // Handle teacher_departments for teachers
+      const teacherInserts = insertedUsers
+        .map((user, index) => {
+          const originalUser = users[index];
+          if (originalUser.role === 'teacher' && originalUser.department_ids && originalUser.department_ids.length > 0) {
+            return originalUser.department_ids.map(deptId => ({
+              teacher_id: user.id,
+              department_id: deptId,
+            }));
+          }
+          return [];
+        })
+        .flat();
+
+      if (teacherInserts.length > 0) {
+        const { error: deptError } = await supabase
+          .from('teacher_departments')
+          .insert(teacherInserts);
+
+        if (deptError) {
+          console.error('Error inserting teacher departments:', deptError);
+          // Don't throw - users were created, just department mapping failed
+        }
+      }
+
+      // Fetch department names for display
+      const departmentIds = [...new Set(insertedUsers.map(u => u.department_id).filter(Boolean))];
+      const deptMap = new Map<string, string>();
+      
+      if (departmentIds.length > 0) {
+        const { data: deptData } = await supabase
+          .from('departments')
+          .select('id, name')
+          .in('id', departmentIds);
+        
+        if (deptData) {
+          deptData.forEach(dept => {
+            deptMap.set(dept.id, dept.name);
+          });
+        }
+      }
+
+      // Map to User objects and add to state
+      const newUsers: User[] = insertedUsers.map((row) => ({
+        id: row.id,
+        loopid: row.loopid,
+        org_id: row.org_id,
+        user_id: row.user_id,
+        name: row.name,
+        email: row.email,
+        role: row.role as UserRole,
+        permissions: row.permissions || [],
+        department: row.department_id ? deptMap.get(row.department_id) || null : null,
+        createdAt: new Date(row.created_at),
+        status: row.status as 'active' | 'inactive',
+        avatar: row.avatar,
+      }));
+
+      setUsers(prev => [...newUsers, ...prev]);
+
+      // Create activities for new users in bulk (single API call)
+      await createBulkUserAddedActivities(
+        newUsers.map(user => ({
+          name: user.name,
+          department: user.department || undefined,
+        }))
+      );
+
+      toast.success(`Successfully added ${newUsers.length} user(s)`);
+    } catch (error) {
+      console.error('Error adding multiple users:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add users';
+      toast.error(errorMessage);
+      throw error; // Re-throw so caller can handle it
     }
   };
 
@@ -227,9 +475,10 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
       setEditDialogOpen(false);
       setSelectedUser(null);
       toast.success(`User ${updatedData.name} updated successfully`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating user:', error);
-      toast.error(error.message || 'Failed to update user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+      toast.error(errorMessage);
     }
   };
 
@@ -244,9 +493,10 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
 
       setUsers(prev => prev.filter(u => u.id !== user.id));
       toast.success(`User ${user.name} deleted`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error(error.message || 'Failed to delete user');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+      toast.error(errorMessage);
     }
   };
 
@@ -332,6 +582,16 @@ export function UserManagement({ dialogOpen, setDialogOpen }: UserManagementProp
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onAdd={handleAddUser}
+        onAddMultiple={async (users) => {
+          // Handle multiple users from AI extraction - use bulk insert
+          try {
+            await handleAddMultipleUsers(users);
+            await fetchUsers(); // Refresh the list
+          } catch (error) {
+            console.error('Error adding multiple users:', error);
+            // Error already shown in handleAddMultipleUsers
+          }
+        }}
       />
 
       {/* Edit User Dialog */}

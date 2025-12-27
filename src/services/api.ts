@@ -7,9 +7,58 @@ interface ApiResponse<T> {
   error: string | null;
 }
 
+interface UserData {
+  name?: string;
+  email?: string;
+  role?: string;
+  password?: string;
+  department_id?: string;
+  org_id?: string;
+  status?: string;
+  permissions?: string[];
+  [key: string]: unknown;
+}
+
+interface OrganizationData {
+  org_name?: string;
+  org_code?: string;
+  org_logo?: string;
+  [key: string]: unknown;
+}
+
+interface DepartmentData {
+  name?: string;
+  created_by?: string;
+  [key: string]: unknown;
+}
+
+interface NotificationData {
+  user_id?: string;
+  title?: string;
+  message?: string;
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface ActivityData {
+  user_id?: string;
+  action?: string;
+  entity_type?: string;
+  entity_id?: string;
+  details?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+interface AttendanceRecord {
+  student_id: string;
+  date: string;
+  status: string;
+  marked_by?: string | null;
+}
+
 class ApiClient {
   private baseUrl: string;
-  private pendingRequests: Map<string, Promise<ApiResponse<any>>> = new Map();
+  private pendingRequests: Map<string, Promise<ApiResponse<unknown>>> = new Map();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -24,7 +73,7 @@ class ApiClient {
     const isGet = !options.method || options.method === 'GET';
     // Extract query params from endpoint for cache key
     const url = new URL(endpoint, 'http://dummy');
-    const params: Record<string, any> = {};
+    const params: Record<string, string> = {};
     url.searchParams.forEach((value, key) => {
       params[key] = value;
     });
@@ -40,7 +89,7 @@ class ApiClient {
       // Check if request is already pending
       const pending = this.pendingRequests.get(cacheKey);
       if (pending) {
-        return pending;
+        return pending as Promise<ApiResponse<T>>;
       }
     }
 
@@ -70,9 +119,18 @@ class ApiClient {
         return result;
       } catch (error) {
         console.error(`API Error [${endpoint}]:`, error);
+        // Handle network errors more gracefully
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // Check if it's a network/fetch error
+        if (errorMessage.includes('fetch failed') || errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+          return {
+            data: null,
+            error: 'Network error: Backend server may not be running. Please ensure the backend server is running on port 3001.',
+          };
+        }
         return {
           data: null,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errorMessage,
         };
       } finally {
         // Remove from pending requests
@@ -120,14 +178,14 @@ class ApiClient {
     });
   }
 
-  async createUser(userData: any) {
+  async createUser(userData: UserData) {
     return this.request('/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  async updateUser(id: string, userData: any) {
+  async updateUser(id: string, userData: UserData) {
     return this.request(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
@@ -152,6 +210,13 @@ class ApiClient {
     return this.request(`/organizations${query ? `?${query}` : ''}`);
   }
 
+  async updateOrganization(id: string, orgData: OrganizationData) {
+    return this.request(`/organizations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(orgData),
+    });
+  }
+
   // Departments
   async getDepartments(params?: { id?: string; ids?: string[] }) {
     const queryParams = new URLSearchParams();
@@ -163,7 +228,7 @@ class ApiClient {
     return this.request(`/departments${query ? `?${query}` : ''}`);
   }
 
-  async createDepartment(departmentData: any) {
+  async createDepartment(departmentData: DepartmentData) {
     return this.request('/departments', {
       method: 'POST',
       body: JSON.stringify(departmentData),
@@ -198,7 +263,7 @@ class ApiClient {
     return this.request(`/attendance${query ? `?${query}` : ''}`);
   }
 
-  async markAttendance(records: any[]) {
+  async markAttendance(records: AttendanceRecord[]) {
     return this.request('/attendance', {
       method: 'POST',
       body: JSON.stringify(records),
@@ -215,7 +280,7 @@ class ApiClient {
     return this.request(`/notifications${query ? `?${query}` : ''}`);
   }
 
-  async createNotification(notificationData: any) {
+  async createNotification(notificationData: NotificationData) {
     return this.request('/notifications', {
       method: 'POST',
       body: JSON.stringify(notificationData),
@@ -241,10 +306,17 @@ class ApiClient {
     return this.request(`/activities${query}`);
   }
 
-  async createActivity(activityData: any) {
+  async createActivity(activityData: ActivityData) {
     return this.request('/activities', {
       method: 'POST',
       body: JSON.stringify(activityData),
+    });
+  }
+
+  async createActivities(activitiesData: ActivityData[]) {
+    return this.request('/activities', {
+      method: 'POST',
+      body: JSON.stringify(activitiesData),
     });
   }
 }

@@ -161,8 +161,51 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
         setIsOpen(false);
       }, 500);
       addMessage('assistant', `Opening students page to view ${action.student_name || 'student'}...`);
+    } else if (action.action === 'add_department') {
+      if (!action.department_name) {
+        addMessage('assistant', 'I couldn\'t identify the department name. Please specify it clearly, e.g., "add new department with name Computer Science"');
+        return;
+      }
+
+      if (!hasPermission('manage_staff')) {
+        addMessage('assistant', 'You don\'t have permission to create departments.');
+        return;
+      }
+
+      try {
+        const response = await api.createDepartment({
+          name: action.department_name,
+          created_by: currentUser?.id || '',
+        });
+
+        if (response.error) throw new Error(response.error);
+
+        addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
+        
+        // Navigate to tools page
+        if (onNavigate) {
+          onNavigate('/tools');
+        } else {
+          navigate('/tools');
+        }
+        
+        // Close chat after action
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 1000);
+      } catch (error) {
+        console.error('Error creating department:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
+        
+        // Check if it's a service role key error
+        if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
+          addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
+        } else {
+          addMessage('assistant', `❌ Error: ${errorMessage}`);
+        }
+      }
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]" or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", or ask me a question about your data.');
     }
   };
 

@@ -1,7 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { NoticeBanner } from '@/components/notices/NoticeBanner';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AIAssistantChat } from '@/components/ai/AIAssistantChat';
@@ -39,10 +38,9 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate }
 
       <div className="flex flex-1 flex-col overflow-hidden w-full md:w-auto">
         <Header title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6 lg:p-8" role="main">
-          <NoticeBanner />
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-4 lg:p-5" role="main">
           <div className="max-w-7xl mx-auto">
-            {children}
+          {children}
           </div>
         </main>
       </div>

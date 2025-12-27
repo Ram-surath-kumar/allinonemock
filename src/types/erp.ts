@@ -19,6 +19,7 @@ export interface Organization {
   org_id: number;
   org_code: string;
   org_name: string;
+  org_logo?: string;
 }
 
 export interface User {

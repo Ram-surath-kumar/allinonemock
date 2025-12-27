@@ -17,7 +17,10 @@ Create a `.env` file in the `server` directory:
 PORT=3001
 SUPABASE_URL=https://vzkbyzpqnojhlazwopvz.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2J5enBxbm9qaGxhendvcHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMTk2MTMsImV4cCI6MjA4MTc5NTYxM30.ledQxA84HlYEQyUTmp2VJ7U4lRkLMqKCYieQNL_ObuY
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 ```
+
+**Important:** The `SUPABASE_SERVICE_ROLE_KEY` is required for write operations (create, update, delete) to bypass Row Level Security (RLS) policies. You can find this key in your Supabase project settings under "API" → "Service Role Key". **Never expose this key in client-side code.**
 
 ### 3. Start Backend Server
 ```bash

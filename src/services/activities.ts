@@ -119,6 +119,56 @@ export const createUserAddedActivity = async (userName: string, department?: str
   }
 };
 
+// Bulk create activities for multiple users
+export const createBulkUserAddedActivities = async (users: Array<{ name: string; department?: string }>): Promise<void> => {
+  try {
+    if (users.length === 0) return;
+
+    const now = new Date();
+    const activities = users.map(user => {
+      const description = user.department 
+        ? `${user.name} was added to ${user.department}`
+        : `${user.name} was added to the system`;
+      
+      return {
+        icon_name: 'User',
+        title: 'New user enrolled',
+        description,
+        time_ago: 'Just now',
+        color_class: 'bg-primary/10 text-primary',
+      };
+    });
+
+    // Create all activities in a single API call
+    const response = await api.createActivities(activities);
+    if (response.error) {
+      console.error('Error creating bulk activities:', response.error);
+    }
+
+    // Create a single combined notification for admins
+    try {
+      const userCount = users.length;
+      const description = userCount === 1
+        ? (users[0].department 
+            ? `${users[0].name} was added to ${users[0].department}`
+            : `${users[0].name} was added to the system`)
+        : `${userCount} new users were added to the system`;
+      
+      await createNotificationForAdmins(
+        userCount === 1 ? 'New User Added' : 'New Users Added',
+        description,
+        'info'
+      );
+    } catch (error) {
+      // Silently fail - notifications are non-critical
+      console.error('Error creating notification:', error);
+    }
+  } catch (error) {
+    console.error('Failed to create bulk activities:', error);
+    // Don't throw - activities are non-critical
+  }
+};
+
 export const createGradeUpdatedActivity = async (teacherName: string, subject: string): Promise<void> => {
   const description = `${teacherName} submitted grades for ${subject}`;
   

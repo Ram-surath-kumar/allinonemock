@@ -1,0 +1,150 @@
+Tab	Feature Name	Feature Explanation
+Dashboard	Admin Dashboard	Role-based dashboard for administrators showing key metrics, analytics, and quick actions
+Dashboard	Teacher Dashboard	Role-based dashboard for teachers with relevant information and actions
+Dashboard	Student Dashboard	Role-based dashboard for students with personalized information
+Dashboard	Statistics Cards	Display key metrics like total students, staff, fees collected, and attendance percentage with sparkline charts
+Dashboard	Quick Actions	Grid of action buttons for common tasks like Add User, Generate Report, Schedule Event, Send Notice
+Dashboard	AI Actions	AI-powered quick actions providing smart insights and recommendations using Gemini AI
+Dashboard	Analytics Charts	Visual analytics including attendance trends, fee collection trends, and student growth charts using ReCharts
+Dashboard	Recent Activity Timeline	Timeline view of recent system activities and events with icons and timestamps
+Dashboard	Role-based Content	Different dashboard content displayed based on user role (admin, teacher, student, etc.)
+User Management	User List View	Display all users in a table/grid format with search and filter capabilities
+User Management	Add User Dialog	Modal dialog to add new users with form fields for name, email, role, permissions, and department
+User Management	Add User with AI	AI-powered feature to extract student data from uploaded images/documents using Gemini Vision API
+User Management	Bulk Student Import	Import multiple students at once from AI-extracted data with checkbox selection
+User Management	Auto Email Generation	Automatically generate email addresses for students using loopid format: [loopid]@erp.loopverse.in
+User Management	Edit User Dialog	Modal dialog to edit existing user details including role, permissions, and department assignments
+User Management	User Search	Real-time search functionality to filter users by name, email, or other criteria
+User Management	Role Filter	Filter users by role (admin, teacher, student, etc.)
+User Management	Permission Management	Assign and manage custom permissions for users based on their role
+User Management	Department Assignment	Assign users to specific departments during creation or editing
+User Management	User Status Management	Activate or deactivate user accounts
+Students	Student List View	Display all students in grid or table view with search and filter options
+Students	Student Search	Search students by name, email, student ID, or other identifiers
+Students	Edit Student	Edit student information including personal details, academic information, and department
+Students	View Student Attendance	View individual student attendance records in calendar format
+Students	Department Filter	Filter students by department (for teachers, shows only their assigned departments)
+Students	View Mode Toggle	Switch between grid view and table view for student listing
+Students	Teacher Department Access	Teachers can only view students from their assigned departments
+Attendance	Mark Attendance	Mark attendance for students on a selected date with status options (present, absent, late, excused)
+Attendance	Bulk Attendance Marking	Select multiple students and mark their attendance status simultaneously
+Attendance	Attendance Calendar	Calendar picker to select the date for marking attendance
+Attendance	Department Filter	Filter students by department when marking attendance
+Attendance	Student Search	Search for specific students while marking attendance
+Attendance	Hide Marked Students	Toggle to hide students who already have attendance marked for the selected date
+Attendance	Attendance Records View	View historical attendance records with status indicators
+Attendance	Grid/List View Toggle	Switch between grid card view and list view for attendance marking
+Attendance	Teacher Department Restriction	Teachers can only mark attendance for students in their assigned departments
+Personal Details	View Personal Information	Display student's personal details including name, email, phone, address, date of birth
+Personal Details	View Academic Information	Show academic details like student ID, admission date, department, year, and semester
+Personal Details	Edit Personal Details	Edit and update personal information if user has edit permissions
+Personal Details	Save Changes	Save updated personal details to the database
+Personal Details	Form Validation	Validate form inputs before saving changes
+Grades & Marks	View All Grades	Display all course grades and marks in a tabular format
+Grades & Marks	Failed Courses Tab	View courses where the student has failed with details like course code, name, marks, and semester
+Grades & Marks	Absent Details Tab	View examination absent records with course information, exam date, exam type, and reason
+Grades & Marks	Malpractice Details Tab	View malpractice records with course details, exam date, description, action taken, and status
+Grades & Marks	Grade Statistics	Display overall GPA, total credits, and pass percentage
+Grades & Marks	Semester Filter	Filter grades by semester or academic year
+Grades & Marks	Grade Breakdown	Show detailed breakdown of marks, maximum marks, credits, and grade for each course
+Attendance Details	Attendance Statistics	Display total days, present days, absent days, late days, excused days, and attendance percentage
+Attendance Details	Attendance Trend Chart	Line chart showing attendance trends over time with monthly/weekly breakdown
+Attendance Details	Status Breakdown	Visual breakdown of attendance status (present, absent, late, excused) using charts
+Attendance Details	Detailed Records Table	Table showing all attendance records with date, subject, period, status, and remarks
+Attendance Details	Month Filter	Filter attendance records by month
+Attendance Details	Attendance Calendar View	Calendar visualization highlighting days with attendance marked
+Timetable	Weekly Schedule View	Display weekly timetable with all days of the week and time slots
+Timetable	Today's Schedule View	Show only today's classes and schedule
+Timetable	Time Slot Details	Display period number, start time, end time, subject name, subject code, teacher name, and room number
+Timetable	Class Type Indicators	Show class type (lecture, lab, tutorial, seminar) with different visual indicators
+Timetable	Week Navigation	Navigate between different weeks to view schedules
+Timetable	Today Highlight	Highlight today's date in the weekly view
+Timetable	Subject Information	Display detailed information about each subject including teacher and room assignment
+Fee Payment	Payment Summary	Display total fees, paid fees, pending fees, overdue fees, and paid percentage
+Fee Payment	Fee Overview Chart	Bar chart showing fee payment status breakdown
+Fee Payment	Fee List View	Table showing all fee payments with type, amount, due date, paid date, and status
+Fee Payment	Payment Status Indicators	Visual indicators for paid, pending, and overdue fees with color coding
+Fee Payment	Pay Fee Dialog	Modal dialog to make fee payments with payment method selection and amount input
+Fee Payment	Payment Method Selection	Select payment method (cash, card, online transfer, etc.)
+Fee Payment	Transaction Details	View transaction ID, receipt URL, and payment method for paid fees
+Fee Payment	Download Receipt	Download payment receipt for completed transactions
+Fee Payment	Overdue Fee Alerts	Highlight overdue fees with alerts and warnings
+Tools	Add Department Tool	Action box to create new departments with department name input
+Tools	Map Teachers to Department	Multi-select dropdown to assign teachers to newly created departments
+Tools	Department Creation Dialog	Modal dialog for department creation with form and teacher selection
+Tools	Select All Teachers	Quick action to select or deselect all teachers when mapping to department
+Tools	Teacher Permission Update	Automatically grant department access permissions to selected teachers
+Tools	Action Box Layout	Grid layout for multiple tools with hover effects and modern card design
+Academics	Academics Module	Placeholder for future academic features like course management, curriculum, etc.
+Finance	Finance Module	Placeholder for future finance features like fee management, expenses, etc.
+Facilities	Facilities Module	Placeholder for future facility management features
+Settings	Settings Module	Placeholder for future system settings and configuration
+AI Assistant	Floating Chat Widget	Floating AI assistant chat button at bottom-right corner of the screen
+AI Assistant	Chat Interface	Chat-like interface for interacting with AI assistant
+AI Assistant	Natural Language Queries	Ask questions in natural language and get responses from AI
+AI Assistant	Database Queries	AI can query Supabase database to answer questions about students, attendance, etc.
+AI Assistant	Action Execution	AI can execute actions like "add department" and navigate to relevant pages
+AI Assistant	Data Analytics Queries	AI provides analytics and insights based on database queries
+AI Assistant	Chat History	Maintain conversation history within the chat session
+AI Assistant	Minimize/Maximize	Minimize or maximize the chat widget
+AI Assistant	Auto-close on Action	Chat automatically closes when AI executes an action that requires navigation
+AI Assistant	Context-aware Responses	AI understands user context and provides relevant responses
+UI/UX	Dark Mode	Toggle between dark and light themes with smooth transitions
+UI/UX	Light Mode	Light theme with proper contrast and visibility
+UI/UX	Theme Toggle Button	Button in header to switch between dark and light modes
+UI/UX	Glassmorphism Design	Modern glassmorphic design with backdrop blur effects
+UI/UX	Rounded Cards	Cards with rounded corners (20-26px radius) for modern look
+UI/UX	Soft Shadows	Depth shadows for cards and components
+UI/UX	Micro Animations	Hover animations, transitions, and smooth interactions
+UI/UX	Responsive Design	Mobile, tablet, and desktop responsive layouts
+UI/UX	Sidebar Navigation	Collapsible sidebar with hover-based expand/collapse functionality
+UI/UX	Sidebar Logo Display	Display organization logo, name, and "powered by loopverse" text
+UI/UX	Active Tab Highlighting	Visual indication of currently active navigation tab
+UI/UX	Tooltips	Tooltips for collapsed sidebar items and action buttons
+UI/UX	Notification Center	Panel to view and manage system notifications
+UI/UX	Search Bar	Global search functionality in the header
+UI/UX	Profile Chip	User profile display with avatar and role in header
+UI/UX	Organization Badge	Display organization name as a badge in the header
+UI/UX	Loading Skeletons	Skeleton loaders for better loading experience
+UI/UX	Smooth Transitions	Smooth animations for sidebar expand/collapse and page transitions
+Layout	App Layout	Main application layout with sidebar, header, and content area
+Layout	Header Component	Top bar with title, subtitle, search, notifications, and theme toggle
+Layout	Sidebar Component	Left navigation sidebar with role-based menu items
+Layout	Mobile Sidebar	Mobile-responsive sidebar with sheet/drawer component
+Layout	Dynamic Routing	URL-based routing with organization name, user ID, and tab parameters
+Layout	Lazy Loading	Code splitting and lazy loading for better performance
+Layout	Role-based Navigation	Different navigation items based on user role
+Layout	Permission-based Access	Components and features hidden/shown based on user permissions
+Authentication	User Login	Login functionality with organization and user selection
+Authentication	Role-based Access Control	Access control based on user roles (admin, teacher, student, etc.)
+Authentication	Permission System	Granular permission system for feature access
+Authentication	Session Management	Maintain user session across page navigation
+Authentication	User Context	Global user context available throughout the application
+Notifications	Notification Panel	Panel to view all system notifications
+Notifications	Notification Badge	Badge showing unread notification count
+Notifications	Mark as Read	Mark individual notifications as read
+Notifications	Mark All as Read	Mark all notifications as read at once
+Notifications	Notification Types	Different types of notifications (system, activity, alert, etc.)
+Data Management	Supabase Integration	Backend integration with Supabase for database operations
+Data Management	API Client	Centralized API client for all backend requests
+Data Management	Error Handling	Comprehensive error handling with user-friendly messages
+Data Management	Toast Notifications	Toast notifications for success, error, and info messages
+Data Management	Data Caching	API response caching for improved performance
+Data Management	Real-time Updates	Real-time data updates where applicable
+Data Management	Form Validation	Client-side and server-side form validation
+Data Management	Bulk Operations	Support for bulk operations like bulk student import
+Organization	Organization Display	Display organization name and logo throughout the application
+Organization	Organization Update	Update organization details like name
+Organization	Multi-organization Support	Support for multiple organizations in the system
+Activities	Activity Logging	Log system activities and user actions
+Activities	Activity Timeline	Display activities in timeline format on dashboard
+Activities	Activity Types	Different types of activities (user added, event scheduled, etc.)
+Charts & Analytics	ReCharts Integration	Integration with ReCharts library for data visualization
+Charts & Analytics	Line Charts	Line charts for trends (attendance, fees, student growth)
+Charts & Analytics	Bar Charts	Bar charts for comparisons and breakdowns
+Charts & Analytics	Pie Charts	Pie charts for distribution visualization
+Charts & Analytics	Area Charts	Area charts for cumulative data visualization
+Charts & Analytics	Chart Animations	Smooth animations when charts are rendered
+Charts & Analytics	Responsive Charts	Charts that adapt to container size
+Charts & Analytics	Interactive Tooltips	Interactive tooltips on chart hover
+Charts & Analytics	Sparkline Charts	Mini sparkline charts in statistics cards
