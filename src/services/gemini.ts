@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = 'AIzaSyAx4QnaJy9_QearhV_irwB-Fy4KmkAux8E';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // List of models to try in order (fallback mechanism)
 const MODEL_OPTIONS = [
@@ -14,7 +14,7 @@ const getModelUrl = (model: string, version: string = 'v1beta') => {
 };
 
 export interface AIAction {
-  action: 'mark_attendance' | 'edit_student' | 'view_student' | 'add_department' | 'unknown';
+  action: 'mark_attendance' | 'edit_student' | 'view_student' | 'add_department' | 'chat' | 'unknown';
   student_name?: string;
   department?: string;
   department_name?: string;
@@ -121,7 +121,7 @@ Now extract the student data and return ONLY the JSON array:`;
     for (const model of MODEL_OPTIONS) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -166,7 +166,7 @@ Now extract the student data and return ONLY the JSON array:`;
 
         // Extract JSON from response (handle various formats)
         let jsonText = text.trim();
-        
+
         // Remove markdown code blocks if present
         if (jsonText.includes('```')) {
           // Try to extract JSON from code blocks
@@ -178,7 +178,7 @@ Now extract the student data and return ONLY the JSON array:`;
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
           }
         }
-        
+
         // Try to find JSON array in the text
         if (!jsonText.startsWith('[')) {
           const arrayMatch = jsonText.match(/(\[[\s\S]*\])/);
@@ -186,7 +186,7 @@ Now extract the student data and return ONLY the JSON array:`;
             jsonText = arrayMatch[1];
           }
         }
-        
+
         // Remove any leading/trailing text that's not JSON
         jsonText = jsonText.trim();
         if (!jsonText.startsWith('[')) {
@@ -231,7 +231,7 @@ Now extract the student data and return ONLY the JSON array:`;
           if (!name) {
             name = `Student ${index + 1}`;
           }
-          
+
           // Loopid is optional - it will be generated as org_id + user_id when the user is created
           // We can still extract it if present in the document, but it's not required
           let loopid = student.loopid?.trim() || '';
@@ -239,7 +239,7 @@ Now extract the student data and return ONLY the JSON array:`;
             // Clean loopid - remove "g:" prefix if present
             loopid = loopid.replace(/^g:/i, '').trim();
           }
-          
+
           return {
             name,
             loopid, // Optional - will be auto-generated if not provided
@@ -335,7 +335,7 @@ async function tryGeminiModel(
   apiVersion: string = 'v1beta'
 ): Promise<GeminiResponse> {
   const url = `${getModelUrl(model, apiVersion)}?key=${GEMINI_API_KEY}`;
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -373,7 +373,8 @@ Available actions:
 2. edit_student - Edit student info
 3. view_student - View student info
 4. add_department - Add/create a new department (requires department_name field)
-5. unknown - Unclear command
+5. chat - General conversation, greetings, or questions not related to data (requires message field)
+6. unknown - Unclear command
 
 Available students:
 ${context.students.length > 0 ? context.students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
@@ -384,6 +385,7 @@ Examples:
 - "add new department with name Computer Science" → {"action":"add_department","department_name":"Computer Science","confidence":0.95}
 - "create department Mathematics" → {"action":"add_department","department_name":"Mathematics","confidence":0.9}
 - "add department Physics" → {"action":"add_department","department_name":"Physics","confidence":0.9}
+- "hi" or "hello" → {"action":"chat","message":"Hello! How can I help you today?","confidence":1.0}
 
 Return ONLY this JSON structure (no markdown, no code blocks):
 {"action":"mark_attendance","student_name":"Laxman","department":"BSC Comp Science","status":"absent","confidence":0.95,"message":"Mark Laxman as absent"}
@@ -399,13 +401,13 @@ Now parse: ${prompt}`;
 
   // Try models in order until one works
   let lastError: Error | null = null;
-  
+
   for (const model of MODEL_OPTIONS) {
     try {
       // Try v1beta first
       const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+
       if (text) {
         // Success! Parse the response
         return parseAIResponse(text, context);
@@ -472,15 +474,15 @@ Output: {"queryType":"student_count","department":"Computer Science","confidence
 Now parse: ${prompt}`;
 
   let lastError: Error | null = null;
-  
+
   for (const model of MODEL_OPTIONS) {
     try {
       const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+
       if (text) {
         let jsonText = text.trim();
-        
+
         // Extract JSON
         if (jsonText.includes('```')) {
           const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -491,7 +493,7 @@ Now parse: ${prompt}`;
         }
 
         const parsed = JSON.parse(jsonText);
-        
+
         // Find student by name if provided
         if (parsed.student_name) {
           const matchingStudents = students.filter(
@@ -575,12 +577,12 @@ Provide a concise, actionable response with:
 Keep the response under 200 words and be specific with numbers.`;
 
   let lastError: Error | null = null;
-  
+
   for (const model of MODEL_OPTIONS) {
     try {
       const response = await tryGeminiModel(model, systemPrompt, 'v1beta');
       const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+
       if (text) {
         return text.trim();
       }
@@ -609,6 +611,15 @@ Keep the response under 200 words and be specific with numbers.`;
 
 function parseAIResponse(text: string, context: AIContext): AIAction {
   try {
+    // Check for chat/greeting messages
+    if (text.toLowerCase().match(/^(hi|hello|hey|greetings)/)) {
+      return {
+        action: 'chat',
+        confidence: 0.9,
+        message: 'Hello! I can help you manage students, attendance, and departments. What would you like to do?',
+      };
+    }
+
     // Check for department creation commands first
     const departmentMatch = text.match(/add\s+(?:new\s+)?department\s+(?:with\s+name\s+)?["']?([^"']+)["']?/i);
     if (departmentMatch) {
@@ -622,7 +633,7 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonText = text.trim();
-    
+
     // Remove markdown code blocks if present
     if (jsonText.includes('```')) {
       const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);

@@ -1,10 +1,10 @@
-export type UserRole = 
-  | 'admin' 
-  | 'vice_head' 
-  | 'teacher' 
-  | 'student' 
-  | 'housekeeping' 
-  | 'librarian' 
+export type UserRole =
+  | 'admin'
+  | 'vice_head'
+  | 'teacher'
+  | 'student'
+  | 'housekeeping'
+  | 'librarian'
   | 'accountant';
 
 export interface Permission {
@@ -65,6 +65,7 @@ export const PERMISSIONS: Permission[] = [
   { id: 'view_grades', name: 'View Grades', description: 'Can view student grades', category: 'academic' },
   { id: 'edit_grades', name: 'Edit Grades', description: 'Can modify student grades', category: 'academic' },
   { id: 'manage_timetable', name: 'Manage Timetable', description: 'Can create and edit timetables', category: 'academic' },
+  { id: 'manage_exam', name: 'Manage Examinations', description: 'Can manage exams and results', category: 'academic' },
   { id: 'view_finance', name: 'View Financial Data', description: 'Can view fee and payment records', category: 'finance' },
   { id: 'manage_finance', name: 'Manage Finances', description: 'Can process payments and fees', category: 'finance' },
   { id: 'manage_library', name: 'Manage Library', description: 'Can manage library books and loans', category: 'facility' },
@@ -75,7 +76,7 @@ export const PERMISSIONS: Permission[] = [
 
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
   admin: PERMISSIONS.map(p => p.id),
-  vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_finance', 'view_staff', 'manage_staff'],
+  vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'manage_exam', 'view_finance', 'view_staff', 'manage_staff'],
   teacher: ['view_students', 'manage_attendance', 'view_grades', 'edit_grades', 'view_staff'],
   student: [], // Students can only view their own data, no additional permissions needed
   housekeeping: ['manage_facilities'],
@@ -86,7 +87,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
 // Permissions that are allowed for each role
 export const ROLE_ALLOWED_PERMISSIONS: Record<UserRole, string[]> = {
   admin: PERMISSIONS.map(p => p.id), // Admins can have all permissions
-  vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_finance', 'view_staff', 'manage_staff'],
+  vice_head: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'manage_exam', 'view_finance', 'view_staff', 'manage_staff'],
   teacher: ['view_students', 'edit_students', 'manage_attendance', 'view_grades', 'edit_grades', 'manage_timetable', 'view_staff'], // Teachers cannot view/manage finance
   student: [], // Students cannot have any permissions (they can only view their own data by default)
   housekeeping: ['manage_facilities'],

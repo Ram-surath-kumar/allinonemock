@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 import { Sparkles, Loader2, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,7 +64,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       if (studentsData) {
         const departmentIds = [...new Set(studentsData.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
         let deptMap = new Map<string, string>();
-        
+
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
@@ -123,19 +124,19 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully marked ${action.student_name} as ${action.status}.`);
-        
+
         // Navigate to attendance page
         if (onNavigate) {
           onNavigate('/attendance');
         } else {
           navigate('/attendance');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
         }, 1000);
-        
+
         window.dispatchEvent(new CustomEvent('attendance-updated'));
       } catch (error: any) {
         console.error('Error marking attendance:', error);
@@ -181,14 +182,14 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
-        
+
         // Navigate to tools page
         if (onNavigate) {
           onNavigate('/tools');
         } else {
           navigate('/tools');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -196,7 +197,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       } catch (error) {
         console.error('Error creating department:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
-        
+
         // Check if it's a service role key error
         if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
           addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
@@ -204,6 +205,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           addMessage('assistant', `❌ Error: ${errorMessage}`);
         }
       }
+    } else if (action.action === 'chat') {
+      addMessage('assistant', action.message || 'Hello! How can I help you today?');
     } else {
       addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", or ask me a question about your data.');
     }
@@ -212,10 +215,10 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
   const handleDataQuery = async (query: string) => {
     try {
       const currentDate = format(new Date(), 'yyyy-MM-dd');
-      
+
       // Parse the query intent
       const intent = await parseDataQueryIntent(query, students, currentDate);
-      
+
       if (intent.confidence < 0.5) {
         addMessage('assistant', 'I\'m not sure I understood your question. Could you rephrase it?');
         return;
@@ -246,7 +249,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           }
 
           const student = matchingStudents[0];
-          
+
           // Get attendance for the date
           const attendanceResponse = await api.getAttendance({
             date: intent.date,
@@ -259,7 +262,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           }
 
           const attendanceData = attendanceResponse.data;
-          
+
           if (!attendanceData || attendanceData.length === 0) {
             response = `${student.name} has no attendance record for ${intent.date === currentDate ? 'today' : intent.date}.`;
           } else {
@@ -362,7 +365,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!prompt.trim()) {
       return;
     }
@@ -371,7 +374,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
     setPrompt('');
     addMessage('user', userPrompt);
     setLoading(true);
-    
+
     try {
       // Load data if not loaded
       if (students.length === 0) {
@@ -380,9 +383,9 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
       const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-                         /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-                         userPrompt.includes('?') ||
-                         /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
+        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
+        userPrompt.includes('?') ||
+        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
 
       if (isDataQuery) {
         // Handle as data query - query database
@@ -411,20 +414,32 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
     }
   };
 
-  return (
+  useEffect(() => {
+    console.log("AIAssistantChat mounted");
+  }, []);
+
+  return createPortal(
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Positioned at bottom-24 to avoid bottom corner overlays */}
+      {/* Floating Button - Positioned at bottom-24 to avoid bottom corner overlays */}
       {!isOpen && (
         <button
+          type="button"
           onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full",
+            "fixed bottom-24 right-6 z-[9999] h-14 w-14 rounded-full",
             "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
-            "shadow-depth-2 hover:shadow-glow transition-all duration-300",
-            "hover-lift active:scale-95",
+            "shadow-depth-2 hover:shadow-glow transition-all duration-300 pointer-events-auto",
+            "hover-lift active:scale-95 cursor-pointer",
             "flex items-center justify-center",
             "group focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
           )}
+          style={{
+            zIndex: 2147483647,
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+            position: 'fixed'
+          }}
           aria-label="Open AI Assistant"
         >
           <Sparkles className="h-6 w-6 animate-pulse group-hover:animate-spin transition-transform" />
@@ -435,12 +450,17 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       {/* Chat Widget */}
       {isOpen && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-2xl shadow-depth-3",
+          "fixed bottom-24 right-6 z-[9999] rounded-2xl shadow-depth-3",
           "bg-card border border-border/30 glass-modern",
           "transition-all duration-300",
           isMinimized ? "w-80 h-16" : "w-96 h-[600px]",
           "flex flex-col overflow-hidden"
-        )} role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+        )}
+          style={{
+            zIndex: 2147483647,
+            pointerEvents: 'auto'
+          }}
+          role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-primary/5 to-primary/10">
             <div className="flex items-center gap-2">
@@ -515,13 +535,20 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
 
               {/* Input */}
               <form onSubmit={handleSubmit} className="p-4 border-t border-border/30">
-                <div className="flex gap-2">
-                  <Input
+                <div className="flex gap-2 relative" style={{ zIndex: 2147483647 }}>
+                  <input
                     placeholder="Ask me anything..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
-                    className="flex-1 rounded-full"
+                    autoFocus
+                    className="flex-1 rounded-full px-4 py-2 border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-muted-foreground"
+                    style={{
+                      pointerEvents: 'auto',
+                      userSelect: 'text',
+                      zIndex: 2147483647,
+                      position: 'relative'
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -548,6 +575,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           )}
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

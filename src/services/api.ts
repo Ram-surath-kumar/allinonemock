@@ -128,7 +128,7 @@ class ApiClient {
         }
 
         const result = await response.json();
-        
+
         // Cache successful GET responses
         if (cacheKey && result.data !== null && result.error === null) {
           apiCache.set(cacheKey, result.data);
@@ -294,12 +294,7 @@ class ApiClient {
     return this.request<any[]>(`/attendance${query ? `?${query}` : ''}`);
   }
 
-  async markAttendance(records: AttendanceRecord[]) {
-    return this.request('/attendance', {
-      method: 'POST',
-      body: JSON.stringify(records),
-    });
-  }
+
 
   // Notifications
   async getNotifications(params?: { user_id?: string; read?: boolean; limit?: number }): Promise<ApiResponse<any[]>> {
@@ -371,8 +366,8 @@ class ApiClient {
    * Combines: students, departments, attendance records, teacher departments, user info
    */
   async getAttendancePageData(
-    userId?: string, 
-    role?: string, 
+    userId?: string,
+    role?: string,
     date?: string
   ): Promise<ApiResponse<AttendancePageData>> {
     const params = new URLSearchParams();
@@ -450,6 +445,93 @@ class ApiClient {
     if (role) params.append('role', role);
     const query = params.toString();
     return this.request(`/finance${query ? `?${query}` : ''}`);
+  }
+  // Hostel Module
+  async getHostelDashboard(): Promise<ApiResponse<any>> {
+    return this.request('/hostel/dashboard');
+  }
+
+  async createHostel(data: any): Promise<ApiResponse<any>> {
+    return this.request('/hostel', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createRoom(data: any): Promise<ApiResponse<any>> {
+    return this.request('/hostel/rooms', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async applyForHostel(data: any): Promise<ApiResponse<any>> {
+    return this.request('/hostel/apply', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async allocateBed(data: any): Promise<ApiResponse<any>> {
+    return this.request('/hostel/allocate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Examination Module
+  async getExamDashboard(): Promise<ApiResponse<any>> {
+    return this.request('/exam/dashboard');
+  }
+
+  async getExams(): Promise<ApiResponse<any[]>> {
+    return this.request('/exam/list');
+  }
+
+  async createExam(data: any): Promise<ApiResponse<any>> {
+    return this.request('/exam/create', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getTimetable(examId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/exam/timetable/${examId}`);
+  }
+
+  async createTimetableEntry(data: any): Promise<ApiResponse<any>> {
+    return this.request('/exam/timetable', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateHallTickets(examId: string): Promise<ApiResponse<any>> {
+    return this.request(`/exam/hall-tickets/generate/${examId}`, {
+      method: 'POST'
+    });
+  }
+
+  async getHallTickets(examId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/exam/hall-tickets/${examId}`);
+  }
+
+  async submitMarks(data: any): Promise<ApiResponse<any>> {
+    return this.request('/exam/marks/submit', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async generateSeatingPlan(data: { exam_id: string; center_id: string; room_capacity: number }): Promise<ApiResponse<any>> {
+    return this.request('/exam/seating/generate', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getSeatingPlan(examId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/exam/seating/${examId}`);
   }
 }
 

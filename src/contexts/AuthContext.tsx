@@ -4,6 +4,7 @@ import { api } from '@/services/api';
 
 interface AuthContextType {
   currentUser: User | null;
+  loading: boolean;
   login: (roleOrUserId: UserRole | string, orgName?: string, userId?: number) => Promise<void>; // Can accept role, user ID, or orgName + userId
   logout: () => void;
   canManageRole: (targetRole: UserRole) => boolean;
@@ -184,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error loading user:', error);
+      console.log('Login failed for email:', ROLE_EMAIL_MAP[role]);
     } finally {
       setLoading(false);
     }
@@ -198,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check if it's a UUID (user ID) or a role
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roleOrUserId);
-    
+
     if (isUUID) {
       await loadUserById(roleOrUserId);
     } else {
@@ -221,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, canManageRole, hasPermission }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, logout, canManageRole, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

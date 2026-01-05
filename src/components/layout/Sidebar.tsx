@@ -1,11 +1,11 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  GraduationCap, 
-  Calendar, 
-  BookOpen, 
-  CreditCard, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  Calendar,
+  BookOpen,
+  CreditCard,
+  Settings,
   Building2,
   LogOut,
   ChevronDown,
@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   Clock,
   FileText,
-  Wrench
+  Wrench,
+  BedDouble
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +47,8 @@ const navItems: NavItem[] = [
   { icon: BookOpen, label: 'Academics', href: '/academics', permission: 'view_grades' },
   { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
+  { icon: BedDouble, label: 'Hostel', href: '/hostel' },
+  { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
@@ -129,14 +132,14 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
 
         const orgIds = [...new Set(data.filter((u: ApiUserRow) => u.org_id).map((u: ApiUserRow) => u.org_id))];
         const orgMap = new Map<number, { id: number; org_id: number; org_code: string; org_name: string }>();
-        
+
         if (orgIds.length > 0) {
           for (const orgId of orgIds) {
             if (orgId) {
-            const orgResponse = await api.getOrganizations({ id: String(orgId) });
+              const orgResponse = await api.getOrganizations({ id: String(orgId) });
               if (!orgResponse.error && orgResponse.data && Array.isArray(orgResponse.data) && orgResponse.data.length > 0) {
                 const org = orgResponse.data[0] as { id: number; org_id: number; org_code: string; org_name: string };
-              orgMap.set(org.id, org);
+                orgMap.set(org.id, org);
               }
             }
           }
@@ -145,24 +148,24 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
         const mappedUsers: User[] = data.map((row: ApiUserRow) => {
           const org = row.org_id ? orgMap.get(row.org_id) : undefined;
           return {
-          id: row.id,
-          loopid: row.loopid,
-          org_id: row.org_id,
-          user_id: row.user_id,
-          name: row.name,
-          email: row.email,
-          role: row.role as UserRole,
-          permissions: row.permissions || [],
-          department: row.department,
-          createdAt: new Date(row.created_at),
-          status: row.status as 'active' | 'inactive',
-          avatar: row.avatar,
+            id: row.id,
+            loopid: row.loopid,
+            org_id: row.org_id,
+            user_id: row.user_id,
+            name: row.name,
+            email: row.email,
+            role: row.role as UserRole,
+            permissions: row.permissions || [],
+            department: row.department,
+            createdAt: new Date(row.created_at),
+            status: row.status as 'active' | 'inactive',
+            avatar: row.avatar,
             organization: org ? {
               id: org.id,
               org_id: org.org_id,
               org_code: org.org_code,
               org_name: org.org_name,
-          } : undefined,
+            } : undefined,
           };
         });
         setAllUsers(mappedUsers);
@@ -185,7 +188,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       console.error('User does not have organization or user_id');
       return;
     }
-    
+
     const pathToTab: Record<string, string> = {
       '/': 'dashboard',
       '/users': 'users',
@@ -196,9 +199,9 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       '/facilities': 'facilities',
       '/settings': 'settings',
     };
-    
+
     const currentTab = pathToTab[currentPath] || 'dashboard';
-    
+
     if (user.user_id && user.organization?.org_name) {
       navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
       await login('', user.organization.org_name, user.user_id);
@@ -234,8 +237,8 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
           collapsed ? "h-10 w-10" : "h-11 w-11"
         )} aria-hidden="true">
           {currentUser?.organization?.org_logo ? (
-            <img 
-              src={currentUser.organization.org_logo} 
+            <img
+              src={currentUser.organization.org_logo}
               alt={currentUser.organization.org_name || "College Logo"}
               className={cn(
                 "object-cover",
@@ -271,7 +274,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.href;
-          
+
           return (
             <button
               key={item.href}
@@ -280,16 +283,16 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 "group relative flex items-center rounded-xl text-sm font-medium",
                 "transition-all duration-200",
                 "hover:scale-[1.02] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
-                collapsed 
-                  ? "justify-center w-full py-3" 
+                collapsed
+                  ? "justify-center w-full py-3"
                   : "justify-start w-full gap-4 px-4 py-3.5",
                 collapsed && isActive
                   ? "px-2.5"
                   : collapsed
-                  ? "px-1.5"
-                  : "",
-                isActive 
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+                    ? "px-1.5"
+                    : "",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
                   : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm"
               )}
               title={collapsed ? item.label : undefined}
@@ -301,7 +304,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 "h-5 w-5",
                 isActive ? "scale-110" : "group-hover:scale-110"
               )} />
-              
+
               <span className={cn(
                 "relative z-10 whitespace-nowrap overflow-hidden transition-[max-width,opacity] duration-300 ease-out",
                 collapsed ? "max-w-0 opacity-0" : "max-w-[180px] opacity-100",
@@ -309,7 +312,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
               )}>
                 {item.label}
               </span>
-              
+
               {isActive && !collapsed && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-sidebar-primary-foreground/30" />
               )}
@@ -325,18 +328,18 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-        {/* User Profile */}
+      {/* User Profile */}
       <div className={cn(
         "border-t border-sidebar-border bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
         collapsed ? "p-1.5" : "p-3"
       )}>
-          <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
-            <DropdownMenuTrigger asChild>
+        <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
+          <DropdownMenuTrigger asChild>
             <button className={cn(
               "flex w-full items-center rounded-xl text-left",
               "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
-              collapsed 
-                ? "justify-center px-0 py-3" 
+              collapsed
+                ? "justify-center px-0 py-3"
                 : "justify-start gap-3 px-3 py-3"
             )}>
               <div className={cn(
@@ -359,7 +362,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 "shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
                 collapsed ? "w-0 opacity-0" : "w-4 opacity-100"
               )}>
-              <ChevronDown className="h-4 w-4 text-sidebar-muted transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                <ChevronDown className="h-4 w-4 text-sidebar-muted transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </div>
             </button>
           </DropdownMenuTrigger>
@@ -377,7 +380,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
               </div>
             ) : (
               allUsers.map((user) => (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   key={user.id}
                   onClick={() => handleUserSwitch(user)}
                   className={cn(

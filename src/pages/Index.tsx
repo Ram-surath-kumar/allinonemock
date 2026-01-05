@@ -6,38 +6,44 @@ import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load pages with better code splitting
-const Dashboard = lazy(() => 
+const Dashboard = lazy(() =>
   import('@/pages/Dashboard').then(module => ({ default: module.Dashboard }))
 );
-const UserManagement = lazy(() => 
+const UserManagement = lazy(() =>
   import('@/pages/UserManagement').then(module => ({ default: module.UserManagement }))
 );
-const Students = lazy(() => 
+const Students = lazy(() =>
   import('@/pages/Students').then(module => ({ default: module.Students }))
 );
-const Attendance = lazy(() => 
+const Attendance = lazy(() =>
   import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
 );
-const PersonalDetails = lazy(() => 
+const PersonalDetails = lazy(() =>
   import('@/pages/student/PersonalDetails').then(module => ({ default: module.PersonalDetails }))
 );
-const GradesMarks = lazy(() => 
+const GradesMarks = lazy(() =>
   import('@/pages/student/GradesMarks').then(module => ({ default: module.GradesMarks }))
 );
-const AttendanceDetails = lazy(() => 
+const AttendanceDetails = lazy(() =>
   import('@/pages/student/AttendanceDetails').then(module => ({ default: module.AttendanceDetails }))
 );
-const Timetable = lazy(() => 
+const Timetable = lazy(() =>
   import('@/pages/student/Timetable').then(module => ({ default: module.Timetable }))
 );
-const FeePayment = lazy(() => 
+const FeePayment = lazy(() =>
   import('@/pages/student/FeePayment').then(module => ({ default: module.FeePayment }))
 );
-const Tools = lazy(() => 
+const Tools = lazy(() =>
   import('@/pages/Tools').then(module => ({ default: module.Tools }))
 );
-const Finance = lazy(() => 
+const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
+);
+const HostelDashboard = lazy(() =>
+  import('@/pages/Hostel/HostelDashboard').then(module => ({ default: module.default }))
+);
+const ExamDashboard = lazy(() =>
+  import('@/pages/Exam/ExamDashboard').then(module => ({ default: module.default }))
 );
 
 // Enhanced skeleton loader with shimmer effect
@@ -77,6 +83,8 @@ function AppContent() {
     'attendance': '/attendance',
     'academics': '/academics',
     'finance': '/finance',
+    'hostel': '/hostel',
+    'exam': '/exam',
     'facilities': '/facilities',
     'settings': '/settings',
     'personal-details': '/student/personal-details',
@@ -94,6 +102,8 @@ function AppContent() {
     '/attendance': 'attendance',
     '/academics': 'academics',
     '/finance': 'finance',
+    '/hostel': 'hostel',
+    '/exam': 'exam',
     '/facilities': 'facilities',
     '/settings': 'settings',
     '/student/personal-details': 'personal-details',
@@ -108,16 +118,16 @@ function AppContent() {
   useEffect(() => {
     const initializeUser = async () => {
       try {
-    if (orgName && userId) {
-      const userIdNum = parseInt(userId, 10);
-      if (!isNaN(userIdNum)) {
-        // Load user by org name and user_id
-        login('', orgName, userIdNum);
-      }
-    } else if (!currentUser) {
-      // Default to admin if no user and no URL params
-      login('admin');
-    }
+        if (orgName && userId) {
+          const userIdNum = parseInt(userId, 10);
+          if (!isNaN(userIdNum)) {
+            // Load user by org name and user_id
+            login('', orgName, userIdNum);
+          }
+        } else if (!currentUser) {
+          // Default to admin if no user and no URL params
+          login('admin');
+        }
       } catch (error) {
         console.error('Error initializing user:', error);
       } finally {
@@ -125,7 +135,7 @@ function AppContent() {
         setTimeout(() => setIsInitializing(false), 1000);
       }
     };
-    
+
     initializeUser();
   }, [orgName, userId]);
 
@@ -134,11 +144,11 @@ function AppContent() {
     if (currentUser?.organization && currentUser.user_id) {
       const currentTab = tab || pathToTab[location.pathname] || 'dashboard';
       const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
-      
+
       // Only update if URL is different
-      if (location.pathname !== newPath && (!orgName || !userId || 
-          orgName !== currentUser.organization.org_name || 
-          parseInt(userId || '0', 10) !== currentUser.user_id)) {
+      if (location.pathname !== newPath && (!orgName || !userId ||
+        orgName !== currentUser.organization.org_name ||
+        parseInt(userId || '0', 10) !== currentUser.user_id)) {
         navigate(newPath, { replace: true });
       }
     }
@@ -154,11 +164,11 @@ function AppContent() {
         navigate(path);
       }
     } else {
-    const tabName = pathToTab[path] || 'dashboard';
-    if (currentUser?.organization && currentUser.user_id) {
-      navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
-    } else {
-      navigate(path);
+      const tabName = pathToTab[path] || 'dashboard';
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
       }
     }
   };
@@ -169,15 +179,15 @@ function AppContent() {
     if (tab) {
       // Check if it's a direct path mapping
       if (tabToPath[tab]) {
-      return tabToPath[tab];
-    }
+        return tabToPath[tab];
+      }
       // For standard routes like 'users', 'students', etc., map them directly
       const standardPath = `/${tab}`;
       if (pathToTab[standardPath]) {
         return standardPath;
       }
     }
-    
+
     // Fallback: try to extract from location pathname
     const pathParts = location.pathname.split('/').filter(Boolean);
     if (pathParts.length >= 3) {
@@ -192,12 +202,12 @@ function AppContent() {
         return standardPath;
       }
     }
-    
+
     // Final fallback
     if (location.pathname.startsWith('/student/')) {
       return location.pathname;
     }
-    
+
     return '/';
   };
 
@@ -222,6 +232,10 @@ function AppContent() {
         return 'Academics';
       case '/finance':
         return 'Finance';
+      case '/hostel':
+        return 'Hostel Management';
+      case '/exam':
+        return 'Examinations';
       case '/facilities':
         return 'Facilities';
       case '/settings':
@@ -245,7 +259,10 @@ function AppContent() {
 
   const getPageSubtitle = () => {
     if (currentPath === '/') {
-      return `Welcome back, ${currentUser?.name.split(' ')[0]}`;
+      if (currentUser?.name) {
+        return `Welcome back, ${currentUser.name.split(' ')[0]}`;
+      }
+      return 'Welcome back';
     }
     return undefined;
   };
@@ -261,10 +278,10 @@ function AppContent() {
       case '/users':
         return (
           <Suspense fallback={<PageLoader />}>
-          <UserManagement 
-            dialogOpen={addUserDialogOpen} 
-            setDialogOpen={setAddUserDialogOpen} 
-          />
+            <UserManagement
+              dialogOpen={addUserDialogOpen}
+              setDialogOpen={setAddUserDialogOpen}
+            />
           </Suspense>
         );
       case '/students':
@@ -321,6 +338,18 @@ function AppContent() {
             <Finance />
           </Suspense>
         );
+      case '/hostel':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <HostelDashboard />
+          </Suspense>
+        );
+      case '/exam':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ExamDashboard />
+          </Suspense>
+        );
       case '/academics':
       case '/facilities':
       case '/settings':
@@ -349,7 +378,7 @@ function AppContent() {
       setIsInitializing(false);
     }
   }, [currentUser, loading]);
-  
+
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

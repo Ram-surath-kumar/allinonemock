@@ -209,8 +209,13 @@ public class SupabaseService {
             ? "resolution=merge-duplicates,return=representation" 
             : "return=representation";
 
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(getApiUrl(table)).newBuilder();
+        if (conflictColumn != null && !conflictColumn.isEmpty()) {
+            urlBuilder.addQueryParameter("on_conflict", conflictColumn);
+        }
+
         Request request = new Request.Builder()
-                .url(getApiUrl(table))
+                .url(urlBuilder.build())
                 .header("apikey", getApiKey())
                 .header("Authorization", getAuthHeader())
                 .header("Content-Type", "application/json")

@@ -1,0 +1,183 @@
+time="2026-01-04T16:27:22+05:30" level=warning msg="/Users/subanesh/ERP FINAL/schoolsphere-admin/backend/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+#1 [internal] load local bake definitions
+#1 reading from stdin 561B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 982B 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21-alpine
+#3 ...
+
+#4 [auth] library/maven:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [auth] library/eclipse-temurin:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [internal] load metadata for docker.io/library/eclipse-temurin:21-jre-alpine
+#6 DONE 2.3s
+
+#3 [internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21-alpine
+#3 DONE 2.5s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 216B done
+#7 DONE 0.0s
+
+#8 [stage-1 1/5] FROM docker.io/library/eclipse-temurin:21-jre-alpine@sha256:326837fba06a8ff5482a17bafbd65319e64a6e997febb7c85ebe7e3f73c12b11
+#8 resolve docker.io/library/eclipse-temurin:21-jre-alpine@sha256:326837fba06a8ff5482a17bafbd65319e64a6e997febb7c85ebe7e3f73c12b11 0.0s done
+#8 DONE 0.0s
+
+#9 [build 1/6] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21-alpine@sha256:5a8b906c4faa11d33f6c74758f67db8eac25441e14b0729f6d50ff78992be58a
+#9 resolve docker.io/library/maven:3.9.9-eclipse-temurin-21-alpine@sha256:5a8b906c4faa11d33f6c74758f67db8eac25441e14b0729f6d50ff78992be58a 0.0s done
+#9 DONE 0.0s
+
+#10 [internal] load build context
+#10 transferring context: 3.99kB done
+#10 DONE 0.0s
+
+#11 [build 4/6] RUN mvn dependency:go-offline -B
+#11 CACHED
+
+#12 [build 2/6] WORKDIR /app
+#12 CACHED
+
+#13 [build 3/6] COPY pom.xml ./
+#13 CACHED
+
+#14 [build 5/6] COPY src ./src
+#14 CACHED
+
+#15 [build 6/6] RUN mvn clean package -DskipTests -B
+#15 2.969 [INFO] Scanning for projects...
+#15 3.355 [INFO] 
+#15 3.355 [INFO] -------------------< com.schoolsphere:admin-backend >-------------------
+#15 3.355 [INFO] Building SchoolSphere Admin Backend 1.0.0
+#15 3.355 [INFO]   from pom.xml
+#15 3.355 [INFO] --------------------------------[ jar ]---------------------------------
+#15 3.932 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.13.6/micrometer-observation-1.13.6.pom
+#15 5.104 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.13.6/micrometer-observation-1.13.6.pom (3.8 kB at 3.3 kB/s)
+#15 5.123 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.13.6/micrometer-commons-1.13.6.pom
+#15 5.166 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.13.6/micrometer-commons-1.13.6.pom (3.4 kB at 81 kB/s)
+#15 5.329 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.pom
+#15 5.366 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.pom (19 kB at 502 kB/s)
+#15 5.369 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/logging-parent/1.0.1.Final/logging-parent-1.0.1.Final.pom
+#15 5.414 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/logging-parent/1.0.1.Final/logging-parent-1.0.1.Final.pom (6.0 kB at 132 kB/s)
+#15 5.426 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/classmate/1.7.0/classmate-1.7.0.pom
+#15 5.499 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/classmate/1.7.0/classmate-1.7.0.pom (7.0 kB at 97 kB/s)
+#15 5.511 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.25/kotlin-stdlib-jdk8-1.9.25.pom
+#15 5.548 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.25/kotlin-stdlib-jdk8-1.9.25.pom (1.6 kB at 42 kB/s)
+#15 5.551 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.25/kotlin-stdlib-1.9.25.pom
+#15 5.581 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.25/kotlin-stdlib-1.9.25.pom (2.8 kB at 95 kB/s)
+#15 5.592 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.25/kotlin-stdlib-jdk7-1.9.25.pom
+#15 5.624 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.25/kotlin-stdlib-jdk7-1.9.25.pom (1.4 kB at 43 kB/s)
+#15 5.627 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.25/kotlin-stdlib-common-1.9.25.pom
+#15 5.661 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.25/kotlin-stdlib-common-1.9.25.pom (1.8 kB at 55 kB/s)
+#15 5.725 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.pom
+#15 5.924 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.pom (16 kB at 80 kB/s)
+#15 5.929 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-parent/1.14.19/byte-buddy-parent-1.14.19.pom
+#15 6.017 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-parent/1.14.19/byte-buddy-parent-1.14.19.pom (62 kB at 715 kB/s)
+#15 6.046 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.pom
+#15 6.084 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.pom (10 kB at 275 kB/s)
+#15 6.146 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.13.6/micrometer-observation-1.13.6.jar
+#15 6.223 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.13.6/micrometer-observation-1.13.6.jar (72 kB at 932 kB/s)
+#15 6.224 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.13.6/micrometer-commons-1.13.6.jar
+#15 6.225 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar
+#15 6.226 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar
+#15 6.227 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.25/kotlin-stdlib-common-1.9.25.jar
+#15 6.228 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.25/kotlin-stdlib-jdk8-1.9.25.jar
+#15 6.370 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.13.6/micrometer-commons-1.13.6.jar (48 kB at 325 kB/s)
+#15 6.370 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.25/kotlin-stdlib-1.9.25.jar
+#15 6.433 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar (59 kB at 283 kB/s)
+#15 6.433 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.25/kotlin-stdlib-jdk7-1.9.25.jar
+#15 6.491 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar (69 kB at 260 kB/s)
+#15 6.491 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar
+#15 6.496 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.25/kotlin-stdlib-jdk8-1.9.25.jar (967 B at 3.6 kB/s)
+#15 6.496 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar
+#15 6.551 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.9.25/kotlin-stdlib-jdk7-1.9.25.jar (961 B at 3.0 kB/s)
+#15 6.551 [INFO] Downloading from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar
+#15 6.995 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar (69 kB at 91 kB/s)
+#15 8.116 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.25/kotlin-stdlib-1.9.25.jar (1.7 MB at 911 kB/s)
+#15 8.198 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.25/kotlin-stdlib-common-1.9.25.jar (227 kB at 115 kB/s)
+#15 8.354 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar (263 kB at 124 kB/s)
+#15 9.517 [INFO] Downloaded from central: https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar (4.2 MB at 1.3 MB/s)
+#15 9.582 [INFO] 
+#15 9.583 [INFO] --- clean:3.3.2:clean (default-clean) @ admin-backend ---
+#15 9.717 [INFO] 
+#15 9.717 [INFO] --- resources:3.3.1:resources (default-resources) @ admin-backend ---
+#15 9.903 [INFO] Copying 2 resources from src/main/resources to target/classes
+#15 9.930 [INFO] Copying 1 resource from src/main/resources to target/classes
+#15 9.935 [INFO] 
+#15 9.935 [INFO] --- compiler:3.13.0:compile (default-compile) @ admin-backend ---
+#15 10.13 [INFO] Recompiling the module because of changed source code.
+#15 10.13 [INFO] Compiling 39 source files with javac [debug parameters release 21] to target/classes
+#15 12.32 [INFO] Annotation processing is enabled because one or more processors were found
+#15 12.32   on the class path. A future release of javac may disable annotation processing
+#15 12.32   unless at least one processor is specified by name (-processor), or a search
+#15 12.32   path is specified (--processor-path, --processor-module-path), or annotation
+#15 12.32   processing is enabled explicitly (-proc:only, -proc:full).
+#15 12.32   Use -Xlint:-options to suppress this message.
+#15 12.32   Use -proc:none to disable annotation processing.
+#15 12.32 [INFO] /app/src/main/java/com/schoolsphere/service/ExaminationService.java: /app/src/main/java/com/schoolsphere/service/ExaminationService.java uses unchecked or unsafe operations.
+#15 12.32 [INFO] /app/src/main/java/com/schoolsphere/service/ExaminationService.java: Recompile with -Xlint:unchecked for details.
+#15 12.32 [INFO] -------------------------------------------------------------
+#15 12.32 [ERROR] COMPILATION ERROR : 
+#15 12.32 [INFO] -------------------------------------------------------------
+#15 12.32 [ERROR] /app/src/main/java/com/schoolsphere/service/ExaminationService.java:[188,25] incompatible types: cannot infer type-variable(s) R,A,capture#1 of ?,T
+#15 12.32     (argument mismatch; java.util.stream.Collector<java.util.Map<java.lang.String,java.lang.Object>,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>> cannot be converted to java.util.stream.Collector<? super java.util.Map,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>>)
+#15 12.32 [INFO] 1 error
+#15 12.32 [INFO] -------------------------------------------------------------
+#15 12.33 [INFO] ------------------------------------------------------------------------
+#15 12.33 [INFO] BUILD FAILURE
+#15 12.33 [INFO] ------------------------------------------------------------------------
+#15 12.33 [INFO] Total time:  9.386 s
+#15 12.33 [INFO] Finished at: 2026-01-04T10:57:38Z
+#15 12.33 [INFO] ------------------------------------------------------------------------
+#15 12.33 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project admin-backend: Compilation failure
+#15 12.33 [ERROR] /app/src/main/java/com/schoolsphere/service/ExaminationService.java:[188,25] incompatible types: cannot infer type-variable(s) R,A,capture#1 of ?,T
+#15 12.33 [ERROR]     (argument mismatch; java.util.stream.Collector<java.util.Map<java.lang.String,java.lang.Object>,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>> cannot be converted to java.util.stream.Collector<? super java.util.Map,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>>)
+#15 12.33 [ERROR] -> [Help 1]
+#15 12.33 [ERROR] 
+#15 12.33 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+#15 12.33 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+#15 12.33 [ERROR] 
+#15 12.33 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+#15 12.33 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+#15 ERROR: process "/bin/sh -c mvn clean package -DskipTests -B" did not complete successfully: exit code: 1
+------
+ > [build 6/6] RUN mvn clean package -DskipTests -B:
+12.33 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project admin-backend: Compilation failure
+12.33 [ERROR] /app/src/main/java/com/schoolsphere/service/ExaminationService.java:[188,25] incompatible types: cannot infer type-variable(s) R,A,capture#1 of ?,T
+12.33 [ERROR]     (argument mismatch; java.util.stream.Collector<java.util.Map<java.lang.String,java.lang.Object>,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>> cannot be converted to java.util.stream.Collector<? super java.util.Map,capture#2 of ?,java.util.List<java.util.Map<java.lang.String,java.lang.Object>>>)
+12.33 [ERROR] -> [Help 1]
+12.33 [ERROR] 
+12.33 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+12.33 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+12.33 [ERROR] 
+12.33 [ERROR] For more information about the errors and possible solutions, please read the following articles:
+12.33 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+------
+Dockerfile:17
+
+--------------------
+
+  15 |     
+
+  16 |     # Build the application
+
+  17 | >>> RUN mvn clean package -DskipTests -B
+
+  18 |     
+
+  19 |     # Runtime stage
+
+--------------------
+
+failed to solve: process "/bin/sh -c mvn clean package -DskipTests -B" did not complete successfully: exit code: 1
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/r4lc162qm2hvtkygq2ka48hx2
+

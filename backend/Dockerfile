@@ -1,24 +1,20 @@
-# Use OpenJDK 21 as base image
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Use Maven image for building
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+# Copy pom.xml
+COPY pom.xml ./
 
-# Make mvnw executable
-RUN chmod +x ./mvnw
-
-# Download dependencies (this layer will be cached if pom.xml doesn't change)
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN ./mvnw clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
