@@ -30,6 +30,7 @@ import {
 import { api } from '@/services/api';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UIConfiguration } from '@/config/UIConfiguration';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
@@ -61,7 +62,8 @@ export function Sidebar({ currentPath, onNavigate }) {
   const [allUsers, setAllUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(true);
+  // Sidebar collapse state - only enabled if minimizeSidebar is true in UIConfiguration
+  const [collapsed, setCollapsed] = useState(UIConfiguration.minimizeSidebar ? true : false);
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -73,8 +75,15 @@ export function Sidebar({ currentPath, onNavigate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usersDropdownOpen]);
 
-  // Handle hover with 500ms delay
+  // Handle hover with 500ms delay - only if minimizeSidebar is enabled
   useEffect(() => {
+    // If minimizeSidebar is disabled, always keep sidebar expanded
+    if (!UIConfiguration.minimizeSidebar) {
+      setCollapsed(false);
+      return;
+    }
+
+    // Only handle hover collapse/expand if minimizeSidebar is enabled
     if (isHovered) {
       hoverTimeoutRef.current = setTimeout(() => {
         setCollapsed(false);
@@ -187,8 +196,8 @@ export function Sidebar({ currentPath, onNavigate }) {
   return (
     <aside
       ref={sidebarRef}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => UIConfiguration.minimizeSidebar && setIsHovered(true)}
+      onMouseLeave={() => UIConfiguration.minimizeSidebar && setIsHovered(false)}
       className={cn(
         "flex h-screen flex-col shadow-depth-2 border-r border-sidebar-border",
         "bg-sidebar backdrop-blur-xl transition-[width] duration-300 ease-out",
