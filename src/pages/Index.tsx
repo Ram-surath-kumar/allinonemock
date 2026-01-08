@@ -45,6 +45,9 @@ const HostelDashboard = lazy(() =>
 const ExamDashboard = lazy(() =>
   import('@/pages/Exam/ExamDashboard').then(module => ({ default: module.default }))
 );
+const LibraryDashboard = lazy(() =>
+  import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
+);
 
 // Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
@@ -85,6 +88,7 @@ function AppContent() {
     'finance': '/finance',
     'hostel': '/hostel',
     'exam': '/exam',
+    'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
     'personal-details': '/student/personal-details',
@@ -104,6 +108,7 @@ function AppContent() {
     '/finance': 'finance',
     '/hostel': 'hostel',
     '/exam': 'exam',
+    '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
     '/student/personal-details': 'personal-details',
@@ -236,6 +241,8 @@ function AppContent() {
         return 'Hostel Management';
       case '/exam':
         return 'Examinations';
+      case '/library':
+        return 'Library Management';
       case '/facilities':
         return 'Facilities';
       case '/settings':
@@ -348,6 +355,12 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <ExamDashboard />
+          </Suspense>
+        );
+      case '/library':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <LibraryDashboard />
           </Suspense>
         );
       case '/academics':

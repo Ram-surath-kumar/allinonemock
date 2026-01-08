@@ -533,6 +533,36 @@ class ApiClient {
   async getSeatingPlan(examId: string): Promise<ApiResponse<any[]>> {
     return this.request(`/exam/seating/${examId}`);
   }
+
+  // Library Module
+  async getLibraryBooks(filters?: Record<string, string>): Promise<ApiResponse<any[]>> {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+    }
+    const query = queryParams.toString();
+    return this.request<any[]>(`/library/books${query ? `?${query}` : ''}`);
+  }
+
+  async getLibraryMember(id: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/library/members/${id}`);
+  }
+
+  async issueLibraryBook(data: { member_id: string; copy_id: string }): Promise<ApiResponse<any>> {
+    return this.request('/library/issue', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async returnLibraryBook(data: { copy_id: string }): Promise<ApiResponse<any>> {
+    return this.request('/library/return', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);
