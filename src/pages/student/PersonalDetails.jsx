@@ -39,7 +39,7 @@ export function PersonalDetails() {
       if (currentUser?.id) {
         const response = await api.getUserById(currentUser.id);
         if (response.error) throw new Error(response.error);
-        
+
         const data = response.data;
         if (data) {
           setFormData({
@@ -94,170 +94,160 @@ export function PersonalDetails() {
 
   if (loading) {
     return (
-      
-        
-        
-      
+      <div className="space-y-6 p-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
     );
   }
 
   return (
-    
+    <div className="space-y-6 p-6">
       {/* Header Card */}
-      
-        
-          
-            Personal Details
-            View and manage your personal information
-          
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Personal Details</CardTitle>
+            <CardDescription>View and manage your personal information</CardDescription>
+          </div>
           {!editing ? (
-             setEditing(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              
+            <Button onClick={() => setEditing(true)} variant="outline" size="sm" className="gap-2">
+              <Edit2 className="h-4 w-4" />
               Edit
-            
+            </Button>
           ) : (
-            
-              
-                
+            <div className="flex gap-2">
+              <Button onClick={handleSave} size="sm" className="gap-2">
+                <Save className="h-4 w-4" />
                 Save
-              
-              
-                
+              </Button>
+              <Button onClick={handleCancel} variant="outline" size="sm" className="gap-2">
+                <X className="h-4 w-4" />
                 Cancel
-              
-            
+              </Button>
+            </div>
           )}
-        
-        
-          
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Basic Information */}
-            
-              Basic Information
-              
-              
-                
-                  
-                    
+            <div className="space-y-4">
+              <h3 className="font-semibold">Basic Information</h3>
+              <div className="h-px bg-border" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
                     Full Name
-                  
+                  </Label>
                   {editing ? (
-                     setFormData({ ...formData, name: e.target.value })}
-                    />
+                    <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                   ) : (
-                    {formData.name || 'Not provided'}
+                    <p className="text-sm text-muted-foreground">{formData.name || 'Not provided'}</p>
                   )}
-                
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
                     Email Address
-                  
+                  </Label>
                   {editing ? (
-                     setFormData({ ...formData, email: e.target.value })}
-                    />
+                    <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   ) : (
-                    {formData.email || 'Not provided'}
+                    <p className="text-sm text-muted-foreground">{formData.email || 'Not provided'}</p>
                   )}
-                
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
                     Phone Number
-                  
+                  </Label>
                   {editing ? (
-                     setFormData({ ...formData, phone: e.target.value })}
-                    />
+                    <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                   ) : (
-                    {formData.phone || 'Not provided'}
+                    <p className="text-sm text-muted-foreground">{formData.phone || 'Not provided'}</p>
                   )}
-                
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
                     Address
-                  
+                  </Label>
                   {editing ? (
-                     setFormData({ ...formData, address: e.target.value })}
-                    />
+                    <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
                   ) : (
-                    {formData.address || 'Not provided'}
+                    <p className="text-sm text-muted-foreground">{formData.address || 'Not provided'}</p>
                   )}
-                
-              
-            
+                </div>
+              </div>
+            </div>
 
             {/* Academic Information */}
-            
-              Academic Information
-              
-              
-                
-                  
-                    
+            <div className="space-y-4">
+              <h3 className="font-semibold">Academic Information</h3>
+              <div className="h-px bg-border" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
                     Student ID
-                  
-                  {formData.studentId || 'Not assigned'}
-                
+                  </Label>
+                  <p className="text-sm text-muted-foreground">{formData.studentId || 'Not assigned'}</p>
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
                     Department
-                  
-                  {formData.department || currentUser?.department || 'Not assigned'}
-                
+                  </Label>
+                  <p className="text-sm text-muted-foreground">{formData.department || currentUser?.department || 'Not assigned'}</p>
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
                     Date of Birth
-                  
+                  </Label>
                   {editing ? (
-                     setFormData({ ...formData, dateOfBirth: e.target.value })}
-                    />
+                    <Input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
                   ) : (
-                    
+                    <p className="text-sm text-muted-foreground">
                       {formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString() : 'Not provided'}
-                    
+                    </p>
                   )}
-                
+                </div>
 
-                
-                  
-                    
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
                     Admission Date
-                  
-                  
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
                     {formData.admissionDate ? new Date(formData.admissionDate).toLocaleDateString() : 'Not provided'}
-                  
-                
+                  </p>
+                </div>
 
                 {formData.year && (
-                  
-                    Year
-                    {formData.year}
-                  
+                  <div className="space-y-2">
+                    <Label>Year</Label>
+                    <p className="text-sm text-muted-foreground">{formData.year}</p>
+                  </div>
                 )}
 
                 {formData.semester && (
-                  
-                    Semester
-                    {formData.semester}
-                  
+                  <div className="space-y-2">
+                    <Label>Semester</Label>
+                    <p className="text-sm text-muted-foreground">{formData.semester}</p>
+                  </div>
                 )}
-              
-            
-          
-        
-      
-    
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
-
