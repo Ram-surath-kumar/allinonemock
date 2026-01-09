@@ -1,7 +1,21 @@
 import express from 'express';
 import cors from 'cors';
-import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+
+// Import route modules
+import usersRouter from './routes/users.js';
+import organizationsRouter from './routes/organizations.js';
+import departmentsRouter from './routes/departments.js';
+import teacherDepartmentsRouter from './routes/teacherDepartments.js';
+import attendanceRouter from './routes/attendance.js';
+import notificationsRouter from './routes/notifications.js';
+import dashboardRouter from './routes/dashboard.js';
+import rolesRouter from './routes/roles.js';
+import activitiesRouter from './routes/activities.js';
+
+// Import growth and finance routes (to be created)
+// import growthRouter from './routes/growth.js';
+// import financeRouter from './routes/finance.js';
 
 dotenv.config();
 
@@ -15,469 +29,516 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://vzkbyzpqnojhlazwopvz.supabase.co';
-// Use service role key for backend operations (bypasses RLS) if available, otherwise fall back to anon key
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2J5enBxbm9qaGxhendvcHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMTk2MTMsImV4cCI6MjA4MTc5NTYxM30.ledQxA84HlYEQyUTmp2VJ7U4lRkLMqKCYieQNL_ObuY';
-
-// Log which key is being used (for debugging)
-const hasValidServiceKey = supabaseServiceKey && 
-  supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE' && 
-  supabaseServiceKey.trim() !== '';
-
-if (!hasValidServiceKey) {
-  console.warn('⚠️  WARNING: SUPABASE_SERVICE_ROLE_KEY not found or is a placeholder.');
-  console.warn('⚠️  Write operations may fail due to Row Level Security (RLS) policies.');
-  console.warn('⚠️  Please add SUPABASE_SERVICE_ROLE_KEY to your server/.env file.');
-}
-
-if (!supabaseAnonKey || supabaseAnonKey === 'YOUR_ANON_KEY_HERE') {
-  console.error('❌ ERROR: SUPABASE_ANON_KEY is missing or invalid.');
-  console.error('❌ Please add SUPABASE_ANON_KEY to your server/.env file.');
-  process.exit(1);
-}
-
-// Use service role key for ALL operations (read and write) to avoid RLS issues
-// If service key is not available or is a placeholder, use anon key
-const supabase = hasValidServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : createClient(supabaseUrl, supabaseAnonKey);
-// Always use service role key for admin operations if available
-const supabaseAdmin = hasValidServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : createClient(supabaseUrl, supabaseAnonKey);
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend API is running' });
 });
 
-// ==================== USERS ENDPOINTS ====================
+// Register routes
+app.use('/api/users', usersRouter);
+app.use('/api/organizations', organizationsRouter);
+app.use('/api/departments', departmentsRouter);
+app.use('/api/teacher-departments', teacherDepartmentsRouter);
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api/roles', rolesRouter);
+app.use('/api/activities', activitiesRouter);
 
-// Get all users
-app.get('/api/users', async (req, res) => {
-  try {
-    const { role, status, department_id, org_id, user_id, email } = req.query;
-    
-    let query = supabase.from('users').select('*');
-    
-    if (role) query = query.eq('role', role);
-    if (status) query = query.eq('status', status);
-    if (department_id) query = query.eq('department_id', department_id);
-    if (org_id) query = query.eq('org_id', org_id);
-    if (user_id) query = query.eq('user_id', user_id);
-    if (email) query = query.eq('email', email);
-    
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
+// TODO: Register these routes once created
+// app.use('/api/growth', growthRouter);
+// app.use('/api/finance', financeRouter);
 
-// Get user by ID
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', req.params.id)
-      .single();
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
+// Temporary: Keep growth and finance endpoints in index.js until route files are created
+// This will be moved to route files in the next step
+import { supabaseAdmin } from './common.js';
+import { handleError, sendSuccess, sendValidationError } from './common.js';
 
-// Get users by department IDs
-app.post('/api/users/by-departments', async (req, res) => {
+// Growth endpoints (temporary - to be moved to routes/growth.js)
+app.get('/api/growth', async (req, res) => {
   try {
-    const { department_ids, role, status } = req.body;
+    const { metric, period = 'month' } = req.query;
     
-    let query = supabase.from('users').select('*');
-    
-    if (department_ids && department_ids.length > 0) {
-      query = query.in('department_id', department_ids);
+    if (!metric) {
+      return sendValidationError(res, 'metric parameter is required');
     }
-    if (role) query = query.eq('role', role);
-    if (status) query = query.eq('status', status);
-    
-    const { data, error } = await query.order('name', { ascending: true });
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
 
-// Create user
-app.post('/api/users', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .insert(req.body)
-      .select()
-      .single();
+    // Calculate date range based on period
+    const today = new Date();
+    const currentPeriodStart = new Date(today);
+    const previousPeriodStart = new Date(today);
     
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// Update user
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .update(req.body)
-      .eq('id', req.params.id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// Delete user
-app.delete('/api/users/:id', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { error } = await supabaseAdmin
-      .from('users')
-      .eq('id', req.params.id)
-      .delete();
-    
-    if (error) throw error;
-    res.json({ data: { success: true }, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// ==================== ORGANIZATIONS ENDPOINTS ====================
-
-app.get('/api/organizations', async (req, res) => {
-  try {
-    const { org_name, id } = req.query;
-    let query = supabase.from('organizations').select('*');
-    
-    if (org_name) query = query.eq('org_name', org_name);
-    if (id) query = query.eq('id', id);
-    
-    const { data, error } = await query;
-    if (error) {
-      console.error('Organizations query error:', error);
-      throw error;
+    if (period === 'week') {
+      currentPeriodStart.setDate(today.getDate() - 7);
+      previousPeriodStart.setDate(today.getDate() - 14);
+    } else if (period === 'month') {
+      currentPeriodStart.setMonth(today.getMonth() - 1);
+      previousPeriodStart.setMonth(today.getMonth() - 2);
+    } else if (period === 'quarter') {
+      currentPeriodStart.setMonth(today.getMonth() - 3);
+      previousPeriodStart.setMonth(today.getMonth() - 6);
+    } else if (period === 'year') {
+      currentPeriodStart.setFullYear(today.getFullYear() - 1);
+      previousPeriodStart.setFullYear(today.getFullYear() - 2);
     }
-    res.json({ data: data || [], error: null });
-  } catch (error) {
-    console.error('Organizations endpoint error:', error);
-    res.status(500).json({ data: null, error: error.message || 'Internal server error' });
-  }
-});
 
-// Update organization
-app.put('/api/organizations/:id', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('organizations')
-      .update(req.body)
-      .eq('id', req.params.id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
+    let currentValue = 0;
+    let previousValue = 0;
+    const dataPoints = [];
 
-// ==================== DEPARTMENTS ENDPOINTS ====================
-
-app.get('/api/departments', async (req, res) => {
-  try {
-    const { id, ids } = req.query;
-    let query = supabase.from('departments').select('*');
-    
-    if (id) query = query.eq('id', id);
-    if (ids) {
-      const idArray = Array.isArray(ids) ? ids : ids.split(',');
-      query = query.in('id', idArray);
-    }
-    
-    const { data, error } = await query.order('name', { ascending: true });
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-app.post('/api/departments', async (req, res) => {
-  try {
-    // Try with service role key first (bypasses RLS)
-    if (supabaseServiceKey && supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE') {
-      const { data, error } = await supabaseAdmin
-        .from('departments')
-        .insert(req.body)
-        .select()
-        .single();
+    if (metric === 'students') {
+      const { data: currentStudents, error: currentError } = await supabaseAdmin
+        .from('users')
+        .select('id, created_at')
+        .eq('role', 'student')
+        .gte('created_at', currentPeriodStart.toISOString())
+        .lte('created_at', today.toISOString());
       
-      if (error) {
-        console.error('❌ Department creation error:', error);
-        throw error;
-      }
+      const { data: previousStudents, error: previousError } = await supabaseAdmin
+        .from('users')
+        .select('id, created_at')
+        .eq('role', 'student')
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', currentPeriodStart.toISOString());
       
-      console.log('✅ Department created successfully:', data);
-      return res.json({ data, error: null });
-    }
-    
-    // Fallback: Try with anon key (may fail due to RLS, but worth trying)
-    console.warn('⚠️  Attempting department creation with anon key (may fail due to RLS)...');
-    const { data, error } = await supabase
-      .from('departments')
-      .insert(req.body)
-      .select()
-      .single();
-    
-    if (error) {
-      // If RLS error, provide helpful message with SQL solution
-      if (error.message && error.message.includes('row-level security')) {
-        console.error('❌ RLS policy violation. Service role key required or RLS must be disabled.');
-        return res.status(500).json({ 
-          data: null, 
-          error: `Row Level Security (RLS) is blocking department creation. To fix this:\n\nOPTION 1 (Recommended): Add Service Role Key\n1. Go to: https://supabase.com/dashboard/project/vzkbyzpqnojhlazwopvz/settings/api\n2. Copy the "service_role" key\n3. Add to server/.env: SUPABASE_SERVICE_ROLE_KEY=your_key\n4. Restart server\n\nOPTION 2: Disable RLS temporarily\nRun this SQL in Supabase SQL Editor:\nALTER TABLE departments DISABLE ROW LEVEL SECURITY;\n\nThen restart the server.` 
+      currentValue = currentStudents && !currentError ? currentStudents.length : 0;
+      previousValue = previousStudents && !previousError ? previousStudents.length : 0;
+
+      const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 365;
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const { data: studentsUpToDate } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('role', 'student')
+          .lte('created_at', date.toISOString());
+        
+        dataPoints.push({
+          date: dateStr,
+          value: studentsUpToDate ? studentsUpToDate.length : 0,
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         });
       }
-      throw error;
+    } else if (metric === 'staff') {
+      const { data: currentStaff, error: currentError } = await supabaseAdmin
+        .from('users')
+        .select('id, created_at')
+        .neq('role', 'student')
+        .gte('created_at', currentPeriodStart.toISOString())
+        .lte('created_at', today.toISOString());
+      
+      const { data: previousStaff, error: previousError } = await supabaseAdmin
+        .from('users')
+        .select('id, created_at')
+        .neq('role', 'student')
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', currentPeriodStart.toISOString());
+      
+      currentValue = currentStaff && !currentError ? currentStaff.length : 0;
+      previousValue = previousStaff && !previousError ? previousStaff.length : 0;
+
+      const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 365;
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const { data: staffUpToDate } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .neq('role', 'student')
+          .lte('created_at', date.toISOString());
+        
+        dataPoints.push({
+          date: dateStr,
+          value: staffUpToDate ? staffUpToDate.length : 0,
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        });
+      }
+    } else if (metric === 'attendance') {
+      const currentPeriodStartStr = currentPeriodStart.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
+      
+      const { data: currentAttendance, error: currentError } = await supabaseAdmin
+        .from('attendance')
+        .select('*')
+        .gte('date', currentPeriodStartStr)
+        .lte('date', todayStr);
+      
+      const previousPeriodStartStr = previousPeriodStart.toISOString().split('T')[0];
+      const previousPeriodEndStr = currentPeriodStart.toISOString().split('T')[0];
+      
+      const { data: previousAttendance, error: previousError } = await supabaseAdmin
+        .from('attendance')
+        .select('*')
+        .gte('date', previousPeriodStartStr)
+        .lt('date', previousPeriodEndStr);
+      
+      if (!currentError && currentAttendance) {
+        const total = currentAttendance.length;
+        const present = currentAttendance.filter(r => r.status === 'present').length;
+        currentValue = total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 0;
+      }
+      
+      if (!previousError && previousAttendance) {
+        const total = previousAttendance.length;
+        const present = previousAttendance.filter(r => r.status === 'present').length;
+        previousValue = total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 0;
+      }
+
+      const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 365;
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const { data: dayAttendance } = await supabaseAdmin
+          .from('attendance')
+          .select('*')
+          .eq('date', dateStr);
+        
+        let dayRate = 0;
+        if (dayAttendance && dayAttendance.length > 0) {
+          const present = dayAttendance.filter(r => r.status === 'present').length;
+          dayRate = Math.round((present / dayAttendance.length) * 100 * 10) / 10;
+        }
+        
+        dataPoints.push({
+          date: dateStr,
+          value: dayRate,
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        });
+      }
+    } else if (metric === 'fees') {
+      currentValue = 0;
+      previousValue = 0;
     }
-    
-    console.log('✅ Department created successfully (with anon key):', data);
-    res.json({ data, error: null });
+
+    const change = currentValue - previousValue;
+    const changePercent = previousValue !== 0 
+      ? Math.round((change / previousValue) * 100 * 10) / 10
+      : (currentValue > 0 ? 100 : 0);
+
+    const growthData = {
+      currentValue,
+      previousValue,
+      change,
+      changePercent,
+      period,
+      metric,
+      dataPoints
+    };
+
+    sendSuccess(res, growthData);
   } catch (error) {
-    console.error('❌ Department creation failed:', error);
-    res.status(500).json({ data: null, error: error.message });
+    handleError(error, res, 'Failed to fetch growth data');
   }
 });
 
-// ==================== TEACHER DEPARTMENTS ENDPOINTS ====================
-
-app.get('/api/teacher-departments/:teacherId', async (req, res) => {
+app.get('/api/growth/staff-by-role', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('teacher_departments')
-      .select('*')
-      .eq('teacher_id', req.params.teacherId);
+    const { role, period = 'month' } = req.query;
     
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-app.post('/api/teacher-departments', async (req, res) => {
-  try {
-    const { teacher_id, department_ids } = req.body;
-    
-    // Use admin client for write operations to bypass RLS
-    // Delete existing associations
-    await supabaseAdmin
-      .from('teacher_departments')
-      .delete()
-      .eq('teacher_id', teacher_id);
-    
-    // Insert new associations
-    const records = department_ids.map((deptId) => ({
-      teacher_id,
-      department_id: deptId,
-    }));
-    
-    const { data, error } = await supabaseAdmin
-      .from('teacher_departments')
-      .insert(records)
-      .select();
-    
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// ==================== ATTENDANCE ENDPOINTS ====================
-
-app.get('/api/attendance', async (req, res) => {
-  try {
-    const { date, student_id, student_ids } = req.query;
-    let query = supabase.from('attendance').select('*');
-    
-    if (date) query = query.eq('date', date);
-    if (student_id) query = query.eq('student_id', student_id);
-    if (student_ids) {
-      const idArray = Array.isArray(student_ids) ? student_ids : student_ids.split(',');
-      query = query.in('student_id', idArray);
+    if (!role) {
+      return sendValidationError(res, 'role parameter is required');
     }
-    
-    const { data, error } = await query.order('date', { ascending: true });
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
 
-app.post('/api/attendance', async (req, res) => {
-  try {
-    const records = Array.isArray(req.body) ? req.body : [req.body];
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('attendance')
-      .upsert(records, { onConflict: 'student_id,date' })
-      .select();
+    const today = new Date();
+    const currentPeriodStart = new Date(today);
+    const previousPeriodStart = new Date(today);
     
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// ==================== NOTIFICATIONS ENDPOINTS ====================
-
-app.get('/api/notifications', async (req, res) => {
-  try {
-    const { user_id, read, limit } = req.query;
-    // Use admin client to bypass RLS for read operations
-    let query = supabaseAdmin.from('notifications').select('*');
-    
-    if (user_id) query = query.eq('user_id', user_id);
-    if (read !== undefined) query = query.eq('read', read === 'true');
-    
-    query = query.order('created_at', { ascending: false });
-    if (limit) query = query.limit(parseInt(limit));
-    
-    const { data, error } = await query;
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      throw error;
+    if (period === 'week') {
+      currentPeriodStart.setDate(today.getDate() - 7);
+      previousPeriodStart.setDate(today.getDate() - 14);
+    } else if (period === 'month') {
+      currentPeriodStart.setMonth(today.getMonth() - 1);
+      previousPeriodStart.setMonth(today.getMonth() - 2);
+    } else if (period === 'quarter') {
+      currentPeriodStart.setMonth(today.getMonth() - 3);
+      previousPeriodStart.setMonth(today.getMonth() - 6);
+    } else if (period === 'year') {
+      currentPeriodStart.setFullYear(today.getFullYear() - 1);
+      previousPeriodStart.setFullYear(today.getFullYear() - 2);
     }
-    res.json({ data, error: null });
-  } catch (error) {
-    console.error('Notifications API error:', error);
-    res.status(500).json({ 
-      data: null, 
-      error: error.message || 'Failed to fetch notifications' 
-    });
-  }
-});
 
-app.post('/api/notifications', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('notifications')
-      .insert(req.body)
-      .select()
-      .single();
+    const { data: currentStaff, error: currentError } = await supabaseAdmin
+      .from('users')
+      .select('id, created_at')
+      .eq('role', role)
+      .gte('created_at', currentPeriodStart.toISOString())
+      .lte('created_at', today.toISOString());
     
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
+    const { data: previousStaff, error: previousError } = await supabaseAdmin
+      .from('users')
+      .select('id, created_at')
+      .eq('role', role)
+      .gte('created_at', previousPeriodStart.toISOString())
+      .lt('created_at', currentPeriodStart.toISOString());
+    
+    const currentValue = currentStaff && !currentError ? currentStaff.length : 0;
+    const previousValue = previousStaff && !previousError ? previousStaff.length : 0;
+    const change = currentValue - previousValue;
+    const changePercent = previousValue !== 0 
+      ? Math.round((change / previousValue) * 100 * 10) / 10
+      : (currentValue > 0 ? 100 : 0);
 
-app.put('/api/notifications/:id/read', async (req, res) => {
-  try {
-    // Use admin client for write operations to bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', req.params.id)
-      .select()
-      .single();
+    const dataPoints = [];
+    const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 365;
     
-    if (error) throw error;
-    res.json({ data, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-app.put('/api/notifications/read-all', async (req, res) => {
-  try {
-    const { user_id } = req.body;
-    // Use admin client for write operations to bypass RLS
-    const { error } = await supabaseAdmin
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', user_id)
-      .eq('read', false);
-    
-    if (error) throw error;
-    res.json({ data: { success: true }, error: null });
-  } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
-  }
-});
-
-// ==================== ACTIVITIES ENDPOINTS ====================
-
-app.get('/api/activities', async (req, res) => {
-  try {
-    const { limit } = req.query;
-    // Use admin client to bypass RLS for read operations
-    let query = supabaseAdmin.from('activities').select('*');
-    
-    query = query.order('created_at', { ascending: false });
-    if (limit) query = query.limit(parseInt(limit));
-    
-    const { data, error } = await query;
-    if (error) {
-      console.error('Error fetching activities:', error);
-      throw error;
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const { data: staffUpToDate } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('role', role)
+        .lte('created_at', date.toISOString());
+      
+      dataPoints.push({
+        date: dateStr,
+        value: staffUpToDate ? staffUpToDate.length : 0,
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      });
     }
-    res.json({ data, error: null });
+
+    const growthData = {
+      currentValue,
+      previousValue,
+      change,
+      changePercent,
+      period,
+      metric: 'staff',
+      role,
+      dataPoints
+    };
+
+    sendSuccess(res, growthData);
   } catch (error) {
-    console.error('Activities API error:', error);
-    res.status(500).json({ 
-      data: null, 
-      error: error.message || 'Failed to fetch activities' 
-    });
+    handleError(error, res, 'Failed to fetch staff growth data');
   }
 });
 
-app.post('/api/activities', async (req, res) => {
+app.get('/api/growth/staff-breakdown', async (req, res) => {
   try {
-    // Use admin client for write operations to bypass RLS
-    // Support both single object and array of objects for bulk insert
-    const isArray = Array.isArray(req.body);
-    const { data, error } = await supabaseAdmin
-      .from('activities')
-      .insert(req.body)
-      .select();
+    const { data: allUsers, error: usersError } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .neq('role', 'student')
+      .eq('status', 'active');
     
-    if (error) throw error;
-    // If single object was sent, return single object; otherwise return array
-    res.json({ data: isArray ? data : (data && data[0] || null), error: null });
+    if (usersError) {
+      throw usersError;
+    }
+
+    const breakdown = {
+      teacher: 0,
+      librarian: 0,
+      housekeeping: 0,
+      accountant: 0,
+      other: 0
+    };
+
+    if (allUsers) {
+      allUsers.forEach(user => {
+        const role = user.role;
+        if (role === 'teacher') breakdown.teacher++;
+        else if (role === 'librarian') breakdown.librarian++;
+        else if (role === 'housekeeping') breakdown.housekeeping++;
+        else if (role === 'accountant') breakdown.accountant++;
+        else breakdown.other++;
+      });
+    }
+
+    sendSuccess(res, breakdown);
   } catch (error) {
-    res.status(500).json({ data: null, error: error.message });
+    handleError(error, res, 'Failed to fetch staff breakdown');
+  }
+});
+
+// Finance endpoint (temporary - to be moved to routes/finance.js)
+app.get('/api/finance', async (req, res) => {
+  try {
+    const { userId, role } = req.query;
+    
+    let totalIncome = 0.0;
+    try {
+      const { data: feesData, error: feesError } = await supabaseAdmin
+        .from('fees')
+        .select('amount, status');
+      
+      if (!feesError && feesData) {
+        feesData.forEach(fee => {
+          if (fee.status === 'paid' || fee.status === 'completed') {
+            totalIncome += parseFloat(fee.amount || 0);
+          }
+        });
+      }
+    } catch (error) {
+      try {
+        const { data: paymentsData, error: paymentsError } = await supabaseAdmin
+          .from('payments')
+          .select('amount');
+        
+        if (!paymentsError && paymentsData) {
+          paymentsData.forEach(payment => {
+            totalIncome += parseFloat(payment.amount || 0);
+          });
+        }
+      } catch (e) {
+        // Both tables might not exist
+      }
+    }
+
+    let totalSalaryPaid = 0.0;
+    try {
+      const { data: salariesData, error: salariesError } = await supabaseAdmin
+        .from('salaries')
+        .select('amount, status');
+      
+      if (!salariesError && salariesData) {
+        salariesData.forEach(salary => {
+          if (salary.status === 'paid' || salary.status === 'completed') {
+            totalSalaryPaid += parseFloat(salary.amount || 0);
+          }
+        });
+      }
+    } catch (error) {
+      // Salaries table might not exist
+    }
+
+    const careerGrowth = [];
+    try {
+      const { data: staffUsers, error: staffError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .neq('role', 'student')
+        .eq('status', 'active');
+      
+      if (!staffError && staffUsers) {
+        for (const user of staffUsers) {
+          let currentSalary = 0.0;
+          try {
+            const { data: salaryData } = await supabaseAdmin
+              .from('salaries')
+              .select('amount')
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (salaryData) {
+              currentSalary = parseFloat(salaryData.amount || 0);
+            }
+          } catch (e) {
+            // Salary might not exist
+          }
+
+          let promotions = 0;
+          try {
+            const { data: promoData } = await supabaseAdmin
+              .from('promotions')
+              .select('id')
+              .eq('user_id', user.id);
+            
+            if (promoData) {
+              promotions = promoData.length;
+            }
+          } catch (e) {
+            // Promotions table might not exist
+          }
+
+          let hikes = 0;
+          try {
+            const { data: hikeData } = await supabaseAdmin
+              .from('salary_hikes')
+              .select('id')
+              .eq('user_id', user.id);
+            
+            if (hikeData) {
+              hikes = hikeData.length;
+            }
+          } catch (e) {
+            // Salary hikes table might not exist
+          }
+
+          careerGrowth.push({
+            userId: user.id,
+            name: user.name || '',
+            role: user.role || '',
+            currentSalary,
+            joinDate: user.created_at || '',
+            promotions,
+            hikes
+          });
+        }
+      }
+    } catch (error) {
+      // Error getting career growth data
+    }
+
+    const promotions = [];
+    try {
+      const { data: promoData, error: promoError } = await supabaseAdmin
+        .from('promotions')
+        .select('*')
+        .order('promotion_date', { ascending: false });
+      
+      if (!promoError && promoData) {
+        promotions.push(...promoData);
+      }
+    } catch (error) {
+      // Promotions table might not exist
+    }
+
+    const hikeRate = {
+      averageHikeRate: 0.0,
+      totalHikes: 0,
+      hikes: []
+    };
+    
+    try {
+      const { data: hikesData, error: hikesError } = await supabaseAdmin
+        .from('salary_hikes')
+        .select('*')
+        .order('hike_date', { ascending: false });
+      
+      if (!hikesError && hikesData && hikesData.length > 0) {
+        let totalHikePercent = 0.0;
+        let count = 0;
+        
+        hikesData.forEach(hike => {
+          if (hike.hike_percentage) {
+            totalHikePercent += parseFloat(hike.hike_percentage || 0);
+            count++;
+          }
+        });
+        
+        hikeRate.averageHikeRate = count > 0 ? totalHikePercent / count : 0.0;
+        hikeRate.totalHikes = hikesData.length;
+        hikeRate.hikes = hikesData;
+      }
+    } catch (error) {
+      // Salary hikes table might not exist
+    }
+
+    const financeData = {
+      totalIncome,
+      totalSalaryPaid,
+      netProfit: totalIncome - totalSalaryPaid,
+      careerGrowth,
+      promotions,
+      hikeRate
+    };
+
+    sendSuccess(res, financeData);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch finance data');
   }
 });
 
@@ -501,4 +562,3 @@ app.listen(PORT, () => {
   console.error('❌ Server failed to start:', err);
   process.exit(1);
 });
-

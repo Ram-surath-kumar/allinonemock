@@ -1,3 +1,4 @@
+// @ts-check
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -12,11 +13,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(process.cwd(), "./src"),
     },
   },
   build: {
-    // Code splitting and optimization
     rollupOptions: {
       output: {
         manualChunks: {
@@ -27,14 +27,10 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for production debugging
     sourcemap: false,
-    // Minify with esbuild (built-in, no extra dependency)
     minify: 'esbuild',
   },
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],
   },
