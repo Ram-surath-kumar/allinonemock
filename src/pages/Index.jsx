@@ -39,6 +39,12 @@ const Tools = lazy(() =>
 const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
+const HostelDashboard = lazy(() =>
+  import('@/pages/Hostel/HostelDashboard').then(module => ({ default: module.default }))
+);
+const ExamDashboard = lazy(() =>
+  import('@/pages/Exam/ExamDashboard').then(module => ({ default: module.default }))
+);
 const LibraryDashboard = lazy(() =>
   import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
 );
@@ -80,6 +86,8 @@ function AppContent() {
     'attendance': '/attendance',
     'academics': '/academics',
     'finance': '/finance',
+    'hostel': '/hostel',
+    'exam': '/exam',
     'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
@@ -98,6 +106,8 @@ function AppContent() {
     '/attendance': 'attendance',
     '/academics': 'academics',
     '/finance': 'finance',
+    '/hostel': 'hostel',
+    '/exam': 'exam',
     '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
@@ -227,6 +237,10 @@ function AppContent() {
         return 'Academics';
       case '/finance':
         return 'Finance';
+      case '/hostel':
+        return 'Hostel Management';
+      case '/exam':
+        return 'Examinations';
       case '/library':
         return 'Library Management';
       case '/facilities':
@@ -326,6 +340,18 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <Finance />
+          </Suspense>
+        );
+      case '/hostel':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <HostelDashboard />
+          </Suspense>
+        );
+      case '/exam':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ExamDashboard />
           </Suspense>
         );
       case '/library':

@@ -41,7 +41,9 @@ const navItems = [
   { icon: BookOpen, label: 'Academics', href: '/academics', permission: 'view_grades' },
   { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
+  { icon: BedDouble, label: 'Hostel', href: '/hostel' },
   { icon: Library, label: 'Library', href: '/library' },
+  { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
