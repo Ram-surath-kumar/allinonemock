@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2 } from 'lucide-react';
+import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +11,16 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 
@@ -34,6 +44,12 @@ export function AIAssistantChat({ onNavigate }) {
     },
   ]);
   const messagesEndRef = useRef(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    action: null,
+    title: '',
+    description: '',
+  });
 
   useEffect(() => {
     console.log('AIAssistantChat component mounted/updated', { isOpen, document: typeof document !== 'undefined' });
@@ -97,7 +113,25 @@ export function AIAssistantChat({ onNavigate }) {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const executeAction = async (action) => {
+  // Check if action is risky and requires confirmation
+  const isRiskyAction = (action) => {
+    const riskyActions = ['delete_students', 'delete_all_students', 'remove_all_students'];
+    return riskyActions.includes(action.action) || (action.delete_all === true);
+  };
+
+  const executeAction = async (action, skipConfirmation = false) => {
+    // Check if action requires confirmation
+    if (!skipConfirmation && isRiskyAction(action)) {
+      const studentCount = students.length;
+      setConfirmDialog({
+        open: true,
+        action: action,
+        title: '⚠️ Risky Action - Delete All Students',
+        description: `This action will permanently delete ALL ${studentCount} student${studentCount !== 1 ? 's' : ''} from the system. This cannot be undone. Are you sure you want to proceed?`,
+      });
+      return;
+    }
+
     if (action.action === 'mark_attendance') {
       if (!action.student_id || !action.status) {
         addMessage('assistant', 'I couldn\'t identify the student or status. Please try again with more details.');
@@ -110,6 +144,8 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
+        addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
+        
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -140,6 +176,7 @@ export function AIAssistantChat({ onNavigate }) {
         addMessage('assistant', `❌ Error: ${error.message || 'Failed to mark attendance'}`);
       }
     } else if (action.action === 'edit_student') {
+      addMessage('assistant', '🔄 Processing... Opening students page for editing...');
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -148,8 +185,8 @@ export function AIAssistantChat({ onNavigate }) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-      addMessage('assistant', 'Opening students page for editing...');
     } else if (action.action === 'view_student') {
+      addMessage('assistant', `🔄 Processing... Opening students page to view ${action.student_name || 'student'}...`);
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -158,7 +195,6 @@ export function AIAssistantChat({ onNavigate }) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-      addMessage('assistant', `Opening students page to view ${action.student_name || 'student'}...`);
     } else if (action.action === 'add_department') {
       if (!action.department_name) {
         addMessage('assistant', 'I couldn\'t identify the department name. Please specify it clearly, e.g., "add new department with name Computer Science"');
@@ -171,6 +207,8 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
+        addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
+        
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -202,13 +240,107 @@ export function AIAssistantChat({ onNavigate }) {
           addMessage('assistant', `❌ Error: ${errorMessage}`);
         }
       }
+    } else if (action.action === 'delete_students') {
+      if (!action.delete_all) {
+        addMessage('assistant', 'I couldn\'t understand the delete command. Please specify "delete all students" to delete all students.');
+        return;
+      }
+
+      if (!hasPermission('manage_staff')) {
+        addMessage('assistant', 'You don\'t have permission to delete students.');
+        return;
+      }
+
+      try {
+        // Show processing status
+        const totalStudents = students.length;
+        addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
+        
+        // Delete all students
+        const studentIds = students.map(s => s.id);
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < studentIds.length; i++) {
+          const studentId = studentIds[i];
+          const currentIndex = i + 1;
+          
+          // Show progress every 5 students or for the last one
+          if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
+            addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
+          }
+          
+          try {
+            const response = await api.deleteUser(studentId);
+            if (response.error) {
+              errorCount++;
+              console.error(`Error deleting student ${studentId}:`, response.error);
+            } else {
+              deletedCount++;
+            }
+          } catch (error) {
+            errorCount++;
+            console.error(`Error deleting student ${studentId}:`, error);
+          }
+        }
+        
+        // Show completion status
+        if (errorCount > 0 && deletedCount === 0) {
+          // Get more details about the first error
+          let errorDetails = '';
+          if (errorCount > 0) {
+            errorDetails = ' This may be due to foreign key constraints or missing permissions.';
+          }
+          throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
+        }
+
+        const message = deletedCount > 0 
+          ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
+          : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
+
+        addMessage('assistant', message);
+        
+        // Reload students list
+        await loadData();
+        
+        // Navigate to students page
+        if (onNavigate) {
+          onNavigate('/students');
+        } else {
+          navigate('/students');
+        }
+        
+        // Close chat after action
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 2000);
+      } catch (error) {
+        console.error('Error deleting students:', error);
+        let errorMessage = error.message || 'Failed to delete students';
+        
+        // Provide more helpful error messages
+        if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
+          errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
+        }
+        
+        addMessage('assistant', `❌ Error: ${errorMessage}`);
+      }
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name]/absent]", "add new department with name [name]", or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", or ask me a question about your data.');
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    setConfirmDialog({ ...confirmDialog, open: false });
+    if (confirmDialog.action) {
+      await executeAction(confirmDialog.action, true);
     }
   };
 
   const handleDataQuery = async (query) => {
     try {
+      addMessage('assistant', '🔄 Processing... Analyzing your question...');
+      
       const currentDate = format(new Date(), 'yyyy-MM-dd');
       
       // Parse the query intent
@@ -387,10 +519,12 @@ export function AIAssistantChat({ onNavigate }) {
         await handleDataQuery(userPrompt);
       } else {
         // Handle action
+        addMessage('assistant', '🔄 Processing... Understanding your command...');
+        
         const context = {
           students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student'],
+          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department'],
         };
 
         const action = await callGeminiAPI(userPrompt, context);
@@ -565,6 +699,30 @@ export function AIAssistantChat({ onNavigate }) {
           )}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {confirmDialog.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="pt-2">
+              {confirmDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Delete All Students
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>,
     document.body
   );

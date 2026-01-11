@@ -294,7 +294,8 @@ Available actions:
 2. edit_student - Edit student info
 3. view_student - View student info
 4. add_department - Add/create a new department (requires department_name field)
-5. unknown - Unclear command
+5. delete_students - Delete all students or specific students (requires confirmation)
+6. unknown - Unclear command
 
 Available students:
 ${context.students.length > 0 ? context.students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
@@ -305,6 +306,9 @@ Examples:
 - "add new department with name Computer Science" → {"action":"add_department","department_name":"Computer Science","confidence":0.95}
 - "create department Mathematics" → {"action":"add_department","department_name":"Mathematics","confidence":0.9}
 - "add department Physics" → {"action":"add_department","department_name":"Physics","confidence":0.9}
+- "delete all students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
+- "delete all the students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
+- "remove all students" → {"action":"delete_students","delete_all":true,"confidence":0.9}
 
 Return ONLY this JSON structure (no markdown, no code blocks){"action":"mark_attendance","student_name":"Laxman","department":"BSC Comp Science","status":"absent","confidence":0.95,"message":"Mark Laxman"}
 
@@ -562,6 +566,16 @@ function parseAIResponse(text, context) {
         department_name: parsed.department_name,
         confidence: parsed.confidence || 0.8,
         message: parsed.message || `Creating department: ${parsed.department_name}`,
+      };
+    }
+
+    // Check if parsed action is delete_students
+    if (parsed.action === 'delete_students') {
+      return {
+        action: 'delete_students',
+        delete_all: parsed.delete_all || true,
+        confidence: parsed.confidence || 0.8,
+        message: parsed.message || 'Delete all students',
       };
     }
 

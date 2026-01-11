@@ -209,15 +209,15 @@ export function Sidebar({ currentPath, onNavigate }) {
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Logo */}
+      {/* Logo - Synced with topbar styling */}
       <div className={cn(
         "flex items-center border-b border-sidebar-border",
-        "bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-        collapsed ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
+        "bg-card/70 backdrop-blur-xl shadow-sm",
+        collapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"
       )}>
         <div className={cn(
-          "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-md shrink-0 transition-transform duration-300 hover:scale-105 hover:shadow-glow overflow-hidden",
-          collapsed ? "h-10 w-10" : "h-11 w-11"
+          "flex items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 shadow-sm shrink-0 transition-transform duration-200 hover:scale-105 overflow-hidden",
+          collapsed ? "h-9 w-9" : "h-10 w-10"
         )} aria-hidden="true">
           {currentUser?.organization?.org_logo ? (
             <img
@@ -225,13 +225,13 @@ export function Sidebar({ currentPath, onNavigate }) {
               alt={currentUser.organization.org_name || "College Logo"}
               className={cn(
                 "object-cover",
-                collapsed ? "h-10 w-10" : "h-11 w-11"
+                collapsed ? "h-9 w-9" : "h-10 w-10"
               )}
             />
           ) : (
             <GraduationCap className={cn(
-              "text-sidebar-primary-foreground",
-              collapsed ? "h-5 w-5" : "h-6 w-6"
+              "text-primary-foreground",
+              collapsed ? "h-4 w-4" : "h-5 w-5"
             )} />
           )}
         </div>
@@ -240,11 +240,11 @@ export function Sidebar({ currentPath, onNavigate }) {
           collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
           collapsed ? "" : "delay-50"
         )}>
-          <div className="whitespace-nowrap pl-3">
-            <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground">
+          <div className="whitespace-nowrap">
+            <h1 className="text-sm font-semibold tracking-tight text-foreground">
               {currentUser?.organization?.org_name || "College Name"}
             </h1>
-            <p className="text-xs text-sidebar-muted font-medium">powered by loopverse</p>
+            <p className="text-[10px] text-muted-foreground font-medium leading-tight">powered by loopverse</p>
           </div>
         </div>
       </div>
@@ -252,7 +252,7 @@ export function Sidebar({ currentPath, onNavigate }) {
       {/* Navigation */}
       <nav className={cn(
         "flex-1 space-y-2 overflow-y-auto",
-        collapsed ? "px-1.5 py-3" : "p-3"
+        collapsed ? "px-1.5 py-2" : "px-3 py-2"
       )}>
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
@@ -263,20 +263,20 @@ export function Sidebar({ currentPath, onNavigate }) {
               key={item.href}
               onClick={() => onNavigate(item.href)}
               className={cn(
-                "group relative flex items-center rounded-xl text-sm font-medium",
+                "group relative flex items-center rounded-lg text-sm font-medium",
                 "transition-all duration-200",
-                "hover:scale-[1.02] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
+                "hover:scale-[1.01] focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
                 collapsed
-                  ? "justify-center w-full py-3"
-                  : "justify-start w-full gap-4 px-4 py-3.5",
+                  ? "justify-center w-full py-2"
+                  : "justify-start w-full gap-3 px-3 py-2.5",
                 collapsed && isActive
                   ? "px-2.5"
                   : collapsed
                     ? "px-1.5"
                     : "",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                  : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-lg border-l-4 border-primary-foreground font-semibold"
+                  : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm border-l-4 border-transparent"
               )}
               title={collapsed ? item.label : undefined}
               aria-label={item.label}
@@ -285,7 +285,7 @@ export function Sidebar({ currentPath, onNavigate }) {
               <Icon className={cn(
                 "shrink-0 transition-all duration-200",
                 "h-5 w-5",
-                isActive ? "scale-110" : "group-hover:scale-110"
+                isActive ? "scale-110 text-primary-foreground" : "group-hover:scale-110"
               )} />
 
               <span className={cn(
@@ -295,10 +295,6 @@ export function Sidebar({ currentPath, onNavigate }) {
               )}>
                 {item.label}
               </span>
-
-              {isActive && !collapsed && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-sidebar-primary-foreground/30" />
-              )}
 
               {/* Tooltip for collapsed state */}
               {collapsed && (
@@ -313,21 +309,21 @@ export function Sidebar({ currentPath, onNavigate }) {
 
       {/* User Profile */}
       <div className={cn(
-        "border-t border-sidebar-border bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-        collapsed ? "p-1.5 pb-1.5" : "px-3 pt-2 pb-1.5"
+        "border-t border-sidebar-border bg-card/70 backdrop-blur-xl shadow-sm",
+        collapsed ? "p-1 pb-1" : "px-3 pt-1.5 pb-1"
       )}>
         <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <button className={cn(
-              "flex w-full items-center rounded-xl text-left",
+              "flex w-full items-center rounded-lg text-left",
               "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
               collapsed
-                ? "justify-center px-0 py-3"
-                : "justify-start gap-3 px-3 py-3"
+                ? "justify-center px-0 py-2"
+                : "justify-start gap-2.5 px-2.5 py-2"
             )}>
               <div className={cn(
-                "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sm font-bold text-sidebar-primary-foreground shadow-md shrink-0 transition-transform duration-200 hover:scale-105",
-                collapsed ? "h-10 w-10" : "h-11 w-11"
+                "flex items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-xs font-semibold text-primary-foreground shadow-sm shrink-0 transition-transform duration-200 hover:scale-105",
+                collapsed ? "h-8 w-8" : "h-9 w-9"
               )}>
                 {currentUser ? getInitials(currentUser.name) : 'U'}
               </div>
@@ -336,8 +332,8 @@ export function Sidebar({ currentPath, onNavigate }) {
                 collapsed ? "max-w-0 opacity-0" : "max-w-[180px] flex-1 opacity-100",
                 collapsed ? "" : "delay-75"
               )}>
-                <p className="truncate text-sm font-semibold text-sidebar-foreground">{currentUser?.name}</p>
-                <p className="truncate text-xs text-sidebar-muted font-medium">
+                <p className="truncate text-xs font-semibold text-foreground leading-tight">{currentUser?.name}</p>
+                <p className="truncate text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
                   {currentUser && ROLE_LABELS[currentUser.role]}
                 </p>
               </div>

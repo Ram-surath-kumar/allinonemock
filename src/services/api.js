@@ -135,6 +135,13 @@ class ApiClient {
     });
   }
 
+  async sendWelcomeEmail({ college_email, loop_email, loopid, user_name }) {
+    return this.request('/users/send-welcome-email', {
+      method: 'POST',
+      body: JSON.stringify({ college_email, loop_email, loopid, user_name }),
+    });
+  }
+
   // Organizations
   async getOrganizations(params) {
     const queryParams = new URLSearchParams();

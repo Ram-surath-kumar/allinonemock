@@ -44,6 +44,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().optional(), // Email is optional for all roles - will be auto-generated
+  college_email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
   role: z.string().min(1, 'Please select a role'), // Accept any string to support custom roles
   department_id: z.string().optional(),
   department_ids: z.array(z.string()).optional(),
@@ -96,6 +97,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
     defaultValues: {
       name: '',
       email: '',
+      college_email: '',
       role: undefined,
       department_id: '',
       department_ids: [],
@@ -202,6 +204,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
     onAdd({
       name: values.name,
       email: values.email || undefined,
+      college_email: values.college_email || undefined,
       role: values.role,
       permissions: values.permissions,
       loopid: values.loopid,
@@ -443,6 +446,28 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                         </FormControl>
                         <FormDescription className="text-xs">
                           Email will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all users
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="college_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>College Email (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="user@college.edu"
+                            {...field}
+                            className={form.formState.errors.college_email ? 'border-destructive focus-visible:ring-destructive' : ''}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          A welcome email with login credentials will be sent to this email address
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

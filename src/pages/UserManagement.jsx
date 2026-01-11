@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { api } from '@/services/api';
 import { createUserAddedActivity, createBulkUserAddedActivities } from '@/services/activities';
 import { updateTeacherDepartments } from '@/services/departments';
 
@@ -97,6 +98,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
     try {
       const email = newUser.email;
       const loopid = newUser.loopid;
+      const college_email = newUser.college_email;
 
       // Generate temporary email if not provided (will be updated after user_id is known)
       let tempEmail = email;
@@ -105,21 +107,20 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         tempEmail = `temp-${currentUser?.organization?.org_id || 'org'}-${Date.now()}@loopverse.in`;
       }
 
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          name: newUser.name,
-          email: tempEmail, // Always provide email to satisfy NOT NULL constraint
-          role: newUser.role,
-          permissions: newUser.permissions,
-          department_id: newUser.department_id || null,
-          loopid: loopid || null, // Will be updated after user_id is known
-          status: 'active',
-        })
-        .select()
-        .single();
+      // Use API to create user (which will handle email sending)
+      const response = await api.createUser({
+        name: newUser.name,
+        email: tempEmail, // Always provide email to satisfy NOT NULL constraint
+        role: newUser.role,
+        permissions: newUser.permissions,
+        department_id: newUser.department_id || null,
+        loopid: loopid || null, // Will be updated after user_id is known
+        status: 'active',
+        college_email: college_email, // Pass college email to backend
+      });
 
-      if (error) throw error;
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       // For all users: Generate email as org_id + user_id @loopverse.in
       if (data && currentUser?.organization?.org_id && data.user_id) {
@@ -148,6 +149,29 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           if (newUser.role === 'student') {
             data.loopid = updateData.loopid;
           }
+        }
+      }
+      
+      // Send welcome email after user is fully created with final email and loopid
+      if (college_email && data) {
+        try {
+          const emailResponse = await api.sendWelcomeEmail({
+            college_email,
+            loop_email: data.email,
+            loopid: data.loopid || '',
+            user_name: data.name,
+          });
+          
+          if (emailResponse.error) {
+            console.error('Error sending welcome email:', emailResponse.error);
+            // Don't fail user creation if email fails
+            toast.warning('User created but email could not be sent. Please check email configuration.');
+          } else {
+            toast.success('Welcome email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          // Don't fail user creation if email fails
         }
       }
 

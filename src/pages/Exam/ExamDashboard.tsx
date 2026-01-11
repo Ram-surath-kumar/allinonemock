@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Calendar, GraduationCap, FileCheck, Plus, AlertCircle } from 'lucide-react';
+import { BookOpen, Calendar, GraduationCap, FileCheck, Plus, AlertCircle, Clock, CalendarDays, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from 'sonner';
 import { ScheduleExamDialog } from './ScheduleExamDialog';
@@ -110,33 +111,95 @@ export default function ExamDashboard() {
                 </TabsList>
 
                 <TabsContent value="planning" className="space-y-4">
-                    <Card className="shad-card">
-                        <CardHeader>
-                            <CardTitle>Upcoming Examinations</CardTitle>
+                    <Card className="shad-card border-border/50">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                                    <CalendarDays className="h-5 w-5 text-primary" />
+                                    Upcoming Examinations
+                                </CardTitle>
+                                <Badge variant="secondary" className="text-xs">
+                                    {exams.length} {exams.length === 1 ? 'exam' : 'exams'}
+                                </Badge>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {exams.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    No exams scheduled. Click "Schedule Exam" to create one.
+                                <div className="text-center py-12">
+                                    <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                                    <p className="text-muted-foreground font-medium">No exams scheduled</p>
+                                    <p className="text-sm text-muted-foreground/70 mt-1">Click "Schedule Exam" to create one</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {exams.map((exam: any) => (
-                                        <div key={exam.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                                            <div>
-                                                <p className="font-medium text-lg">{exam.name}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {new Date(exam.start_date).toLocaleDateString()} - {new Date(exam.end_date).toLocaleDateString()}
-                                                </p>
+                                <div className="space-y-3">
+                                    {exams.map((exam: any, index: number) => {
+                                        const startDate = new Date(exam.start_date);
+                                        const endDate = new Date(exam.end_date);
+                                        const isSameDay = startDate.toDateString() === endDate.toDateString();
+                                        const isPlanned = exam.status === 'PLANNED';
+                                        
+                                        return (
+                                            <div 
+                                                key={exam.id} 
+                                                className="group relative rounded-lg border border-border/50 bg-card/50 hover:bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 p-4 animate-in fade-in slide-in-from-bottom-2"
+                                                style={{ animationDelay: `${index * 50}ms` }}
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="mt-0.5 rounded-lg bg-primary/10 p-2 shrink-0">
+                                                                <BookOpen className="h-4 w-4 text-primary" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-base text-foreground mb-1.5 group-hover:text-primary transition-colors">
+                                                                    {exam.name}
+                                                                </h3>
+                                                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Calendar className="h-3.5 w-3.5" />
+                                                                        <span>
+                                                                            {isSameDay 
+                                                                                ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                                                                : `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                    {!isSameDay && (
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <Clock className="h-3.5 w-3.5" />
+                                                                            <span>
+                                                                                {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} days
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5 shrink-0">
+                                                        <Badge 
+                                                            variant={isPlanned ? "default" : "secondary"}
+                                                            className={`text-xs font-medium px-2.5 py-1 ${
+                                                                isPlanned 
+                                                                    ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15' 
+                                                                    : 'bg-muted text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            {exam.status}
+                                                        </Badge>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm"
+                                                            className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                                                        >
+                                                            <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
+                                                            Timetable
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-xs px-2 py-1 rounded-full ${exam.status === 'PLANNED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                    {exam.status}
-                                                </span>
-                                                <Button variant="outline" size="sm">Timetable</Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>
