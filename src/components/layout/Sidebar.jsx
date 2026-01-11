@@ -5,7 +5,6 @@ import {
   Calendar,
   BookOpen,
   CreditCard,
-  Settings,
   Building2,
   LogOut,
   ChevronDown,
@@ -45,7 +44,6 @@ const navItems = [
   { icon: Library, label: 'Library', href: '/library' },
   { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
-  { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
 // Student-specific navigation items
@@ -316,7 +314,7 @@ export function Sidebar({ currentPath, onNavigate }) {
       {/* User Profile */}
       <div className={cn(
         "border-t border-sidebar-border bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-        collapsed ? "p-1.5" : "p-3"
+        collapsed ? "p-1.5 pb-1.5" : "px-3 pt-2 pb-1.5"
       )}>
         <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
           <DropdownMenuTrigger asChild>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Search, Check, X, Menu, Sparkles, Moon, Sun, User } from 'lucide-react';
+import { Bell, Search, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { ROLE_LABELS } from '@/types/erp';
 
-export function Header({ title, subtitle, onMenuClick }) {
+export function Header({ title, subtitle, onMenuClick, onNavigate }) {
   const { currentUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState([]);
@@ -209,6 +209,20 @@ export function Header({ title, subtitle, onMenuClick }) {
           </Button>
         )}
         
+        {/* Settings */}
+        {onNavigate && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onNavigate('/settings')}
+            className="h-9 w-9 rounded-xl hover-lift"
+            title="Settings"
+            aria-label="Settings"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        )}
+
         {/* Notifications */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

@@ -12,6 +12,9 @@ import notificationsRouter from './routes/notifications.js';
 import dashboardRouter from './routes/dashboard.js';
 import rolesRouter from './routes/roles.js';
 import activitiesRouter from './routes/activities.js';
+import libraryRouter from './routes/library.js';
+import hostelRouter from './routes/hostel.js';
+import examRouter from './routes/exam.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -23,8 +26,30 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+// CORS configuration - allow localhost and Vercel domains
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  // Add your Vercel domain here after deployment
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // In production, allow Vercel preview and production domains
+      if (process.env.VERCEL || process.env.VERCEL_ENV) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -44,6 +69,9 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/activities', activitiesRouter);
+app.use('/api/library', libraryRouter);
+app.use('/api/hostel', hostelRouter);
+app.use('/api/exam', examRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);
@@ -553,12 +581,18 @@ app.use((req, res) => {
   res.status(404).json({ data: null, error: `Route ${req.method} ${req.path} not found` });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
-  console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
-  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
-}).on('error', (err) => {
-  console.error('❌ Server failed to start:', err);
-  process.exit(1);
-});
+// Export app for Vercel serverless functions
+export default app;
+
+// Only start the server if not running in Vercel environment
+// Vercel will handle the serverless function execution
+if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Backend server running on http://localhost:${PORT}`);
+    console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+    console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
+  }).on('error', (err) => {
+    console.error('❌ Server failed to start:', err);
+    process.exit(1);
+  });
+}
