@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Login } from '@/pages/Login';
 import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -119,19 +120,18 @@ function AppContent() {
     '/tools': 'tools',
   };
 
-  // Initialize from URL on mount
+  // Initialize from URL on mount (only if user is already logged in)
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        if (orgName && userId) {
+        if (currentUser && orgName && userId) {
           const userIdNum = parseInt(userId, 10);
           if (!isNaN(userIdNum)) {
-            // Load user by org name and user_id
-            login('', orgName, userIdNum);
+            // Load user by org name and user_id if URL params don't match current user
+            if (currentUser.organization?.org_name !== orgName || currentUser.user_id !== userIdNum) {
+              login('', orgName, userIdNum);
+            }
           }
-        } else if (!currentUser) {
-          // Default to admin if no user and no URL params
-          login('admin');
         }
       } catch (error) {
         console.error('Error initializing user:', error);
@@ -141,8 +141,12 @@ function AppContent() {
       }
     };
 
-    initializeUser();
-  }, [orgName, userId]);
+    if (currentUser) {
+      initializeUser();
+    } else {
+      setIsInitializing(false);
+    }
+  }, [orgName, userId, currentUser]);
 
   // Update URL when user changes
   useEffect(() => {
@@ -389,6 +393,18 @@ function AppContent() {
     }
   }, [currentUser, loading]);
 
+  // Show login page if not authenticated - redirect to /login
+  useEffect(() => {
+    if (!currentUser && !loading && !isInitializing && location.pathname !== '/login') {
+      navigate('/login', { replace: true });
+    }
+  }, [currentUser, loading, isInitializing, location.pathname, navigate]);
+
+  // Show login page if not authenticated
+  if (!currentUser && !loading && !isInitializing) {
+    return null; // Will redirect to /login
+  }
+
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -410,11 +426,7 @@ function AppContent() {
 }
 
 const Index = () => {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  return <AppContent />;
 };
 
 export default Index;

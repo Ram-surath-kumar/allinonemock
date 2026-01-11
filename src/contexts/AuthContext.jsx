@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ROLE_HIERARCHY } from '@/types/erp';
 import { api } from '@/services/api';
+import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext(undefined);
 
@@ -19,10 +20,25 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load admin user by default on mount
+  // Check for existing session on mount
   useEffect(() => {
-    loadUser('admin');
+    checkSession();
   }, []);
+
+  const checkSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        // Load user by email if session exists
+        await loadUserByEmail(session.user.email);
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+      setLoading(false);
+    }
+  };
 
   const loadUserById = async (userId) => {
     try {
@@ -175,8 +191,90 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
+  const loadUserByEmail = async (email) => {
+    try {
+      setLoading(true);
+      const response = await api.getUsers({ email });
+      if (response.error) throw new Error(response.error);
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        setLoading(false);
+        return;
+      }
+      const data = response.data[0];
+
+      // Fetch organization if org_id exists
+      let organization = undefined;
+      if (data.org_id) {
+        const orgResponse = await api.getOrganizations({ id: String(data.org_id) });
+        if (!orgResponse.error && orgResponse.data && Array.isArray(orgResponse.data) && orgResponse.data.length > 0) {
+          const orgData = orgResponse.data[0];
+          organization = {
+            id: orgData.id,
+            org_id: orgData.org_id,
+            org_code: orgData.org_code,
+            org_name: orgData.org_name,
+          };
+        }
+      }
+
+      const user = {
+        id: data.id,
+        loopid: data.loopid,
+        org_id: data.org_id,
+        user_id: data.user_id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        permissions: data.permissions || [],
+        department: data.department,
+        createdAt: new Date(data.created_at),
+        status: data.status,
+        avatar: data.avatar,
+        organization,
+      };
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error loading user by email:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithCredentials = async (email, password) => {
+    try {
+      setLoading(true);
+      
+      // Authenticate with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      // Load user data
+      await loadUserByEmail(email);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      // Clear any cached data
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      setCurrentUser(null);
+      window.location.href = '/';
+    }
   };
 
   const canManageRole = (targetRole) => {
@@ -190,7 +288,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, canManageRole, hasPermission }}>
+    <AuthContext.Provider value={{ currentUser, login, loginWithCredentials, logout, canManageRole, hasPermission, loading }}>
       {children}
     </AuthContext.Provider>
   );

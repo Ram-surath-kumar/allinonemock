@@ -7,7 +7,6 @@ import {
   CreditCard,
   Building2,
   LogOut,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   User as UserIcon,
@@ -21,15 +20,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_LABELS, UserRole, User } from '@/types/erp';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { api } from '@/services/api';
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { UIConfiguration } from '@/config/UIConfiguration';
 
 const navItems = [
@@ -59,23 +50,12 @@ const studentNavItems = [
 
 
 export function Sidebar({ currentPath, onNavigate }) {
-  const { currentUser, login, logout, hasPermission } = useAuth();
-  const navigate = useNavigate();
-  const [allUsers, setAllUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
+  const { currentUser, logout, hasPermission } = useAuth();
   // Sidebar collapse state - only enabled if minimizeSidebar is true in UIConfiguration
   const [collapsed, setCollapsed] = useState(UIConfiguration.minimizeSidebar ? true : false);
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef(null);
   const sidebarRef = useRef(null);
-
-  useEffect(() => {
-    if (usersDropdownOpen && allUsers.length === 0) {
-      fetchAllUsers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usersDropdownOpen]);
 
   // Handle hover with 500ms delay - only if minimizeSidebar is enabled
   useEffect(() => {
@@ -105,91 +85,11 @@ export function Sidebar({ currentPath, onNavigate }) {
     };
   }, [isHovered]);
 
-  const fetchAllUsers = async () => {
-    try {
-      setLoadingUsers(true);
-      const response = await api.getUsers();
-      if (response.error) throw new Error(response.error);
-      const data = response.data;
-
-      if (data && Array.isArray(data)) {
-        const orgIds = [...new Set(data.filter((u) => u.org_id).map((u) => u.org_id))];
-        const orgMap = new Map();
-
-        if (orgIds.length > 0) {
-          for (const orgId of orgIds) {
-            if (orgId) {
-              const orgResponse = await api.getOrganizations({ id: String(orgId) });
-              if (!orgResponse.error && orgResponse.data && Array.isArray(orgResponse.data) && orgResponse.data.length > 0) {
-                const org = orgResponse.data[0];
-                orgMap.set(org.id, org);
-              }
-            }
-          }
-        }
-
-        const mappedUsers = data.map((row) => {
-          const org = row.org_id ? orgMap.get(row.org_id) : undefined;
-          return {
-            id: row.id,
-            loopid: row.loopid,
-            org_id: row.org_id,
-            user_id: row.user_id,
-            name: row.name,
-            email: row.email,
-            role: row.role,
-            permissions: row.permissions || [],
-            department: row.department,
-            createdAt: new Date(row.created_at),
-            status: row.status,
-            avatar: row.avatar,
-            organization: org ? {
-              id: org.id,
-              org_id: org.org_id,
-              org_code: org.org_code,
-              org_name: org.org_name,
-            } : undefined,
-          };
-        });
-        setAllUsers(mappedUsers);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
   const filteredNavItems = navItems.filter(item => {
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
     return true;
   });
-
-  const handleUserSwitch = async (user) => {
-    if (!user.organization || !user.user_id) {
-      console.error('User does not have organization or user_id');
-      return;
-    }
-
-    const pathToTab = {
-      '/': 'dashboard',
-      '/users': 'users',
-      '/students': 'students',
-      '/attendance': 'attendance',
-      '/academics': 'academics',
-      '/finance': 'finance',
-      '/facilities': 'facilities',
-      '/settings': 'settings',
-    };
-
-    const currentTab = pathToTab[currentPath] || 'dashboard';
-
-    if (user.user_id && user.organization?.org_name) {
-      navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
-      await login('', user.organization.org_name, user.user_id);
-    }
-  };
 
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -312,81 +212,49 @@ export function Sidebar({ currentPath, onNavigate }) {
         "border-t border-sidebar-border bg-card/70 backdrop-blur-xl shadow-sm",
         collapsed ? "p-1 pb-1" : "px-3 pt-1.5 pb-1"
       )}>
-        <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <button className={cn(
-              "flex w-full items-center rounded-lg text-left",
-              "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
-              collapsed
-                ? "justify-center px-0 py-2"
-                : "justify-start gap-2.5 px-2.5 py-2"
+        <div className={cn(
+          "flex w-full items-center rounded-lg",
+          "transition-all duration-200",
+          collapsed
+            ? "justify-center px-0 py-2"
+            : "justify-between gap-2.5 px-2.5 py-2"
+        )}>
+          <div className={cn(
+            "flex items-center gap-2.5 flex-1 min-w-0",
+            collapsed && "justify-center"
+          )}>
+            <div className={cn(
+              "flex items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-xs font-semibold text-primary-foreground shadow-sm shrink-0 transition-transform duration-200 hover:scale-105",
+              collapsed ? "h-8 w-8" : "h-9 w-9"
             )}>
-              <div className={cn(
-                "flex items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-xs font-semibold text-primary-foreground shadow-sm shrink-0 transition-transform duration-200 hover:scale-105",
-                collapsed ? "h-8 w-8" : "h-9 w-9"
-              )}>
-                {currentUser ? getInitials(currentUser.name) : 'U'}
-              </div>
-              <div className={cn(
-                "overflow-hidden min-w-0 transition-[max-width,opacity] duration-300 ease-out",
-                collapsed ? "max-w-0 opacity-0" : "max-w-[180px] flex-1 opacity-100",
-                collapsed ? "" : "delay-75"
-              )}>
-                <p className="truncate text-xs font-semibold text-foreground leading-tight">{currentUser?.name}</p>
-                <p className="truncate text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
-                  {currentUser && ROLE_LABELS[currentUser.role]}
-                </p>
-              </div>
-              <div className={cn(
-                "shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-                collapsed ? "w-0 opacity-0" : "w-4 opacity-100"
-              )}>
-                <ChevronDown className="h-4 w-4 text-sidebar-muted transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 glass-modern">
-            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-              Switch Role (Demo)
+              {currentUser ? getInitials(currentUser.name) : 'U'}
             </div>
-            {loadingUsers ? (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                Loading users...
-              </div>
-            ) : allUsers.length === 0 ? (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                No users available
-              </div>
-            ) : (
-              allUsers.map((user) => (
-                <DropdownMenuItem
-                  key={user.id}
-                  onClick={() => handleUserSwitch(user)}
-                  className={cn(
-                    "flex items-center justify-between",
-                    currentUser?.id === user.id && "bg-accent"
-                  )}
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary shrink-0">
-                      {getInitials(user.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {ROLE_LABELS[user.role]}
-                      </p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-              ))
+            <div className={cn(
+              "overflow-hidden min-w-0 transition-[max-width,opacity] duration-300 ease-out",
+              collapsed ? "max-w-0 opacity-0" : "max-w-[180px] flex-1 opacity-100",
+              collapsed ? "" : "delay-75"
+            )}>
+              <p className="truncate text-xs font-semibold text-foreground leading-tight">{currentUser?.name}</p>
+              <p className="truncate text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
+                {currentUser && ROLE_LABELS[currentUser.role]}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className={cn(
+              "shrink-0 p-1.5 rounded-md transition-all duration-200",
+              "hover:bg-sidebar-accent hover:text-destructive",
+              "text-sidebar-muted",
+              collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+              collapsed ? "" : "delay-75"
             )}
-            <DropdownMenuItem onClick={logout} className="text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            title="Sign Out"
+            aria-label="Sign Out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );

@@ -160,6 +160,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
             loop_email: data.email,
             loopid: data.loopid || '',
             user_name: data.name,
+            user_id: data.user_id,
           });
           
           if (emailResponse.error) {

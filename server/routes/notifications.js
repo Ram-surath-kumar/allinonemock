@@ -43,7 +43,50 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update notification (mark as read)
+// Mark all notifications as read for a user
+router.put('/read-all', async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({
+        data: null,
+        error: 'User ID is required'
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', user_id)
+      .eq('read', false)
+      .select();
+    
+    if (error) throw error;
+    sendSuccess(res, data || []);
+  } catch (error) {
+    handleError(error, res, 'Failed to mark all notifications as read');
+  }
+});
+
+// Mark single notification as read
+router.put('/:id/read', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    sendSuccess(res, data);
+  } catch (error) {
+    handleError(error, res, 'Failed to mark notification as read');
+  }
+});
+
+// Update notification (generic update)
 router.put('/:id', async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
