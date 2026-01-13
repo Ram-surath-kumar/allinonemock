@@ -14,7 +14,8 @@ import {
   FileText,
   Wrench,
   BedDouble,
-  Library
+  Library,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +36,7 @@ const navItems = [
   { icon: Library, label: 'Library', href: '/library' },
   { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
+  { icon: SettingsIcon, label: 'Settings', href: '/settings' },
 ];
 
 // Student-specific navigation items
