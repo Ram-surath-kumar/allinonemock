@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      # Add other env vars from .env manually or use env_file
+    env_file:
+      - ./server/.env
+
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
