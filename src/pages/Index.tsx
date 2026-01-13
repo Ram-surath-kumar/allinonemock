@@ -2,7 +2,6 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Login } from '@/pages/Login';
 import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -40,15 +39,6 @@ const Tools = lazy(() =>
 const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
-const HostelDashboard = lazy(() =>
-  import('@/pages/Hostel/HostelDashboard').then(module => ({ default: module.default }))
-);
-const ExamDashboard = lazy(() =>
-  import('@/pages/Exam/ExamDashboard').then(module => ({ default: module.default }))
-);
-const LibraryDashboard = lazy(() =>
-  import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
-);
 
 // Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
@@ -73,23 +63,20 @@ const PageLoader = () => (
 
 function AppContent() {
   const { currentUser, login, loading } = useAuth();
-  const { orgName, userId, tab } = useParams();
+  const { orgName, userId, tab } = useParams<{ orgName?: string; userId?: string; tab?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Map tab names to paths
-  const tabToPath = {
+  const tabToPath: Record<string, string> = {
     'dashboard': '/',
     'users': '/users',
     'students': '/students',
     'attendance': '/attendance',
     'academics': '/academics',
     'finance': '/finance',
-    'hostel': '/hostel',
-    'exam': '/exam',
-    'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
     'personal-details': '/student/personal-details',
@@ -100,16 +87,13 @@ function AppContent() {
     'tools': '/tools',
   };
 
-  const pathToTab = {
+  const pathToTab: Record<string, string> = {
     '/': 'dashboard',
     '/users': 'users',
     '/students': 'students',
     '/attendance': 'attendance',
     '/academics': 'academics',
     '/finance': 'finance',
-    '/hostel': 'hostel',
-    '/exam': 'exam',
-    '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
     '/student/personal-details': 'personal-details',
@@ -120,18 +104,19 @@ function AppContent() {
     '/tools': 'tools',
   };
 
-  // Initialize from URL on mount (only if user is already logged in)
+  // Initialize from URL on mount
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        if (currentUser && orgName && userId) {
+        if (orgName && userId) {
           const userIdNum = parseInt(userId, 10);
           if (!isNaN(userIdNum)) {
-            // Load user by org name and user_id if URL params don't match current user
-            if (currentUser.organization?.org_name !== orgName || currentUser.user_id !== userIdNum) {
-              login('', orgName, userIdNum);
-            }
+            // Load user by org name and user_id
+            login('', orgName, userIdNum);
           }
+        } else if (!currentUser) {
+          // Default to admin if no user and no URL params
+          login('admin');
         }
       } catch (error) {
         console.error('Error initializing user:', error);
@@ -141,12 +126,8 @@ function AppContent() {
       }
     };
 
-    if (currentUser) {
-      initializeUser();
-    } else {
-      setIsInitializing(false);
-    }
-  }, [orgName, userId, currentUser]);
+    initializeUser();
+  }, [orgName, userId]);
 
   // Update URL when user changes
   useEffect(() => {
@@ -163,19 +144,23 @@ function AppContent() {
     }
   }, [currentUser?.organization?.org_name, currentUser?.user_id]);
 
-  const handleNavigate = (path) => {
+  const handleNavigate = (path: string) => {
+    // Split path and query params
+    const [pathPart, queryPart] = path.split('?');
+    const queryString = queryPart ? `?${queryPart}` : '';
+
     // For student routes, use the path directly or map to tab name
-    if (path.startsWith('/student/')) {
-      const tabName = pathToTab[path] || path.replace('/student/', '').replace(/-/g, '-');
+    if (pathPart.startsWith('/student/')) {
+      const tabName = pathToTab[pathPart] || pathPart.replace('/student/', '').replace(/-/g, '-');
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryString}`);
       } else {
         navigate(path);
       }
     } else {
-      const tabName = pathToTab[path] || 'dashboard';
+      const tabName = pathToTab[pathPart] || 'dashboard';
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryString}`);
       } else {
         navigate(path);
       }
@@ -241,12 +226,6 @@ function AppContent() {
         return 'Academics';
       case '/finance':
         return 'Finance';
-      case '/hostel':
-        return 'Hostel Management';
-      case '/exam':
-        return 'Examinations';
-      case '/library':
-        return 'Library Management';
       case '/facilities':
         return 'Facilities';
       case '/settings':
@@ -346,24 +325,6 @@ function AppContent() {
             <Finance />
           </Suspense>
         );
-      case '/hostel':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <HostelDashboard />
-          </Suspense>
-        );
-      case '/exam':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <ExamDashboard />
-          </Suspense>
-        );
-      case '/library':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <LibraryDashboard />
-          </Suspense>
-        );
       case '/academics':
       case '/facilities':
       case '/settings':
@@ -393,18 +354,6 @@ function AppContent() {
     }
   }, [currentUser, loading]);
 
-  // Show login page if not authenticated - redirect to /login
-  useEffect(() => {
-    if (!currentUser && !loading && !isInitializing && location.pathname !== '/login') {
-      navigate('/login', { replace: true });
-    }
-  }, [currentUser, loading, isInitializing, location.pathname, navigate]);
-
-  // Show login page if not authenticated
-  if (!currentUser && !loading && !isInitializing) {
-    return null; // Will redirect to /login
-  }
-
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -426,7 +375,11 @@ function AppContent() {
 }
 
 const Index = () => {
-  return <AppContent />;
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 };
 
 export default Index;

@@ -1,41 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Loader2, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent } from '@/services/gemini';
+import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent, AIAction, AIContext, DataQueryIntent } from '@/services/gemini';
 import { api } from '@/services/api';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
+interface AIAssistantChatProps {
+  onNavigate?: (path: string) => void;
+}
 
-
-
-export function AIAssistantChat({ onNavigate }) {
+export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
   const { currentUser, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [messages, setMessages] = useState([
+  const [students, setStudents] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
@@ -43,17 +39,7 @@ export function AIAssistantChat({ onNavigate }) {
       timestamp: new Date(),
     },
   ]);
-  const messagesEndRef = useRef(null);
-  const [confirmDialog, setConfirmDialog] = useState({
-    open: false,
-    action: null,
-    title: '',
-    description: '',
-  });
-
-  useEffect(() => {
-    console.log('AIAssistantChat component mounted/updated', { isOpen, document: typeof document !== 'undefined' });
-  }, []);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && students.length === 0) {
@@ -75,20 +61,20 @@ export function AIAssistantChat({ onNavigate }) {
       const studentsData = studentsResponse.data;
 
       if (studentsData) {
-        const departmentIds = [...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id))];
-        let deptMap = new Map();
-        
+        const departmentIds = [...new Set(studentsData.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
+        let deptMap = new Map<string, string>();
+
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
-            deptResponse.data.forEach((dept) => {
+            deptResponse.data.forEach((dept: any) => {
               deptMap.set(dept.id, dept.name);
             });
             setDepartments(deptResponse.data);
           }
         }
 
-        const studentsWithDept = studentsData.map((row) => ({
+        const studentsWithDept = studentsData.map((row: any) => ({
           id: row.id,
           name: row.name,
           email: row.email,
@@ -103,8 +89,8 @@ export function AIAssistantChat({ onNavigate }) {
     }
   };
 
-  const addMessage = (role, content) => {
-    const newMessage= {
+  const addMessage = (role: 'user' | 'assistant', content: string) => {
+    const newMessage: Message = {
       id: Date.now().toString(),
       role,
       content,
@@ -113,23 +99,11 @@ export function AIAssistantChat({ onNavigate }) {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  // Check if action is risky and requires confirmation
-  const isRiskyAction = (action) => {
-    const riskyActions = ['delete_students', 'delete_all_students', 'remove_all_students'];
-    return riskyActions.includes(action.action) || (action.delete_all === true);
-  };
-
-  const executeAction = async (action, skipConfirmation = false) => {
-    // Check if action requires confirmation
-    if (!skipConfirmation && isRiskyAction(action)) {
-      const studentCount = students.length;
-      setConfirmDialog({
-        open: true,
-        action: action,
-        title: '⚠️ Risky Action - Delete All Students',
-        description: `This action will permanently delete ALL ${studentCount} student${studentCount !== 1 ? 's' : ''} from the system. This cannot be undone. Are you sure you want to proceed?`,
-      });
-      return;
+  const executeAction = async (action: AIAction) => {
+    // Check for clarification needed FIRST
+    if (action.needs_clarification) {
+      addMessage('assistant', action.clarification_question || 'I need more details to proceed.');
+      return; // Stop execution, wait for user input
     }
 
     if (action.action === 'mark_attendance') {
@@ -144,8 +118,6 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
-        addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
-        
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -157,26 +129,25 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully marked ${action.student_name} as ${action.status}.`);
-        
+
         // Navigate to attendance page
         if (onNavigate) {
           onNavigate('/attendance');
         } else {
           navigate('/attendance');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
         }, 1000);
-        
+
         window.dispatchEvent(new CustomEvent('attendance-updated'));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error marking attendance:', error);
         addMessage('assistant', `❌ Error: ${error.message || 'Failed to mark attendance'}`);
       }
     } else if (action.action === 'edit_student') {
-      addMessage('assistant', '🔄 Processing... Opening students page for editing...');
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -185,8 +156,8 @@ export function AIAssistantChat({ onNavigate }) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
+      addMessage('assistant', 'Opening students page for editing...');
     } else if (action.action === 'view_student') {
-      addMessage('assistant', `🔄 Processing... Opening students page to view ${action.student_name || 'student'}...`);
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -195,6 +166,7 @@ export function AIAssistantChat({ onNavigate }) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
+      addMessage('assistant', `Opening students page to view ${action.student_name || 'student'}...`);
     } else if (action.action === 'add_department') {
       if (!action.department_name) {
         addMessage('assistant', 'I couldn\'t identify the department name. Please specify it clearly, e.g., "add new department with name Computer Science"');
@@ -207,8 +179,6 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
-        addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
-        
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -217,14 +187,14 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
-        
+
         // Navigate to tools page
         if (onNavigate) {
           onNavigate('/tools');
         } else {
           navigate('/tools');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -232,7 +202,7 @@ export function AIAssistantChat({ onNavigate }) {
       } catch (error) {
         console.error('Error creating department:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
-        
+
         // Check if it's a service role key error
         if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
           addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
@@ -240,112 +210,63 @@ export function AIAssistantChat({ onNavigate }) {
           addMessage('assistant', `❌ Error: ${errorMessage}`);
         }
       }
-    } else if (action.action === 'delete_students') {
-      if (!action.delete_all) {
-        addMessage('assistant', 'I couldn\'t understand the delete command. Please specify "delete all students" to delete all students.');
-        return;
-      }
-
-      if (!hasPermission('manage_staff')) {
-        addMessage('assistant', 'You don\'t have permission to delete students.');
-        return;
-      }
-
-      try {
-        // Show processing status
-        const totalStudents = students.length;
-        addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
-        
-        // Delete all students
-        const studentIds = students.map(s => s.id);
-        let deletedCount = 0;
-        let errorCount = 0;
-
-        for (let i = 0; i < studentIds.length; i++) {
-          const studentId = studentIds[i];
-          const currentIndex = i + 1;
-          
-          // Show progress every 5 students or for the last one
-          if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
-            addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
-          }
-          
-          try {
-            const response = await api.deleteUser(studentId);
-            if (response.error) {
-              errorCount++;
-              console.error(`Error deleting student ${studentId}:`, response.error);
-            } else {
-              deletedCount++;
-            }
-          } catch (error) {
-            errorCount++;
-            console.error(`Error deleting student ${studentId}:`, error);
-          }
-        }
-        
-        // Show completion status
-        if (errorCount > 0 && deletedCount === 0) {
-          // Get more details about the first error
-          let errorDetails = '';
-          if (errorCount > 0) {
-            errorDetails = ' This may be due to foreign key constraints or missing permissions.';
-          }
-          throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
-        }
-
-        const message = deletedCount > 0 
-          ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
-          : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
-
-        addMessage('assistant', message);
-        
-        // Reload students list
-        await loadData();
-        
-        // Navigate to students page
-        if (onNavigate) {
-          onNavigate('/students');
-        } else {
-          navigate('/students');
-        }
-        
-        // Close chat after action
-        setTimeout(() => {
-          setIsOpen(false);
-        }, 2000);
-      } catch (error) {
-        console.error('Error deleting students:', error);
-        let errorMessage = error.message || 'Failed to delete students';
-        
-        // Provide more helpful error messages
-        if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
-          errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
-        }
-        
-        addMessage('assistant', `❌ Error: ${errorMessage}`);
-      }
+    } else if (['create_fee_structure', 'manage_fee_categories', 'view_student_fees'].includes(action.action)) {
+      if (onNavigate) onNavigate('/finance?tab=fees');
+      else navigate('/finance?tab=fees');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Fee Management...');
+    } else if (action.action === 'record_payment') {
+      if (onNavigate) onNavigate('/finance?tab=collections');
+      else navigate('/finance?tab=collections');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Collections to record payment...');
+    } else if (['request_refund', 'approve_refund'].includes(action.action)) {
+      if (onNavigate) onNavigate('/finance?tab=refunds');
+      else navigate('/finance?tab=refunds');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Refunds section...');
+    } else if (['add_bank_account', 'record_bank_transaction'].includes(action.action)) {
+      if (onNavigate) onNavigate('/finance?tab=bank');
+      else navigate('/finance?tab=bank');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Bank Management...');
+    } else if (['create_journal_entry', 'view_chart_of_accounts'].includes(action.action)) {
+      if (onNavigate) onNavigate('/finance?tab=accounting');
+      else navigate('/finance?tab=accounting');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Accounting...');
+    } else if (['update_tax_config', 'view_gst_report'].includes(action.action)) {
+      if (onNavigate) onNavigate('/finance?tab=tax');
+      else navigate('/finance?tab=tax');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Tax & Compliance...');
+    } else if (action.action === 'reconcile_transactions') {
+      if (onNavigate) onNavigate('/finance?tab=reconciliation');
+      else navigate('/finance?tab=reconciliation');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Reconciliation...');
+    } else if (action.action === 'view_reports') {
+      if (onNavigate) onNavigate('/finance?tab=reports');
+      else navigate('/finance?tab=reports');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Finance Reports...');
+    } else if (action.action === 'view_finance_dashboard') {
+      if (onNavigate) onNavigate('/finance?tab=dashboard');
+      else navigate('/finance?tab=dashboard');
+      setTimeout(() => setIsOpen(false), 500);
+      addMessage('assistant', 'Opening Finance Dashboard...');
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try specific finance commands like "create fee structure", "record payment", "check refunds", or ask me a question about your data.');
     }
   };
 
-  const handleConfirmAction = async () => {
-    setConfirmDialog({ ...confirmDialog, open: false });
-    if (confirmDialog.action) {
-      await executeAction(confirmDialog.action, true);
-    }
-  };
-
-  const handleDataQuery = async (query) => {
+  const handleDataQuery = async (query: string) => {
     try {
-      addMessage('assistant', '🔄 Processing... Analyzing your question...');
-      
       const currentDate = format(new Date(), 'yyyy-MM-dd');
-      
+
       // Parse the query intent
       const intent = await parseDataQueryIntent(query, students, currentDate);
-      
+
       if (intent.confidence < 0.5) {
         addMessage('assistant', 'I\'m not sure I understood your question. Could you rephrase it?');
         return;
@@ -362,7 +283,7 @@ export function AIAssistantChat({ onNavigate }) {
 
           // Find student
           const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
+            s => s.name.toLowerCase().includes(intent.student_name!.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
@@ -376,7 +297,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const student = matchingStudents[0];
-          
+
           // Get attendance for the date
           const attendanceResponse = await api.getAttendance({
             date: intent.date,
@@ -389,7 +310,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const attendanceData = attendanceResponse.data;
-          
+
           if (!attendanceData || attendanceData.length === 0) {
             response = `${student.name} has no attendance record for ${intent.date === currentDate ? 'today' : intent.date}.`;
           } else {
@@ -407,7 +328,7 @@ export function AIAssistantChat({ onNavigate }) {
           if (intent.department) {
             // Find matching department
             const matchingDepts = departments.filter(
-              d => d.name.toLowerCase().includes(intent.department.toLowerCase())
+              d => d.name.toLowerCase().includes(intent.department!.toLowerCase())
             );
 
             if (matchingDepts.length > 0) {
@@ -416,7 +337,7 @@ export function AIAssistantChat({ onNavigate }) {
             } else {
               // Try fuzzy match
               filteredStudents = students.filter(
-                s => s.department?.toLowerCase().includes(intent.department.toLowerCase())
+                s => s.department?.toLowerCase().includes(intent.department!.toLowerCase())
               );
             }
           }
@@ -437,7 +358,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
+            s => s.name.toLowerCase().includes(intent.student_name!.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
@@ -456,7 +377,7 @@ export function AIAssistantChat({ onNavigate }) {
 
         default: {
           // Use analytics function for general queries
-          const generateHistorical = (current, count = 6) => {
+          const generateHistorical = (current: number, count: number = 6) => {
             const data = [];
             for (let i = count - 1; i >= 0; i--) {
               data.push(Math.max(0, current + (Math.random() - 0.5) * (current * 0.1)));
@@ -484,15 +405,15 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       addMessage('assistant', response);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing data query:', error);
       addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your query'}`);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!prompt.trim()) {
       return;
     }
@@ -501,7 +422,7 @@ export function AIAssistantChat({ onNavigate }) {
     setPrompt('');
     addMessage('user', userPrompt);
     setLoading(true);
-    
+
     try {
       // Load data if not loaded
       if (students.length === 0) {
@@ -510,79 +431,60 @@ export function AIAssistantChat({ onNavigate }) {
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
       const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-                         /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-                         userPrompt.includes('?') ||
-                         /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
+        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
+        userPrompt.includes('?') ||
+        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
 
       if (isDataQuery) {
-        // Handle data query
+        // Handle as data query - query database
         await handleDataQuery(userPrompt);
       } else {
-        // Handle action
-        addMessage('assistant', '🔄 Processing... Understanding your command...');
-        
-        const context = {
-          students,
+
+        // Handle as action
+        // Format history for context (exclude last user message which is current prompt)
+        // We only want previous turns
+        const history = messages.slice(0, messages.length - (loading ? 0 : 0)).map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+
+        const context: AIContext = {
+          students: students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department'],
+          availableActions: ['mark_attendance', 'edit_student', 'view_student'],
+          history: history
         };
 
         const action = await callGeminiAPI(userPrompt, context);
 
-        if (action.confidence >= 0.7) {
-          await executeAction(action);
+        if (action.confidence < 0.5) {
+          addMessage('assistant', `I'm not confident I understood that (${(action.confidence * 100).toFixed(0)}% confidence). ${action.message || 'Could you rephrase your request?'}`);
         } else {
-          addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", or ask me a question about your data.');
+          await executeAction(action);
         }
       }
-    } catch (error) {
-      console.error('Error processing message:', error);
-      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your message'}`);
+    } catch (error: any) {
+      console.error('Error processing AI command:', error);
+      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your request'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Ensure we have document available (client-side only)
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return null; // SSR safety check
-  }
-
-  // Ensure document.body exists
-  if (!document.body) {
-    return null;
-  }
-
-  // Render using portal to document.body to ensure it's always on top
-  return createPortal(
+  return (
     <>
-      {/* Floating Button - Positioned at bottom-right corner */}
+      {/* Floating Button */}
       {!isOpen && (
         <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsOpen(true);
-          }}
+          onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed h-14 w-14 rounded-full",
+            "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full",
             "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
-            "shadow-lg hover:shadow-xl transition-all duration-300",
-            "hover:scale-110 active:scale-95",
+            "shadow-depth-2 hover:shadow-glow transition-all duration-300",
+            "hover-lift active:scale-95",
             "flex items-center justify-center",
             "group focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
           )}
-          style={{
-            zIndex: 99999,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '56px',
-            height: '56px'
-          }}
           aria-label="Open AI Assistant"
         >
           <Sparkles className="h-6 w-6 animate-pulse group-hover:animate-spin transition-transform" />
@@ -590,36 +492,33 @@ export function AIAssistantChat({ onNavigate }) {
         </button>
       )}
 
-      {/* Chat Widget - Positioned at bottom-right corner */}
+      {/* Chat Widget */}
       {isOpen && (
         <div className={cn(
-          "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
-          "flex flex-col overflow-hidden transition-all duration-300",
-          isMinimized ? "h-14" : "h-[600px]"
-        )}
-        style={{
-          zIndex: 99999,
-          pointerEvents: 'auto',
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px'
-        }}
-        role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+          "fixed bottom-6 right-6 z-50 rounded-2xl shadow-depth-3",
+          "bg-card border border-border/30 glass-modern",
+          "transition-all duration-300",
+          isMinimized ? "w-80 h-16" : "w-96 h-[600px]",
+          "flex flex-col overflow-hidden"
+        )} role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
+          <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-primary/5 to-primary/10">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              </div>
               {!isMinimized && (
                 <div>
-                  <h3 className="text-sm font-semibold">AI Assistant</h3>
+                  <h3 className="text-sm font-semibold text-foreground">AI Assistant</h3>
                   <p className="text-xs text-muted-foreground">Ask me anything</p>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7"
                 onClick={() => setIsMinimized(!isMinimized)}
               >
                 {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
@@ -627,6 +526,7 @@ export function AIAssistantChat({ onNavigate }) {
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7"
                 onClick={() => setIsOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -644,25 +544,27 @@ export function AIAssistantChat({ onNavigate }) {
                       key={message.id}
                       className={cn(
                         "flex",
-                        message.role === 'user' ? "justify-end" : "justify-start"
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       )}
                     >
-                      <div className={cn(
-                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                        message.role === 'user'
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                      )}>
-                        {message.content}
-                        <div className="text-xs opacity-70 mt-1">
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
+                          message.role === 'user'
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-xs opacity-70 mt-1">
                           {format(message.timestamp, 'HH:mm')}
-                        </div>
+                        </p>
                       </div>
                     </div>
                   ))}
                   {loading && (
                     <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg px-3 py-2">
+                      <div className="bg-muted rounded-2xl px-4 py-2.5">
                         <Loader2 className="h-4 w-4 animate-spin" />
                       </div>
                     </div>
@@ -672,9 +574,10 @@ export function AIAssistantChat({ onNavigate }) {
               </ScrollArea>
 
               {/* Input */}
-              <form onSubmit={handleSubmit} className="border-t border-border p-4">
+              <form onSubmit={handleSubmit} className="p-4 border-t border-border/30">
                 <div className="flex gap-2">
                   <Input
+                    placeholder="Ask me anything..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
@@ -686,7 +589,13 @@ export function AIAssistantChat({ onNavigate }) {
                       }
                     }}
                   />
-                  <Button type="submit" disabled={loading} size="icon">
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={loading || !prompt.trim()}
+                    className="rounded-full shrink-0 hover-lift focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+                    aria-label="Send message"
+                  >
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -699,31 +608,6 @@ export function AIAssistantChat({ onNavigate }) {
           )}
         </div>
       )}
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              {confirmDialog.title}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="pt-2">
-              {confirmDialog.description}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAction}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Yes, Delete All Students
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>,
-    document.body
+    </>
   );
 }
