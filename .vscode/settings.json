@@ -1,0 +1,10 @@
+{
+    "java.jdt.ls.java.home": "C:\\Program Files\\Microsoft\\jdk-21.0.9.10-hotspot",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "C:\\Program Files\\Microsoft\\jdk-21.0.9.10-hotspot",
+            "default": true
+        }
+    ]
+}
