@@ -23,10 +23,9 @@ export function StudentProfileView({ student, onBack }) {
     const fetchProfile = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/profiles/${student.user_id || student.id}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/profiles/${student.id}`);
             const result = await response.json();
-
-            if (result.status === 'success') {
+            if (result.data && !result.error) {
                 setProfile(result.data);
             }
         } catch (error) {
@@ -41,27 +40,43 @@ export function StudentProfileView({ student, onBack }) {
         e.preventDefault();
         try {
             setLoading(true);
+
+            // Sanitize data before saving
+            const sanitizedProfile = { ...profile };
+            delete sanitizedProfile.id; // Don't send the internal primary key
+
+            if (sanitizedProfile.family_income === '') {
+                sanitizedProfile.family_income = null;
+            } else if (sanitizedProfile.family_income !== undefined && sanitizedProfile.family_income !== null) {
+                sanitizedProfile.family_income = Number(sanitizedProfile.family_income);
+            }
+
+            if (sanitizedProfile.dob === '') {
+                sanitizedProfile.dob = null;
+            }
+
             const dataToSave = {
-                ...profile,
-                user_id: student.user_id || student.id
+                ...sanitizedProfile,
+                user_id: student.id
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/profiles/${student.user_id || student.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/profiles/${student.id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSave)
             });
 
             const result = await response.json();
-            if (result.status === 'success') {
+            if (!result.error) {
                 toast.success('Profile updated successfully');
                 setIsEditing(false);
                 setProfile(result.data);
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Failed to update profile');
             }
         } catch (error) {
-            toast.error('Failed to update profile');
+            console.error('Error updating profile:', error);
+            toast.error(error.message || 'Failed to update profile');
         } finally {
             setLoading(false);
         }
@@ -198,7 +213,7 @@ export function StudentProfileView({ student, onBack }) {
                 </TabsContent>
 
                 <TabsContent value="academic" className="mt-4 space-y-4">
-                    <AcademicTab userId={student.user_id || student.id} />
+                    <AcademicTab userId={student.id} />
                 </TabsContent>
 
                 <TabsContent value="health" className="mt-4 space-y-4">
@@ -272,7 +287,7 @@ function AcademicTab({ userId }) {
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/academic/${userId}`);
             const result = await response.json();
-            if (result.status === 'success') {
+            if (result.data && !result.error) {
                 setData(result.data);
             }
         } catch (error) {

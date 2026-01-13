@@ -28,9 +28,13 @@ router.get('/:userId', async (req, res) => {
         if (recordError && recordError.code !== 'PGRST116') throw recordError;
         if (enrollError) throw enrollError;
 
-        sendSuccess(res, {
-            academic_record: record || {},
-            enrollments: enrollments || []
+        res.json({
+            status: 'success',
+            data: {
+                academic_record: record || {},
+                enrollments: enrollments || []
+            },
+            error: null
         });
     } catch (error) {
         handleError(error, res, 'Failed to fetch academic details');
@@ -55,7 +59,7 @@ router.post('/:userId/register-semester', async (req, res) => {
             .single();
 
         if (error) throw error;
-        sendSuccess(res, data);
+        res.json({ status: 'success', data, error: null });
     } catch (error) {
         handleError(error, res, 'Failed to register semester');
     }
@@ -82,7 +86,7 @@ router.post('/:userId/courses', async (req, res) => {
             .single();
 
         if (error) throw error;
-        sendSuccess(res, data);
+        res.json({ status: 'success', data, error: null });
     } catch (error) {
         handleError(error, res, 'Failed to enroll in course');
     }
