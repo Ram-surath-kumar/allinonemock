@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/services/api';
-import { DollarSign, CreditCard, TrendingUp } from 'lucide-react';
+import { IndianRupee, CreditCard, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function FinanceDashboard() {
@@ -13,17 +13,19 @@ export function FinanceDashboard() {
     });
 
     useEffect(() => {
+        const loadData = async () => {
+            // Fetch financial statements (Income, Expense, etc.)
+            const res = await api.getFinancialStatements();
+            if (res.data) {
+                setData({
+                    totalIncome: res.data.income || 0,
+                    totalSalaryPaid: res.data.expense || 0, // Using expense as salary for now
+                    netProfit: (res.data.income || 0) - (res.data.expense || 0)
+                });
+            }
+        };
         loadData();
     }, []);
-
-    const loadData = async () => {
-        // Ideally fetch dashboard stats from specific endpoint
-        // For now using existing getFinanceData logic or new endpoint
-        const res = await api.getFinanceData(currentUser?.id, currentUser?.role);
-        if (res.data) {
-            setData(res.data);
-        }
-    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -39,7 +41,7 @@ export function FinanceDashboard() {
             <Card className="rounded-xl shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <IndianRupee className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(data.totalIncome)}</div>

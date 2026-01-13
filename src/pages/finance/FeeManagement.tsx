@@ -332,7 +332,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
                                 ))}
                             </div>
                             <div className="text-right font-bold mt-2">
-                                Total: {totalAmount}
+                                Total: ₹{totalAmount}
                             </div>
                         </div>
                         <DialogFooter>
@@ -358,7 +358,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
                                 <TableCell className="font-medium">{s.name}</TableCell>
                                 <TableCell>{s.category?.name}</TableCell>
                                 <TableCell>{s.batch_year} - {s.semester}</TableCell>
-                                <TableCell>{s.total_amount}</TableCell>
+                                <TableCell>₹{s.total_amount}</TableCell>
                                 <TableCell>{new Date(s.due_date).toLocaleDateString()}</TableCell>
                             </TableRow>
                         ))}
@@ -430,7 +430,7 @@ function AssignmentsTab({ structures, scholarships }: { structures: any[], schol
                         <SelectContent>
                             <SelectItem value="none">None</SelectItem>
                             {scholarships.map(s => (
-                                <SelectItem key={s.id} value={s.id}>{s.name} ({s.type === 'percentage' ? `${s.value}%` : s.value})</SelectItem>
+                                <SelectItem key={s.id} value={s.id}>{s.name} ({s.type === 'percentage' ? `${s.value}%` : `₹${s.value}`})</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -513,7 +513,7 @@ function ScholarshipsTab({ scholarships, refresh }: { scholarships: any[], refre
                             <TableRow key={s.id}>
                                 <TableCell className="font-medium">{s.name}</TableCell>
                                 <TableCell className="capitalize">{s.type.replace('_', ' ')}</TableCell>
-                                <TableCell>{s.value}{s.type === 'percentage' ? '%' : ''}</TableCell>
+                                <TableCell>{s.type === 'percentage' ? `${s.value}%` : `₹${s.value}`}</TableCell>
                                 <TableCell>{s.criteria}</TableCell>
                             </TableRow>
                         ))}

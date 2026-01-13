@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Search, CreditCard } from 'lucide-react';
 import { PaymentGatewayMock } from '@/components/finance/PaymentGatewayMock';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function PaymentCollection() {
+    const { currentUser } = useAuth();
     const [search, setSearch] = useState('');
     const [students, setStudents] = useState<any[]>([]);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -88,7 +90,7 @@ export function PaymentCollection() {
                 amount: parseFloat(amount),
                 payment_method: method,
                 remarks,
-                created_by: 'current-user-uuid'
+                created_by: currentUser?.id
             });
 
             if (res.data) {
@@ -180,9 +182,9 @@ export function PaymentCollection() {
                                             <TableRow key={f.id}>
                                                 <TableCell>{f.structure?.name}</TableCell>
                                                 <TableCell>{f.structure?.semester} / {f.structure?.batch_year}</TableCell>
-                                                <TableCell>{f.net_amount}</TableCell>
-                                                <TableCell className="text-green-600 font-medium">{f.paid_amount}</TableCell>
-                                                <TableCell className="text-red-600 font-medium">{balance}</TableCell>
+                                                <TableCell>₹{f.net_amount}</TableCell>
+                                                <TableCell className="text-green-600 font-medium">₹{f.paid_amount}</TableCell>
+                                                <TableCell className="text-red-600 font-medium">₹{balance}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={f.status === 'paid' ? 'default' : f.status === 'partial' ? 'secondary' : 'destructive'}>
                                                         {f.status}
@@ -439,7 +441,7 @@ function ManageFeeDialog({ assignment, onClose }: { assignment: any, onClose: ()
                                     <div key={inst.id} className="flex justify-between items-center border p-2 rounded">
                                         <span className="text-sm">Inst {i + 1} ({inst.due_date})</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium">{inst.amount}</span>
+                                            <span className="font-medium">₹{inst.amount}</span>
                                             <Badge variant="outline">{inst.status}</Badge>
                                         </div>
                                     </div>

@@ -9,8 +9,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6a2J5enBxbm9qaGxhendvcHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyMTk2MTMsImV4cCI6MjA4MTc5NTYxM30.ledQxA84HlYEQyUTmp2VJ7U4lRkLMqKCYieQNL_ObuY';
 
 // Log which key is being used (for debugging)
-const hasValidServiceKey = supabaseServiceKey && 
-  supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE' && 
+const hasValidServiceKey = supabaseServiceKey &&
+  supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE' &&
   supabaseServiceKey.trim() !== '';
 
 if (!hasValidServiceKey) {
@@ -33,5 +33,10 @@ export const supabase = hasValidServiceKey
 
 // Always use service role key for admin operations if available
 export const supabaseAdmin = hasValidServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
   : createClient(supabaseUrl, supabaseAnonKey);
