@@ -212,6 +212,8 @@ class ApiClient {
     if (params?.student_ids) {
       params.student_ids.forEach(id => queryParams.append('student_ids', id));
     }
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
     const query = queryParams.toString();
     return this.request(`/attendance${query ? `?${query}` : ''}`);
   }

@@ -27,7 +27,16 @@ export function AuthProvider({ children }) {
 
   const checkSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      // If there's an error with the session (e.g., invalid refresh token), clear it
+      if (error) {
+        console.warn('Session error, clearing:', error.message);
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
       if (session?.user?.email) {
         // Load user by email if session exists
         await loadUserByEmail(session.user.email);
@@ -36,6 +45,8 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       console.error('Error checking session:', error);
+      // Clear any stale session data
+      await supabase.auth.signOut();
       setLoading(false);
     }
   };
@@ -81,6 +92,7 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       console.error('Error loading user by ID:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -123,6 +135,7 @@ export function AuthProvider({ children }) {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error loading user by org and user_id:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -169,6 +182,7 @@ export function AuthProvider({ children }) {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error loading user:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -197,8 +211,7 @@ export function AuthProvider({ children }) {
       const response = await api.getUsers({ email });
       if (response.error) throw new Error(response.error);
       if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-        setLoading(false);
-        return;
+        throw new Error('User data not found in database');
       }
       const data = response.data[0];
 
@@ -235,6 +248,7 @@ export function AuthProvider({ children }) {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error loading user by email:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

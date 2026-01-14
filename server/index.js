@@ -15,9 +15,15 @@ import activitiesRouter from './routes/activities.js';
 import libraryRouter from './routes/library.js';
 import hostelRouter from './routes/hostel.js';
 import examRouter from './routes/exam.js';
+<<<<<<< HEAD
 import academicRouter from './routes/academic.js';
 import misRouter from './routes/mis.js';
 import financeRouter from './routes/finance.js';
+
+import profilesRouter from './routes/SIM/profiles.js';
+import admissionsRouter from './routes/SIM/admissions.js';
+import simAcademicRouter from './routes/SIM/academic.js';
+import communicationsRouter from './routes/SIM/communications.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -80,9 +86,15 @@ app.use('/api/activities', activitiesRouter);
 app.use('/api/library', libraryRouter);
 app.use('/api/hostel', hostelRouter);
 app.use('/api/exam', examRouter);
+
 app.use('/api/academic', academicRouter);
 app.use('/api/mis', misRouter);
 app.use('/api/finance', financeRouter);
+
+app.use('/api/sim/profiles', profilesRouter);
+app.use('/api/sim/admissions', admissionsRouter);
+app.use('/api/sim/academic', simAcademicRouter);
+app.use('/api/sim/communications', communicationsRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);
