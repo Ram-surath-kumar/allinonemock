@@ -51,6 +51,8 @@ export function FeeManagement() {
                     <TabsTrigger value="heads">Fee Heads</TabsTrigger>
                     <TabsTrigger value="scholarships">Scholarships</TabsTrigger>
                     <TabsTrigger value="assignments">Fee Assignments</TabsTrigger>
+                    <TabsTrigger value="rules">Assignment Rules</TabsTrigger>
+                    <TabsTrigger value="penalties">Penalty Configs</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="structures" className="space-y-4">
@@ -70,7 +72,15 @@ export function FeeManagement() {
                 </TabsContent>
 
                 <TabsContent value="assignments" className="space-y-4">
-                    <AssignmentsTab structures={structures} scholarships={scholarships} />
+                    <AssignmentsTab structures={structures} scholarships={scholarships} refresh={loadData} />
+                </TabsContent>
+
+                <TabsContent value="rules" className="space-y-4">
+                    <AssignmentRulesTab structures={structures} categories={categories} />
+                </TabsContent>
+
+                <TabsContent value="penalties" className="space-y-4">
+                    <PenaltyConfigsTab />
                 </TabsContent>
             </Tabs>
         </div>
@@ -369,7 +379,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
     );
 }
 
-function AssignmentsTab({ structures, scholarships }: { structures: any[], scholarships: any[] }) {
+function AssignmentsTab({ structures, scholarships, refresh }: { structures: any[], scholarships: any[], refresh: () => void }) {
     const [students, setStudents] = useState<any[]>([]);
     const [selectedStudent, setSelectedStudent] = useState('');
     const [selectedStructure, setSelectedStructure] = useState('');
@@ -435,7 +445,23 @@ function AssignmentsTab({ structures, scholarships }: { structures: any[], schol
                         </SelectContent>
                     </Select>
                 </div>
-                <Button onClick={handleAssign} disabled={loading}>Assign Fee</Button>
+                <div className="flex gap-4">
+                    <Button onClick={handleAssign} disabled={loading}>Assign Fee</Button>
+                    <Button
+                        variant="secondary"
+                        onClick={async () => {
+                            if (!selectedStudent) { toast.error("Select student first"); return; }
+                            setLoading(true);
+                            const res = await api.autoAssignFees(selectedStudent);
+                            setLoading(false);
+                            if (res.data) toast.success("Auto-assigned successfully");
+                            else toast.error(res.error || "Auto-assignment failed");
+                        }}
+                        disabled={loading}
+                    >
+                        Auto-Assign Best Match
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
@@ -515,6 +541,183 @@ function ScholarshipsTab({ scholarships, refresh }: { scholarships: any[], refre
                                 <TableCell className="capitalize">{s.type.replace('_', ' ')}</TableCell>
                                 <TableCell>{s.type === 'percentage' ? `${s.value}%` : `₹${s.value}`}</TableCell>
                                 <TableCell>{s.criteria}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+function AssignmentRulesTab({ structures, categories }: { structures: any[], categories: any[] }) {
+    const [rules, setRules] = useState<any[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const [studentCategory, setStudentCategory] = useState('');
+    const [hostelStatus, setHostelStatus] = useState('any');
+    const [structureId, setStructureId] = useState('');
+    const [priority, setPriority] = useState('1');
+    const [numInstallments, setNumInstallments] = useState('2');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        loadRules();
+    }, []);
+
+    const loadRules = async () => {
+        setLoading(true);
+        const res = await api.getAssignmentRules();
+        if (res.data) setRules(res.data);
+        setLoading(false);
+    };
+
+    const handleSubmit = async () => {
+        if (!structureId) { toast.error("Select structure"); return; }
+        const res = await api.createAssignmentRule({
+            student_category: studentCategory || null,
+            hostel_status: hostelStatus,
+            fee_structure_id: structureId,
+            priority: parseInt(priority),
+            num_installments: parseInt(numInstallments)
+        });
+        if (res.data) {
+            toast.success("Rule created");
+            setIsOpen(false);
+            loadRules();
+        } else {
+            toast.error(res.error || "Failed to create rule");
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Assignment Rules</CardTitle>
+                    <CardDescription>Rules to automatically match students to fee structures</CardDescription>
+                </div>
+                <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <DialogTrigger asChild>
+                        <Button><Plus className="mr-2 h-4 w-4" /> Add Rule</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>Create Assignment Rule</DialogTitle></DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Student Category (Optional)</Label>
+                                <Select value={studentCategory} onValueChange={setStudentCategory}>
+                                    <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value=" ">All Categories</SelectItem>
+                                        {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Hostel Status</Label>
+                                <Select value={hostelStatus} onValueChange={setHostelStatus}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="any">Any</SelectItem>
+                                        <SelectItem value="resident">Resident</SelectItem>
+                                        <SelectItem value="day_scholar">Day Scholar</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Fee Structure</Label>
+                                <Select value={structureId} onValueChange={setStructureId}>
+                                    <SelectTrigger><SelectValue placeholder="Select structure" /></SelectTrigger>
+                                    <SelectContent>
+                                        {structures.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Priority (High = Matches first)</Label>
+                                    <Input type="number" value={priority} onChange={e => setPriority(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Installments</Label>
+                                    <Input type="number" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={handleSubmit}>Save Rule</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Hostel</TableHead>
+                            <TableHead>Structure</TableHead>
+                            <TableHead>Priority</TableHead>
+                            <TableHead>Inst.</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rules.map(r => (
+                            <TableRow key={r.id}>
+                                <TableCell>{r.student_category || 'All'}</TableCell>
+                                <TableCell className="capitalize">{r.hostel_status}</TableCell>
+                                <TableCell>{r.fee_structures?.name}</TableCell>
+                                <TableCell>{r.priority}</TableCell>
+                                <TableCell>{r.num_installments}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+function PenaltyConfigsTab() {
+    const [configs, setConfigs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        loadConfigs();
+    }, []);
+
+    const loadConfigs = async () => {
+        setLoading(true);
+        const res = await api.getPenaltyConfigs();
+        if (res.data) setConfigs(res.data);
+        setLoading(false);
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Late Fee Configurations</CardTitle>
+                <CardDescription>Rules for automatically calculating penalties on overdue payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Grace Period</TableHead>
+                            <TableHead>Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {configs.map(c => (
+                            <TableRow key={c.id}>
+                                <TableCell className="font-medium">{c.name}</TableCell>
+                                <TableCell className="capitalize">{c.type.replace('_', ' ')}</TableCell>
+                                <TableCell>₹{c.amount}</TableCell>
+                                <TableCell>{c.grace_period_days} days</TableCell>
+                                <TableCell>{c.is_active ? 'Active' : 'Inactive'}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

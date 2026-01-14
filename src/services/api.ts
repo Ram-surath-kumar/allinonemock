@@ -1,6 +1,6 @@
 import { apiCache, getCacheKey } from './cache';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 // Consolidated API endpoints - use these instead of multiple separate calls
 interface DashboardData {
@@ -612,10 +612,37 @@ class ApiClient {
         return this.request(`/finance/receipt/${id}`);
     }
 
+    // Auto-Assignment & Rules
+    async autoAssignFees(studentId: string): Promise<ApiResponse<any>> {
+        return this.request(`/finance/auto-assign/${studentId}`, { method: 'POST' });
+    }
+
+    async getAssignmentRules(): Promise<ApiResponse<any[]>> {
+        return this.request('/finance/assignment-rules');
+    }
+
+    async createAssignmentRule(data: any): Promise<ApiResponse<any>> {
+        return this.request('/finance/assignment-rules', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getPenaltyConfigs(): Promise<ApiResponse<any[]>> {
+        return this.request('/finance/penalty-configs');
+    }
+
 
 
     async getChartOfAccounts(): Promise<ApiResponse<any[]>> {
         return this.request('/finance/chart-of-accounts');
+    }
+
+    async createAccount(data: { code: string; name: string; type: string; subtype?: string }): Promise<ApiResponse<any>> {
+        return this.request('/finance/chart-of-accounts', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     }
 
     async createJournalEntry(data: any): Promise<ApiResponse<any>> {
