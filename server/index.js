@@ -15,7 +15,6 @@ import activitiesRouter from './routes/activities.js';
 import libraryRouter from './routes/library.js';
 import hostelRouter from './routes/hostel.js';
 import examRouter from './routes/exam.js';
-<<<<<<< HEAD
 import academicRouter from './routes/academic.js';
 import misRouter from './routes/mis.js';
 import financeRouter from './routes/finance.js';
