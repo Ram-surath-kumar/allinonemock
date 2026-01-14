@@ -15,20 +15,25 @@ import activitiesRouter from './routes/activities.js';
 import libraryRouter from './routes/library.js';
 import hostelRouter from './routes/hostel.js';
 import examRouter from './routes/exam.js';
+import academicRouter from './routes/academic.js';
+import misRouter from './routes/mis.js';
+import financeRouter from './routes/finance.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
-// import financeRouter from './routes/finance.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+import { auditLogger } from './middleware/auditLogger.js';
+
 // Middleware
 // CORS configuration - allow localhost and Vercel domains
 const allowedOrigins = [
   'http://localhost:8080',
+  'http://localhost:8081',
   'http://localhost:5173',
   'http://localhost:3000',
   // Add your Vercel domain here after deployment
@@ -54,6 +59,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Apply Audit Logger
+app.use(auditLogger);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend API is running' });
@@ -72,10 +80,12 @@ app.use('/api/activities', activitiesRouter);
 app.use('/api/library', libraryRouter);
 app.use('/api/hostel', hostelRouter);
 app.use('/api/exam', examRouter);
+app.use('/api/academic', academicRouter);
+app.use('/api/mis', misRouter);
+app.use('/api/finance', financeRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);
-// app.use('/api/finance', financeRouter);
 
 // Temporary: Keep growth and finance endpoints in index.js until route files are created
 // This will be moved to route files in the next step
@@ -86,7 +96,7 @@ import { handleError, sendSuccess, sendValidationError } from './common.js';
 app.get('/api/growth', async (req, res) => {
   try {
     const { metric, period = 'month' } = req.query;
-    
+
     if (!metric) {
       return sendValidationError(res, 'metric parameter is required');
     }
@@ -95,7 +105,7 @@ app.get('/api/growth', async (req, res) => {
     const today = new Date();
     const currentPeriodStart = new Date(today);
     const previousPeriodStart = new Date(today);
-    
+
     if (period === 'week') {
       currentPeriodStart.setDate(today.getDate() - 7);
       previousPeriodStart.setDate(today.getDate() - 14);
@@ -121,14 +131,14 @@ app.get('/api/growth', async (req, res) => {
         .eq('role', 'student')
         .gte('created_at', currentPeriodStart.toISOString())
         .lte('created_at', today.toISOString());
-      
+
       const { data: previousStudents, error: previousError } = await supabaseAdmin
         .from('users')
         .select('id, created_at')
         .eq('role', 'student')
         .gte('created_at', previousPeriodStart.toISOString())
         .lt('created_at', currentPeriodStart.toISOString());
-      
+
       currentValue = currentStudents && !currentError ? currentStudents.length : 0;
       previousValue = previousStudents && !previousError ? previousStudents.length : 0;
 
@@ -137,13 +147,13 @@ app.get('/api/growth', async (req, res) => {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const { data: studentsUpToDate } = await supabaseAdmin
           .from('users')
           .select('id')
           .eq('role', 'student')
           .lte('created_at', date.toISOString());
-        
+
         dataPoints.push({
           date: dateStr,
           value: studentsUpToDate ? studentsUpToDate.length : 0,
@@ -157,14 +167,14 @@ app.get('/api/growth', async (req, res) => {
         .neq('role', 'student')
         .gte('created_at', currentPeriodStart.toISOString())
         .lte('created_at', today.toISOString());
-      
+
       const { data: previousStaff, error: previousError } = await supabaseAdmin
         .from('users')
         .select('id, created_at')
         .neq('role', 'student')
         .gte('created_at', previousPeriodStart.toISOString())
         .lt('created_at', currentPeriodStart.toISOString());
-      
+
       currentValue = currentStaff && !currentError ? currentStaff.length : 0;
       previousValue = previousStaff && !previousError ? previousStaff.length : 0;
 
@@ -173,13 +183,13 @@ app.get('/api/growth', async (req, res) => {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const { data: staffUpToDate } = await supabaseAdmin
           .from('users')
           .select('id')
           .neq('role', 'student')
           .lte('created_at', date.toISOString());
-        
+
         dataPoints.push({
           date: dateStr,
           value: staffUpToDate ? staffUpToDate.length : 0,
@@ -189,28 +199,28 @@ app.get('/api/growth', async (req, res) => {
     } else if (metric === 'attendance') {
       const currentPeriodStartStr = currentPeriodStart.toISOString().split('T')[0];
       const todayStr = today.toISOString().split('T')[0];
-      
+
       const { data: currentAttendance, error: currentError } = await supabaseAdmin
         .from('attendance')
         .select('*')
         .gte('date', currentPeriodStartStr)
         .lte('date', todayStr);
-      
+
       const previousPeriodStartStr = previousPeriodStart.toISOString().split('T')[0];
       const previousPeriodEndStr = currentPeriodStart.toISOString().split('T')[0];
-      
+
       const { data: previousAttendance, error: previousError } = await supabaseAdmin
         .from('attendance')
         .select('*')
         .gte('date', previousPeriodStartStr)
         .lt('date', previousPeriodEndStr);
-      
+
       if (!currentError && currentAttendance) {
         const total = currentAttendance.length;
         const present = currentAttendance.filter(r => r.status === 'present').length;
         currentValue = total > 0 ? Math.round((present / total) * 100 * 10) / 10 : 0;
       }
-      
+
       if (!previousError && previousAttendance) {
         const total = previousAttendance.length;
         const present = previousAttendance.filter(r => r.status === 'present').length;
@@ -222,18 +232,18 @@ app.get('/api/growth', async (req, res) => {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const { data: dayAttendance } = await supabaseAdmin
           .from('attendance')
           .select('*')
           .eq('date', dateStr);
-        
+
         let dayRate = 0;
         if (dayAttendance && dayAttendance.length > 0) {
           const present = dayAttendance.filter(r => r.status === 'present').length;
           dayRate = Math.round((present / dayAttendance.length) * 100 * 10) / 10;
         }
-        
+
         dataPoints.push({
           date: dateStr,
           value: dayRate,
@@ -246,7 +256,7 @@ app.get('/api/growth', async (req, res) => {
     }
 
     const change = currentValue - previousValue;
-    const changePercent = previousValue !== 0 
+    const changePercent = previousValue !== 0
       ? Math.round((change / previousValue) * 100 * 10) / 10
       : (currentValue > 0 ? 100 : 0);
 
@@ -269,7 +279,7 @@ app.get('/api/growth', async (req, res) => {
 app.get('/api/growth/staff-by-role', async (req, res) => {
   try {
     const { role, period = 'month' } = req.query;
-    
+
     if (!role) {
       return sendValidationError(res, 'role parameter is required');
     }
@@ -277,7 +287,7 @@ app.get('/api/growth/staff-by-role', async (req, res) => {
     const today = new Date();
     const currentPeriodStart = new Date(today);
     const previousPeriodStart = new Date(today);
-    
+
     if (period === 'week') {
       currentPeriodStart.setDate(today.getDate() - 7);
       previousPeriodStart.setDate(today.getDate() - 14);
@@ -298,35 +308,35 @@ app.get('/api/growth/staff-by-role', async (req, res) => {
       .eq('role', role)
       .gte('created_at', currentPeriodStart.toISOString())
       .lte('created_at', today.toISOString());
-    
+
     const { data: previousStaff, error: previousError } = await supabaseAdmin
       .from('users')
       .select('id, created_at')
       .eq('role', role)
       .gte('created_at', previousPeriodStart.toISOString())
       .lt('created_at', currentPeriodStart.toISOString());
-    
+
     const currentValue = currentStaff && !currentError ? currentStaff.length : 0;
     const previousValue = previousStaff && !previousError ? previousStaff.length : 0;
     const change = currentValue - previousValue;
-    const changePercent = previousValue !== 0 
+    const changePercent = previousValue !== 0
       ? Math.round((change / previousValue) * 100 * 10) / 10
       : (currentValue > 0 ? 100 : 0);
 
     const dataPoints = [];
     const days = period === 'week' ? 7 : period === 'month' ? 30 : period === 'quarter' ? 90 : 365;
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const { data: staffUpToDate } = await supabaseAdmin
         .from('users')
         .select('id')
         .eq('role', role)
         .lte('created_at', date.toISOString());
-      
+
       dataPoints.push({
         date: dateStr,
         value: staffUpToDate ? staffUpToDate.length : 0,
@@ -358,7 +368,7 @@ app.get('/api/growth/staff-breakdown', async (req, res) => {
       .select('role')
       .neq('role', 'student')
       .eq('status', 'active');
-    
+
     if (usersError) {
       throw usersError;
     }
@@ -392,13 +402,13 @@ app.get('/api/growth/staff-breakdown', async (req, res) => {
 app.get('/api/finance', async (req, res) => {
   try {
     const { userId, role } = req.query;
-    
+
     let totalIncome = 0.0;
     try {
       const { data: feesData, error: feesError } = await supabaseAdmin
         .from('fees')
         .select('amount, status');
-      
+
       if (!feesError && feesData) {
         feesData.forEach(fee => {
           if (fee.status === 'paid' || fee.status === 'completed') {
@@ -411,7 +421,7 @@ app.get('/api/finance', async (req, res) => {
         const { data: paymentsData, error: paymentsError } = await supabaseAdmin
           .from('payments')
           .select('amount');
-        
+
         if (!paymentsError && paymentsData) {
           paymentsData.forEach(payment => {
             totalIncome += parseFloat(payment.amount || 0);
@@ -427,7 +437,7 @@ app.get('/api/finance', async (req, res) => {
       const { data: salariesData, error: salariesError } = await supabaseAdmin
         .from('salaries')
         .select('amount, status');
-      
+
       if (!salariesError && salariesData) {
         salariesData.forEach(salary => {
           if (salary.status === 'paid' || salary.status === 'completed') {
@@ -446,7 +456,7 @@ app.get('/api/finance', async (req, res) => {
         .select('*')
         .neq('role', 'student')
         .eq('status', 'active');
-      
+
       if (!staffError && staffUsers) {
         for (const user of staffUsers) {
           let currentSalary = 0.0;
@@ -459,7 +469,7 @@ app.get('/api/finance', async (req, res) => {
               .order('created_at', { ascending: false })
               .limit(1)
               .single();
-            
+
             if (salaryData) {
               currentSalary = parseFloat(salaryData.amount || 0);
             }
@@ -473,7 +483,7 @@ app.get('/api/finance', async (req, res) => {
               .from('promotions')
               .select('id')
               .eq('user_id', user.id);
-            
+
             if (promoData) {
               promotions = promoData.length;
             }
@@ -487,7 +497,7 @@ app.get('/api/finance', async (req, res) => {
               .from('salary_hikes')
               .select('id')
               .eq('user_id', user.id);
-            
+
             if (hikeData) {
               hikes = hikeData.length;
             }
@@ -516,7 +526,7 @@ app.get('/api/finance', async (req, res) => {
         .from('promotions')
         .select('*')
         .order('promotion_date', { ascending: false });
-      
+
       if (!promoError && promoData) {
         promotions.push(...promoData);
       }
@@ -529,24 +539,24 @@ app.get('/api/finance', async (req, res) => {
       totalHikes: 0,
       hikes: []
     };
-    
+
     try {
       const { data: hikesData, error: hikesError } = await supabaseAdmin
         .from('salary_hikes')
         .select('*')
         .order('hike_date', { ascending: false });
-      
+
       if (!hikesError && hikesData && hikesData.length > 0) {
         let totalHikePercent = 0.0;
         let count = 0;
-        
+
         hikesData.forEach(hike => {
           if (hike.hike_percentage) {
             totalHikePercent += parseFloat(hike.hike_percentage || 0);
             count++;
           }
         });
-        
+
         hikeRate.averageHikeRate = count > 0 ? totalHikePercent / count : 0.0;
         hikeRate.totalHikes = hikesData.length;
         hikeRate.hikes = hikesData;
