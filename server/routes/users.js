@@ -11,10 +11,21 @@ const router = express.Router();
 router.use(authenticateUser);
 
 // Get all users
-router.get('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
-  try {
-    const { role, status, department_id, org_id, user_id, email } = req.query;
+// Enforce RBAC manually to allow "Self-Service" (getting own profile)
+router.get('/', async (req, res) => {
+  const { role, status, department_id, org_id, user_id, email } = req.query;
 
+  // 1. Self-Service Check: Allow if user is fetching their own profile by email
+  const isSelfService = email && (req.user.email === email || req.userProfile.email === email);
+
+  // 2. Admin/Registrar Check
+  const isAdminOrRegistrar = ['admin', 'registrar'].includes(req.userProfile.role);
+
+  if (!isSelfService && !isAdminOrRegistrar) {
+    return res.status(403).json({ error: 'Access Denied: Requires admin or registrar privileges' });
+  }
+
+  try {
     const users = await secureDb.get('users', (query) => {
       if (role) query = query.eq('role', role);
       if (status) query = query.eq('status', status);
