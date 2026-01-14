@@ -27,7 +27,7 @@ export const authenticateUser = async (req, res, next) => {
             .from('users')
             .select('*')
             // Match by Auth ID (user_id) OR Email OR Loop Email
-            .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+            .or(`id.eq.${user.id},email.eq.${user.email}`)
             .single();
 
         if (profileError || !userProfile) {
