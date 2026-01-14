@@ -26,8 +26,8 @@ export const authenticateUser = async (req, res, next) => {
         const { data: userProfile, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
-            .eq('id', user.id) // Assuming public.users.id maps to auth.users.id or we match by email/loopid
-            .or(`email.eq.${user.email},loop_email.eq.${user.email}`) // Fallback to email match if ID mismatch (migrated data)
+            // Match by Auth ID (user_id) OR Email OR Loop Email
+            .or(`user_id.eq.${user.id},email.eq.${user.email},loop_email.eq.${user.email}`)
             .single();
 
         if (profileError || !userProfile) {
