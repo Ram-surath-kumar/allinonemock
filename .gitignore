@@ -26,3 +26,6 @@ dist-ssr
 
 .env
 server/.env
+
+backend/target/
+*.class
