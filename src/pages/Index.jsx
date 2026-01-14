@@ -40,6 +40,9 @@ const Tools = lazy(() =>
 const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
+const Settings = lazy(() =>
+  import('@/pages/Settings').then(module => ({ default: module.Settings }))
+);
 const HostelDashboard = lazy(() =>
   import('@/pages/Hostel/HostelDashboard').then(module => ({ default: module.default }))
 );
@@ -403,7 +406,6 @@ function AppContent() {
         );
       case '/academics':
       case '/facilities':
-      case '/settings':
         return (
           <div className="flex items-center justify-center h-64 rounded-2xl border border-border bg-card animate-fade-in shadow-depth-1" role="region" aria-label={getPageTitle()}>
             <div className="text-center">
@@ -413,6 +415,12 @@ function AppContent() {
               </p>
             </div>
           </div>
+        );
+      case '/settings':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Settings />
+          </Suspense>
         );
       default:
         return (

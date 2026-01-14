@@ -183,7 +183,7 @@ export function AuthProvider({ children }) {
 
     // Check if it's a UUID (user ID) or a role
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roleOrUserId);
-    
+
     if (isUUID) {
       await loadUserById(roleOrUserId);
     } else {
@@ -243,7 +243,7 @@ export function AuthProvider({ children }) {
   const loginWithCredentials = async (email, password) => {
     try {
       setLoading(true);
-      
+
       // Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -287,8 +287,16 @@ export function AuthProvider({ children }) {
     return currentUser.permissions.includes(permission);
   };
 
+  const refreshUser = async () => {
+    if (currentUser?.email) {
+      await loadUserByEmail(currentUser.email);
+    } else if (currentUser?.id) {
+      await loadUserById(currentUser.id);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, login, loginWithCredentials, logout, canManageRole, hasPermission, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, loginWithCredentials, logout, canManageRole, hasPermission, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
