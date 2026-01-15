@@ -39,8 +39,6 @@ const Tools = lazy(() =>
 const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
-<<<<<<< HEAD:src/pages/Index.tsx
-=======
 const Settings = lazy(() =>
   import('@/pages/Settings').then(module => ({ default: module.Settings }))
 );
@@ -53,7 +51,6 @@ const ExamDashboard = lazy(() =>
 const LibraryDashboard = lazy(() =>
   import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
 );
->>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/pages/Index.jsx
 
 // Import AcademicGovernance
 const AcademicGovernance = lazy(() =>
