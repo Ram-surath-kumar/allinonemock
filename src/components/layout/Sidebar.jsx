@@ -89,6 +89,15 @@ export function Sidebar({ currentPath, onNavigate }) {
   }, [isHovered]);
 
   const filteredNavItems = navItems.filter(item => {
+    // Debug log to trace why items might be hidden
+    if (process.env.NODE_ENV === 'development') {
+      const allowedByPerm = !item.permission || hasPermission(item.permission);
+      const allowedByRole = !item.roles || (currentUser && item.roles.includes(currentUser.role));
+      if (!allowedByPerm || !allowedByRole) {
+        console.log(`[Sidebar] Hiding ${item.label}: Perm=${allowedByPerm}, Role=${allowedByRole} (User Role: ${currentUser?.role}, Perms: ${currentUser?.permissions?.length})`);
+      }
+    }
+
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
     return true;

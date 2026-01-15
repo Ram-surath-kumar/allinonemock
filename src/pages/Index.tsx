@@ -108,7 +108,9 @@ function AppContent() {
     'fee-payment': '/student/fee-payment',
 
     'tools': '/tools',
-    'academic-governance': '/governance/academic',
+    'hostel': '/hostel',
+    'library': '/library',
+    'examinations': '/exam',
   };
 
   const pathToTab: Record<string, string> = {
@@ -129,7 +131,9 @@ function AppContent() {
     '/student/fee-payment': 'fee-payment',
 
     '/tools': 'tools',
-    '/governance/academic': 'academic-governance',
+    '/hostel': 'hostel',
+    '/library': 'library',
+    '/exam': 'examinations',
   };
 
   // Initialize from URL on mount
@@ -272,6 +276,12 @@ function AppContent() {
         return 'Tools';
       case '/tools':
         return 'Tools';
+      case '/hostel':
+        return 'Hostel Management';
+      case '/library':
+        return 'Library Management';
+      case '/exam':
+        return 'Examinations';
       case '/governance/academic':
         return 'Academic Governance';
       case '/governance/academic':
@@ -353,6 +363,24 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <Tools />
+          </Suspense>
+        );
+      case '/hostel':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <HostelDashboard />
+          </Suspense>
+        );
+      case '/library':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <LibraryDashboard />
+          </Suspense>
+        );
+      case '/exam':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ExamDashboard />
           </Suspense>
         );
 

@@ -1,5 +1,7 @@
 import { apiCache, getCacheKey } from './cache';
 
+import { supabase } from '@/lib/supabase';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 // Consolidated API endpoints - use these instead of multiple separate calls
@@ -114,12 +116,20 @@ class ApiClient {
         // Make the request
         const requestPromise = (async () => {
             try {
+                // Get the current session to extract the access token
+                const { data: { session } } = await supabase.auth.getSession();
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                    ...(options.headers as Record<string, string>),
+                };
+
+                if (session?.access_token) {
+                    headers['Authorization'] = `Bearer ${session.access_token}`;
+                }
+
                 const response = await fetch(`${this.baseUrl}${endpoint}`, {
                     ...options,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers,
-                    },
+                    headers,
                 });
 
                 if (!response.ok) {
@@ -630,6 +640,18 @@ class ApiClient {
 
     async getPenaltyConfigs(): Promise<ApiResponse<any[]>> {
         return this.request('/finance/penalty-configs');
+    }
+
+    async getHostelDashboard(): Promise<ApiResponse<any>> {
+        return this.request('/hostel/dashboard');
+    }
+
+    async getLibraryDashboard(): Promise<ApiResponse<any>> {
+        return this.request('/library/dashboard');
+    }
+
+    async getExamDashboard(): Promise<ApiResponse<any>> {
+        return this.request('/exam/dashboard');
     }
 
 

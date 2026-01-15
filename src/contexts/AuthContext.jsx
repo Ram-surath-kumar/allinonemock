@@ -53,6 +53,7 @@ export function AuthProvider({ children }) {
 
   const loadUserById = async (userId) => {
     try {
+      setLoading(true);
       const response = await api.getUserById(userId);
       if (response.error) throw new Error(response.error);
       const data = response.data;
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
 
   const loadUserByOrgAndUserId = async (orgName, userId) => {
     try {
+      setLoading(true);
       // First get the organization
       const orgResponse = await api.getOrganizations({ org_name: orgName });
       if (orgResponse.error) throw new Error(orgResponse.error);
@@ -143,6 +145,7 @@ export function AuthProvider({ children }) {
 
   const loadUser = async (role) => {
     try {
+      setLoading(true);
       const email = ROLE_EMAIL_MAP[role];
       const response = await api.getUsers({ email });
       if (response.error) throw new Error(response.error);

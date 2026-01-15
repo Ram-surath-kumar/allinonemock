@@ -26,10 +26,7 @@ import communicationsRouter from './routes/SIM/communications.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
-<<<<<<< HEAD
-import financeRoutes from './routes/finance.js';
-=======
->>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5
+
 
 dotenv.config();
 
@@ -101,10 +98,7 @@ app.use('/api/sim/communications', communicationsRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);
-<<<<<<< HEAD
-app.use('/api/finance', financeRoutes);
-=======
->>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5
+
 
 // Temporary: Keep growth and finance endpoints in index.js until route files are created
 // This will be moved to route files in the next step

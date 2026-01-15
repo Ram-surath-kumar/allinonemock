@@ -43,21 +43,11 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
         const dashboardStats = dashboardData.stats as Record<string, unknown>;
         const students = dashboardData.students as unknown[] || [];
 
-        const totalStudents = typeof dashboardStats.totalStudents === 'number'
-          ? dashboardStats.totalStudents
-          : students.length;
-
-<<<<<<< HEAD:src/components/views/AdminDashboard.tsx
-        const totalStaff = typeof dashboardStats.totalStaff === 'number'
-=======
-        // Ensure we get the correct values from stats object
-        // Use stats.totalStudents if available, otherwise fall back to students array length
-        const totalStudents = (typeof dashboardStats.totalStudents === 'number' && dashboardStats.totalStudents !== null)
+        const totalStudents = (typeof dashboardStats.totalStudents === 'number')
           ? dashboardStats.totalStudents
           : (Array.isArray(students) ? students.length : 0);
 
-        const totalStaff = (typeof dashboardStats.totalStaff === 'number' && dashboardStats.totalStaff !== null)
->>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/components/views/AdminDashboard.jsx
+        const totalStaff = (typeof dashboardStats.totalStaff === 'number')
           ? dashboardStats.totalStaff
           : 0;
 
@@ -69,13 +59,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
           ? dashboardStats.feeCollectionPercentage
           : 0;
 
-<<<<<<< HEAD:src/components/views/AdminDashboard.tsx
-        const feeCollection = typeof dashboardStats.feeCollection === 'number'
-          ? dashboardStats.feeCollection
-          : 0;
-
-=======
-        const feeCollection = (typeof dashboardStats.feeCollection === 'number' && dashboardStats.feeCollection !== null)
+        const feeCollection = (typeof dashboardStats.feeCollection === 'number')
           ? dashboardStats.feeCollection
           : 0;
 
@@ -85,7 +69,6 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
           attendanceRate,
           feeCollection,
           feeCollectionPercentage,
-          feeCollectionPercentage,
         });
 
         // Governance Data
@@ -94,12 +77,10 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
         const pendingApprovals = dashboardStats.pendingApprovals || 0;
         const systemVersion = dashboardStats.systemVersion || 'v1.0.0';
 
->>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/components/views/AdminDashboard.jsx
         setStats({
           totalStudents,
           totalStaff,
           attendanceRate,
-          feeCollection,
           feeCollection,
           feeCollectionPercentage,
           placements,
