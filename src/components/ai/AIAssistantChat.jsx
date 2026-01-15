@@ -77,7 +77,7 @@ export function AIAssistantChat({ onNavigate }) {
       if (studentsData) {
         const departmentIds = [...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id))];
         let deptMap = new Map();
-        
+
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
@@ -104,7 +104,7 @@ export function AIAssistantChat({ onNavigate }) {
   };
 
   const addMessage = (role, content) => {
-    const newMessage= {
+    const newMessage = {
       id: Date.now().toString(),
       role,
       content,
@@ -145,7 +145,7 @@ export function AIAssistantChat({ onNavigate }) {
 
       try {
         addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
-        
+
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -157,19 +157,19 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully marked ${action.student_name} as ${action.status}.`);
-        
+
         // Navigate to attendance page
         if (onNavigate) {
           onNavigate('/attendance');
         } else {
           navigate('/attendance');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
         }, 1000);
-        
+
         window.dispatchEvent(new CustomEvent('attendance-updated'));
       } catch (error) {
         console.error('Error marking attendance:', error);
@@ -208,7 +208,7 @@ export function AIAssistantChat({ onNavigate }) {
 
       try {
         addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
-        
+
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -217,14 +217,14 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
-        
+
         // Navigate to tools page
         if (onNavigate) {
           onNavigate('/tools');
         } else {
           navigate('/tools');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -232,7 +232,7 @@ export function AIAssistantChat({ onNavigate }) {
       } catch (error) {
         console.error('Error creating department:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
-        
+
         // Check if it's a service role key error
         if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
           addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
@@ -255,7 +255,7 @@ export function AIAssistantChat({ onNavigate }) {
         // Show processing status
         const totalStudents = students.length;
         addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
-        
+
         // Delete all students
         const studentIds = students.map(s => s.id);
         let deletedCount = 0;
@@ -264,12 +264,12 @@ export function AIAssistantChat({ onNavigate }) {
         for (let i = 0; i < studentIds.length; i++) {
           const studentId = studentIds[i];
           const currentIndex = i + 1;
-          
+
           // Show progress every 5 students or for the last one
           if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
             addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
           }
-          
+
           try {
             const response = await api.deleteUser(studentId);
             if (response.error) {
@@ -283,7 +283,7 @@ export function AIAssistantChat({ onNavigate }) {
             console.error(`Error deleting student ${studentId}:`, error);
           }
         }
-        
+
         // Show completion status
         if (errorCount > 0 && deletedCount === 0) {
           // Get more details about the first error
@@ -294,22 +294,22 @@ export function AIAssistantChat({ onNavigate }) {
           throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
         }
 
-        const message = deletedCount > 0 
+        const message = deletedCount > 0
           ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
           : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
 
         addMessage('assistant', message);
-        
+
         // Reload students list
         await loadData();
-        
+
         // Navigate to students page
         if (onNavigate) {
           onNavigate('/students');
         } else {
           navigate('/students');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -317,16 +317,46 @@ export function AIAssistantChat({ onNavigate }) {
       } catch (error) {
         console.error('Error deleting students:', error);
         let errorMessage = error.message || 'Failed to delete students';
-        
+
         // Provide more helpful error messages
         if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
           errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
         }
-        
+
         addMessage('assistant', `❌ Error: ${errorMessage}`);
       }
+    } else if (action.action === 'add_applicant') {
+      addMessage('assistant', '📝 Opening Admission Portal...');
+      if (onNavigate) {
+        onNavigate('/students');
+      } else {
+        navigate('/students');
+      }
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1000);
+    } else if (action.action === 'analyze_system') {
+      try {
+        addMessage('assistant', '📊 Gathering real-time data from dashboard...');
+
+        const response = await api.getDashboardData(currentUser?.id, currentUser?.role);
+
+        if (response.error) throw new Error(response.error);
+
+        const dashboardData = response.data;
+
+        // Analyze using the analytics service but with REAL data
+        const analysis = await callGeminiAnalytics("Analyze the entire ERP system based on this data", dashboardData);
+
+        addMessage('assistant', analysis);
+      } catch (error) {
+        console.error('Error analyzing system:', error);
+        addMessage('assistant', '❌ Failed to analyze system data. Please try again.');
+      }
+    } else if (action.action === 'chat') {
+      addMessage('assistant', action.message || 'Hello! How can I help you?');
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", "add applicant", "analyze system", or just say "hi"!');
     }
   };
 
@@ -340,12 +370,12 @@ export function AIAssistantChat({ onNavigate }) {
   const handleDataQuery = async (query) => {
     try {
       addMessage('assistant', '🔄 Processing... Analyzing your question...');
-      
+
       const currentDate = format(new Date(), 'yyyy-MM-dd');
-      
+
       // Parse the query intent
       const intent = await parseDataQueryIntent(query, students, currentDate);
-      
+
       if (intent.confidence < 0.5) {
         addMessage('assistant', 'I\'m not sure I understood your question. Could you rephrase it?');
         return;
@@ -376,7 +406,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const student = matchingStudents[0];
-          
+
           // Get attendance for the date
           const attendanceResponse = await api.getAttendance({
             date: intent.date,
@@ -389,7 +419,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const attendanceData = attendanceResponse.data;
-          
+
           if (!attendanceData || attendanceData.length === 0) {
             response = `${student.name} has no attendance record for ${intent.date === currentDate ? 'today' : intent.date}.`;
           } else {
@@ -492,7 +522,7 @@ export function AIAssistantChat({ onNavigate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!prompt.trim()) {
       return;
     }
@@ -501,7 +531,7 @@ export function AIAssistantChat({ onNavigate }) {
     setPrompt('');
     addMessage('user', userPrompt);
     setLoading(true);
-    
+
     try {
       // Load data if not loaded
       if (students.length === 0) {
@@ -509,10 +539,14 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-      const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-                         /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-                         userPrompt.includes('?') ||
-                         /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
+      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(userPrompt);
+
+      const isDataQuery = !isAnalyzeCommand && (
+        /^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
+        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
+        userPrompt.includes('?') ||
+        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt)
+      );
 
       if (isDataQuery) {
         // Handle data query
@@ -520,11 +554,11 @@ export function AIAssistantChat({ onNavigate }) {
       } else {
         // Handle action
         addMessage('assistant', '🔄 Processing... Understanding your command...');
-        
+
         const context = {
           students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department'],
+          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department', 'add_applicant', 'analyze_system'],
         };
 
         const action = await callGeminiAPI(userPrompt, context);
@@ -597,14 +631,14 @@ export function AIAssistantChat({ onNavigate }) {
           "flex flex-col overflow-hidden transition-all duration-300",
           isMinimized ? "h-14" : "h-[600px]"
         )}
-        style={{
-          zIndex: 99999,
-          pointerEvents: 'auto',
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px'
-        }}
-        role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+          style={{
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px'
+          }}
+          role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
             <div className="flex items-center gap-2">

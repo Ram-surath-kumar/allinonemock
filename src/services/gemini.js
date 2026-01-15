@@ -91,7 +91,7 @@ Now extract the student data and return ONLY the JSON array:`;
     for (const model of MODEL_OPTIONS) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -136,7 +136,7 @@ Now extract the student data and return ONLY the JSON array:`;
 
         // Extract JSON from response (handle various formats)
         let jsonText = text.trim();
-        
+
         // Remove markdown code blocks if present
         if (jsonText.includes('```')) {
           // Try to extract JSON from code blocks
@@ -148,7 +148,7 @@ Now extract the student data and return ONLY the JSON array:`;
             jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
           }
         }
-        
+
         // Try to find JSON array in the text
         if (!jsonText.startsWith('[')) {
           const arrayMatch = jsonText.match(/(\[[\s\S]*\])/);
@@ -156,7 +156,7 @@ Now extract the student data and return ONLY the JSON array:`;
             jsonText = arrayMatch[1];
           }
         }
-        
+
         // Remove any leading/trailing text that's not JSON
         jsonText = jsonText.trim();
         if (!jsonText.startsWith('[')) {
@@ -201,7 +201,7 @@ Now extract the student data and return ONLY the JSON array:`;
           if (!name) {
             name = `Student ${index + 1}`;
           }
-          
+
           // Loopid is optional - it will be generated+ user_id when the user is created
           // We can still extract it if present in the document, but it's not required
           let loopid = student.loopid?.trim() || '';
@@ -209,7 +209,7 @@ Now extract the student data and return ONLY the JSON array:`;
             // Clean loopid - remove "g:" prefix if present
             loopid = loopid.replace(/^g:/i, '').trim();
           }
-          
+
           return {
             name,
             loopid, // Optional - will be auto-generated if not provided
@@ -256,7 +256,7 @@ async function tryGeminiModel(
   apiVersion = 'v1beta'
 ) {
   const url = `${getModelUrl(model, apiVersion)}?key=${GEMINI_API_KEY}`;
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -295,7 +295,10 @@ Available actions:
 3. view_student - View student info
 4. add_department - Add/create a new department (requires department_name field)
 5. delete_students - Delete all students or specific students (requires confirmation)
-6. unknown - Unclear command
+6. add_applicant - Add a new student applicant (Admission Portal)
+7. analyze_system - Analyze the entire ERP system (Dashboard data)
+8. chat - General conversation, greetings, or non-command interactions
+9. unknown - Unclear command
 
 Available students:
 ${context.students.length > 0 ? context.students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
@@ -309,6 +312,13 @@ Examples:
 - "delete all students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
 - "delete all the students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
 - "remove all students" → {"action":"delete_students","delete_all":true,"confidence":0.9}
+- "add applicant Vijay" → {"action":"add_applicant","student_name":"Vijay","confidence":0.95}
+- "add new student Vijay" → {"action":"add_applicant","student_name":"Vijay","confidence":0.9}
+- "analyze system" → {"action":"analyze_system","confidence":0.95}
+- "analyze erp" → {"action":"analyze_system","confidence":0.95}
+- "hi" → {"action":"chat","message":"Hello! How can I help you with the ERP today?","confidence":0.95}
+- "hello" → {"action":"chat","message":"Hi there! I'm ready to help you manage students, departments, and more.","confidence":0.95}
+- "who are you" → {"action":"chat","message":"I am the SchoolSphere AI Assistant. I can help you manage your school data.","confidence":0.95}
 
 Return ONLY this JSON structure (no markdown, no code blocks){"action":"mark_attendance","student_name":"Laxman","department":"BSC Comp Science","status":"absent","confidence":0.95,"message":"Mark Laxman"}
 
@@ -323,13 +333,13 @@ Now parse: ${prompt}`;
 
   // Try models in order until one works
   let lastError = null;
-  
+
   for (const model of MODEL_OPTIONS) {
     try {
       // Try v1beta first
       const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+
       if (text) {
         // Success! Parse the response
         return parseAIResponse(text, context);
@@ -395,15 +405,15 @@ Output{"queryType":"student_count","department":"Computer Science","confidence":
 Now parse: ${prompt}`;
 
   let lastError = null;
-  
+
   for (const model of MODEL_OPTIONS) {
     try {
       const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+
       if (text) {
         let jsonText = text.trim();
-        
+
         // Extract JSON
         if (jsonText.includes('```')) {
           const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -414,7 +424,7 @@ Now parse: ${prompt}`;
         }
 
         const parsed = JSON.parse(jsonText);
-        
+
         // Find student by name if provided
         if (parsed.student_name) {
           const matchingStudents = students.filter(
@@ -530,7 +540,7 @@ function parseAIResponse(text, context) {
 
     // Extract JSON from response (handle markdown code blocks if present)
     let jsonText = text.trim();
-    
+
     // Remove markdown code blocks if present
     if (jsonText.includes('```')) {
       const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
