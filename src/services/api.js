@@ -117,6 +117,18 @@ class ApiClient {
     return this.request(`/users/${id}`);
   }
 
+  // SIM Profile
+  async getStudentProfile(userId) {
+    return this.request(`/sim/profiles/${userId}`);
+  }
+
+  async updateStudentProfile(userId, profileData) {
+    return this.request(`/sim/profiles/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
+  }
+
   async getUsersByDepartments(departmentIds, role, status) {
     return this.request('/users/by-departments', {
       method: 'POST',
