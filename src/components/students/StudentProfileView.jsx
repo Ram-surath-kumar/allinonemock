@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Calendar, MapPin, Phone, Heart, Users, CreditCard } from 'lucide-react';
+import { User, Calendar, MapPin, Phone, Heart, Users, CreditCard, Mail, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { StudentAcademics } from './Profile/StudentAcademics';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export function StudentProfileView({ student, onBack }) {
     const [activeTab, setActiveTab] = useState('personal');
     const [loading, setLoading] = useState(false);
-    const [profile, setProfile] = useState(null);
+    const [profile, setProfile] = useState({});
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -28,6 +29,8 @@ export function StudentProfileView({ student, onBack }) {
             const result = await response.json();
             if (result.data && !result.error) {
                 setProfile(result.data);
+            } else {
+                setProfile({});
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -42,18 +45,15 @@ export function StudentProfileView({ student, onBack }) {
         try {
             setLoading(true);
 
-            // Sanitize data before saving
+            // Sanitize data before saving (remove nulls or convert types if needed)
             const sanitizedProfile = { ...profile };
-            delete sanitizedProfile.id; // Don't send the internal primary key
+            delete sanitizedProfile.id; // Don't send internal PK
+            delete sanitizedProfile.created_at;
+            delete sanitizedProfile.updated_at;
 
-            if (sanitizedProfile.family_income === '') {
-                sanitizedProfile.family_income = null;
-            } else if (sanitizedProfile.family_income !== undefined && sanitizedProfile.family_income !== null) {
-                sanitizedProfile.family_income = Number(sanitizedProfile.family_income);
-            }
-
-            if (sanitizedProfile.dob === '') {
-                sanitizedProfile.dob = null;
+            // Ensure numeric
+            if (sanitizedProfile.family_annual_income) {
+                sanitizedProfile.family_annual_income = Number(sanitizedProfile.family_annual_income);
             }
 
             const dataToSave = {
@@ -87,24 +87,64 @@ export function StudentProfileView({ student, onBack }) {
         setProfile(prev => ({ ...prev, [field]: value }));
     };
 
+
+
+    const renderInput = (label, field, type = 'text', placeholder = '') => (
+        <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">{label}</label>
+            {isEditing ? (
+                type === 'date' ? (
+                    <DatePicker
+                        date={profile[field]}
+                        setDate={(d) => handleChange(field, d)}
+                        placeholder={placeholder || "Select date"}
+                    />
+                ) : (
+                    <Input
+                        type={type}
+                        value={profile[field] || ''}
+                        onChange={e => handleChange(field, e.target.value)}
+                        placeholder={placeholder}
+                    />
+                )
+            ) : (
+                <p className="font-medium text-sm border p-2 rounded-md bg-muted/20 min-h-[40px] flex items-center">
+                    {profile[field] || <span className="text-muted-foreground italic text-xs">Not provided</span>}
+                </p>
+            )}
+        </div>
+    );
+
+    const renderSectionHeader = (icon, title) => (
+        <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+                {icon} {title}
+            </CardTitle>
+        </CardHeader>
+    );
+
     if (!profile && loading) return <div className="p-8 text-center">Loading profile...</div>;
 
-    const displayProfile = profile || {};
-
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
-                <Button variant="outline" onClick={onBack}>&larr; Back</Button>
+        <div className="space-y-6 pb-20">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-6 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 border-b">
+                <Button variant="outline" size="sm" onClick={onBack}>&larr; Back</Button>
                 <div>
                     <h2 className="text-2xl font-bold">{student.name}</h2>
-                    <p className="text-muted-foreground">{student.email} • {student.department}</p>
+                    <p className="text-muted-foreground text-sm flex items-center gap-2">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{student.role?.toUpperCase()}</span>
+                        <span>{student.email}</span>
+                        <span>•</span>
+                        <span>{student.department}</span>
+                    </p>
                 </div>
                 <div className="ml-auto">
                     {!isEditing ? (
-                        <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                        <Button onClick={() => setIsEditing(true)}>Edit Details</Button>
                     ) : (
                         <div className="flex gap-2">
-                            <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                            <Button variant="ghost" onClick={() => { setIsEditing(false); fetchProfile(); }}>Cancel</Button>
                             <Button onClick={handleSave} disabled={loading}>Save Changes</Button>
                         </div>
                     )}
@@ -112,103 +152,28 @@ export function StudentProfileView({ student, onBack }) {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-                    <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsList className="w-full justify-start overflow-x-auto">
+                    <TabsTrigger value="personal">Personal & Identity</TabsTrigger>
                     <TabsTrigger value="academic">Academic</TabsTrigger>
+                    <TabsTrigger value="contact">Contact & Address</TabsTrigger>
+                    <TabsTrigger value="family">Family</TabsTrigger>
                     <TabsTrigger value="health">Health & Emergency</TabsTrigger>
-                    <TabsTrigger value="documents">Documents</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="personal" className="space-y-4 mt-4">
+                {/* 1. PERSONAL & IDENTITY */}
+                <TabsContent value="personal" className="mt-6 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Basic Info</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Date of Birth</label>
-                                <Input
-                                    type="date"
-                                    value={displayProfile.dob || ''}
-                                    onChange={e => handleChange('dob', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Gender</label>
-                                <Input
-                                    value={displayProfile.gender || ''}
-                                    onChange={e => handleChange('gender', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Aadhar No</label>
-                                <Input
-                                    value={displayProfile.aadhar_no || ''}
-                                    onChange={e => handleChange('aadhar_no', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Family Income</label>
-                                <Input
-                                    type="number"
-                                    value={displayProfile.family_income || ''}
-                                    onChange={e => handleChange('family_income', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Address</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Current Address</label>
-                                <Textarea
-                                    value={displayProfile.address_current || ''}
-                                    onChange={e => handleChange('address_current', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Permanent Address</label>
-                                <Textarea
-                                    value={displayProfile.address_permanent || ''}
-                                    onChange={e => handleChange('address_permanent', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Guardian Info</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Guardian Name</label>
-                                <Input
-                                    value={displayProfile.guardian_name || ''}
-                                    onChange={e => handleChange('guardian_name', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Relationship</label>
-                                <Input
-                                    value={displayProfile.guardian_relation || ''}
-                                    onChange={e => handleChange('guardian_relation', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Contact Number</label>
-                                <Input
-                                    value={displayProfile.guardian_contact || ''}
-                                    onChange={e => handleChange('guardian_contact', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
+                        {renderSectionHeader(<User className="h-5 w-5" />, "Personal Information")}
+                        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {renderInput("Date of Birth", "dob", "date")}
+                            {renderInput("Gender", "gender")}
+                            {renderInput("Blood Group", "blood_group")}
+                            {renderInput("Religion", "religion")}
+                            {renderInput("Community / Category", "category")}
+                            {renderInput("Nationality", "nationality")}
+                            {renderInput("Mother Tongue", "mother_tongue")}
+                            {renderInput("Aadhaar Number", "aadhar_no")}
+                            {renderInput("PAN Number", "pan_no")}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -217,62 +182,90 @@ export function StudentProfileView({ student, onBack }) {
                     <StudentAcademics userId={student.id} />
                 </TabsContent>
 
-                <TabsContent value="health" className="mt-4 space-y-4">
+                {/* 3. CONTACT & ADDRESS */}
+                <TabsContent value="contact" className="mt-6 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" /> Medical Info</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Blood Group</label>
-                                <Input
-                                    value={displayProfile.blood_group || ''}
-                                    onChange={e => handleChange('blood_group', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <label className="text-sm font-medium">Medical History / Allergies</label>
-                                <Textarea
-                                    value={displayProfile.medical_history || ''}
-                                    onChange={e => handleChange('medical_history', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
+                        {renderSectionHeader(<Phone className="h-5 w-5" />, "Contact Details")}
+                        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {renderInput("Personal Mobile", "personal_mobile")}
+                            {renderInput("Alternative Mobile", "alt_mobile")}
+                            {renderInput("Landline", "landline_phone")}
+                            {renderInput("Personal Email", "personal_email")}
                         </CardContent>
                     </Card>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                            {renderSectionHeader(<MapPin className="h-5 w-5" />, "Current Address")}
+                            <CardContent className="space-y-4">
+                                {renderInput("Street / Area", "current_street")}
+                                {renderInput("City", "current_city")}
+                                {renderInput("State", "current_state")}
+                                {renderInput("Pincode", "current_pincode")}
+                                {renderInput("Country", "current_country")}
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            {renderSectionHeader(<MapPin className="h-5 w-5" />, "Permanent Address")}
+                            <CardContent className="space-y-4">
+                                {renderInput("Street / Area", "permanent_street")}
+                                {renderInput("City", "permanent_city")}
+                                {renderInput("State", "permanent_state")}
+                                {renderInput("Pincode", "permanent_pincode")}
+                                {renderInput("Country", "permanent_country")}
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+
+                {/* 4. FAMILY */}
+                <TabsContent value="family" className="mt-6 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Phone className="h-5 w-5" /> Emergency Contact</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Name</label>
-                                <Input
-                                    value={displayProfile.emergency_contact_name || ''}
-                                    onChange={e => handleChange('emergency_contact_name', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Phone</label>
-                                <Input
-                                    value={displayProfile.emergency_contact_number || ''}
-                                    onChange={e => handleChange('emergency_contact_number', e.target.value)}
-                                    disabled={!isEditing}
-                                />
-                            </div>
+                        {renderSectionHeader(<Users className="h-5 w-5" />, "Family Information")}
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {renderInput("Father's Name", "father_name")}
+                            {renderInput("Father's Occupation", "father_occupation")}
+                            {renderInput("Mother's Name", "mother_name")}
+                            {renderInput("Mother's Occupation", "mother_occupation")}
+                            {renderInput("Annual Family Income", "family_annual_income", "number")}
+                            {renderInput("Siblings Count", "siblings_count", "number")}
                         </CardContent>
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="documents" className="mt-4">
+                {/* 5. HEALTH & EMERGENCY */}
+                <TabsContent value="health" className="mt-6 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
+                        {renderSectionHeader(<Phone className="h-5 w-5" />, "Emergency Contact")}
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {renderInput("Contact Name", "emergency_contact_name")}
+                            {renderInput("Relationship", "emergency_contact_relation")}
+                            {renderInput("Contact Number", "emergency_contact_number")}
+                            {renderInput("Address", "emergency_contact_address")}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        {renderSectionHeader(<Heart className="h-5 w-5" />, "Medical Information")}
                         <CardContent>
-                            <p className="text-muted-foreground">Document upload and management (Coming Soon)</p>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground">Medical History</label>
+                                {isEditing ? (
+                                    <Textarea
+                                        value={profile.medical_history || ''}
+                                        onChange={e => handleChange('medical_history', e.target.value)}
+                                        rows={4}
+                                    />
+                                ) : (
+                                    <p className="p-3 bg-muted/20 rounded-md text-sm">{profile.medical_history || 'No medical history recorded.'}</p>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
+
             </Tabs>
-        </div>
+        </div >
     );
 }
 

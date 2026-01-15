@@ -301,8 +301,16 @@ export function AuthProvider({ children }) {
     return currentUser.permissions.includes(permission);
   };
 
+  const refreshUser = async () => {
+    if (currentUser?.email) {
+      await loadUserByEmail(currentUser.email);
+    } else if (currentUser?.id) {
+      await loadUserById(currentUser.id);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, login, loginWithCredentials, logout, canManageRole, hasPermission, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, loginWithCredentials, logout, canManageRole, hasPermission, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

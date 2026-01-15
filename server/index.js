@@ -16,25 +16,36 @@ import activitiesRouter from './routes/activities.js';
 import libraryRouter from './routes/library.js';
 import hostelRouter from './routes/hostel.js';
 import examRouter from './routes/exam.js';
+import academicRouter from './routes/academic.js';
+import misRouter from './routes/mis.js';
+import financeRouter from './routes/finance.js';
+import facilitiesRouter from './routes/facilities.js';
+
 import profilesRouter from './routes/SIM/profiles.js';
 import admissionsRouter from './routes/SIM/admissions.js';
-import academicRouter from './routes/SIM/academic.js';
+import simAcademicRouter from './routes/SIM/academic.js';
 import communicationsRouter from './routes/SIM/communications.js';
 import simExamsRouter from './routes/SIM/exams.js';
 import meritRouter from './routes/SIM/merit.js';
 import registrationRouter from './routes/SIM/registration.js';
 import graduationRouter from './routes/SIM/graduation.js';
+import leavesRouter from './routes/SIM/leaves.js';
+import courseAttendanceRouter from './routes/SIM/course_attendance.js';
 
-// ... (existing code)
+// Import growth and finance routes (to be created)
+// import growthRouter from './routes/growth.js';
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+import { auditLogger } from './middleware/auditLogger.js';
+
 // Middleware
 // CORS configuration - allow localhost and Vercel domains
 const allowedOrigins = [
   'http://localhost:8080',
+  'http://localhost:8081',
   'http://localhost:5173',
   'http://localhost:3000',
   // Add your Vercel domain here after deployment
@@ -60,6 +71,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Apply Audit Logger
+app.use(auditLogger);
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend API is running' });
@@ -79,7 +93,13 @@ app.use('/api/library', libraryRouter);
 app.use('/api/hostel', hostelRouter);
 app.use('/api/exam', examRouter);
 
-// Student Information System (SIM) Routes
+// Generic Routes
+app.use('/api/academic', academicRouter);
+app.use('/api/mis', misRouter);
+app.use('/api/finance', financeRouter);
+app.use('/api/facilities', facilitiesRouter);
+
+// SIM Routes
 app.use('/api/sim/profiles', profilesRouter);
 app.use('/api/sim/admissions', admissionsRouter);
 app.use('/api/sim/communications', communicationsRouter);
@@ -87,25 +107,12 @@ app.use('/api/sim/exams', simExamsRouter);
 app.use('/api/sim/merit', meritRouter);
 app.use('/api/sim/registration', registrationRouter);
 app.use('/api/sim/academic', academicRouter);
-import leavesRouter from './routes/SIM/leaves.js';
-
-// ... (existing imports)
-
-import courseAttendanceRouter from './routes/SIM/course_attendance.js';
-
-// ... (existing imports)
-
-// SIM Routes
-app.use('/api/sim/profiles', profilesRouter);
-app.use('/api/sim/admissions', admissionsRouter);
-app.use('/api/sim/exams', simExamsRouter);
-app.use('/api/sim/merit', meritRouter);
-app.use('/api/sim/registration', registrationRouter);
-app.use('/api/sim/academic', academicRouter);
 app.use('/api/sim/graduation', graduationRouter);
 app.use('/api/sim/leaves', leavesRouter);
 app.use('/api/sim/attendance', courseAttendanceRouter);
-// app.use('/api/finance', financeRouter);
+
+// Future Routes
+// app.use('/api/growth', growthRouter);
 
 // Temporary: Keep growth and finance endpoints in index.js until route files are created
 // This will be moved to route files in the next step

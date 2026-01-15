@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import AdmissionAdmin from "./pages/AdmissionAdmin";
 // AdmissionPortal is already imported or not needed here if imported elsewhere?
 import { AdmissionPortal } from "./components/students/Admission/AdmissionPortal";
+import Facilities from "./pages/Facilities";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const AppContent = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<Index />} />
       <Route path="/admin/admissions" element={<AdmissionAdmin />} />
+      <Route path="/facilities" element={<Facilities />} />
+
 
       <Route path="/:orgName/:userId" element={<Index />} />
       <Route path="/:orgName/:userId/:tab" element={<Index />} />

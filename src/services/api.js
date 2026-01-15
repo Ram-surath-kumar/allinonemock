@@ -1,4 +1,5 @@
 import { apiCache, getCacheKey } from './cache';
+import { supabase } from '@/lib/supabase';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -13,6 +14,17 @@ class ApiClient {
     options = {},
     useCache = true
   ) {
+    // Inject Auth Token
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
     // Only cache GET requests
     const isGet = !options.method || options.method === 'GET';
     // Extract query params from endpoint for cache key
@@ -42,10 +54,7 @@ class ApiClient {
       try {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-          },
+          headers,
         });
 
         if (!response.ok) {
@@ -106,6 +115,18 @@ class ApiClient {
 
   async getUserById(id) {
     return this.request(`/users/${id}`);
+  }
+
+  // SIM Profile
+  async getStudentProfile(userId) {
+    return this.request(`/sim/profiles/${userId}`);
+  }
+
+  async updateStudentProfile(userId, profileData) {
+    return this.request(`/sim/profiles/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
   }
 
   async getUsersByDepartments(departmentIds, role, status) {

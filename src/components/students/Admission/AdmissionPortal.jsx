@@ -8,7 +8,6 @@ import { Loader2, FileText, Award, Calendar, CheckCircle2, AlertCircle } from 'l
 import { ApplicationForm } from './ApplicationForm';
 import { ApplicationStatus } from './ApplicationStatus';
 import { MeritListDisplay } from './MeritListDisplay';
-
 import { EntranceExamCard } from './EntranceExamCard';
 import { AdmissionProfile } from './AdmissionProfile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,12 +22,13 @@ export function AdmissionPortal() {
     const fetchMyApplications = async () => {
         try {
             setLoading(true);
-            // In a real app, we would filter by the logged-in user's email or ID
-            // For now, we fetch all to simulate the view or filter by email if available in context
-            const response = await api.getAdmissions(); // This gets ALL for admin dev purposes
-            // TODO: Filter for current user
-            if (response.data) {
-                setMyApplications(response.data);
+            const response = await api.getAdmissions(); // Fetches all, filter for user below
+            if (response.data && currentUser?.email) {
+                // Filter applications for the logged-in user
+                const userApps = response.data.filter(app => app.email === currentUser.email);
+                setMyApplications(userApps);
+            } else {
+                setMyApplications([]);
             }
         } catch (error) {
             console.error(error);
@@ -39,8 +39,12 @@ export function AdmissionPortal() {
     };
 
     useEffect(() => {
-        fetchMyApplications();
-    }, []);
+        if (currentUser) {
+            fetchMyApplications();
+        } else {
+            setLoading(false);
+        }
+    }, [currentUser]);
 
     const handleApplicationSubmit = async (formData) => {
         try {
@@ -148,4 +152,3 @@ export function AdmissionPortal() {
         </div>
     );
 }
-

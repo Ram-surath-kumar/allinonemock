@@ -4,6 +4,7 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
+import { GovernanceSection } from '@/components/dashboard/GovernanceSection';
 import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
 import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
 import { getDashboardStats, getGrowthData, getConsolidatedGrowthData } from '@/services/dashboard';
@@ -37,11 +38,11 @@ export function AdminDashboard({ onAddUser }) {
         // Ensure we get the correct values from stats object
         // Use stats.totalStudents if available, otherwise fall back to students array length
         const totalStudents = (typeof dashboardStats.totalStudents === 'number' && dashboardStats.totalStudents !== null)
-          ? dashboardStats.totalStudents 
+          ? dashboardStats.totalStudents
           : (Array.isArray(students) ? students.length : 0);
-        
+
         const totalStaff = (typeof dashboardStats.totalStaff === 'number' && dashboardStats.totalStaff !== null)
-          ? dashboardStats.totalStaff 
+          ? dashboardStats.totalStaff
           : 0;
 
         const attendanceRate = (typeof dashboardStats.attendanceRate === 'number' && dashboardStats.attendanceRate !== null)
@@ -53,7 +54,7 @@ export function AdminDashboard({ onAddUser }) {
           : 0;
 
         const feeCollection = (typeof dashboardStats.feeCollection === 'number' && dashboardStats.feeCollection !== null)
-          ? dashboardStats.feeCollection 
+          ? dashboardStats.feeCollection
           : 0;
 
         console.log('AdminDashboard - Extracted Stats:', {
@@ -62,14 +63,26 @@ export function AdminDashboard({ onAddUser }) {
           attendanceRate,
           feeCollection,
           feeCollectionPercentage,
+          feeCollectionPercentage,
         });
+
+        // Governance Data
+        const placements = dashboardStats.placements || null;
+        const compliance = dashboardStats.compliance || null;
+        const pendingApprovals = dashboardStats.pendingApprovals || 0;
+        const systemVersion = dashboardStats.systemVersion || 'v1.0.0';
 
         setStats({
           totalStudents,
           totalStaff,
           attendanceRate,
           feeCollection,
+          feeCollection,
           feeCollectionPercentage,
+          placements,
+          compliance,
+          pendingApprovals,
+          systemVersion,
         });
         setIsLoading(false);
       } catch (error) {
@@ -101,7 +114,7 @@ export function AdminDashboard({ onAddUser }) {
       ]);
 
       setChangeTexts({
-        students: studentsGrowth 
+        students: studentsGrowth
           ? `${studentsGrowth.change >= 0 ? '+' : ''}${studentsGrowth.changePercent.toFixed(1)}% from last month`
           : undefined,
         staff: staffGrowth
@@ -110,7 +123,7 @@ export function AdminDashboard({ onAddUser }) {
         attendance: attendanceGrowth
           ? `${attendanceGrowth.change >= 0 ? '+' : ''}${attendanceGrowth.changePercent.toFixed(1)}% from last month`
           : undefined,
-        fees: stats?.feeCollectionPercentage 
+        fees: stats?.feeCollectionPercentage
           ? `${stats.feeCollectionPercentage.toFixed(0)}% collected`
           : undefined,
       });
@@ -209,6 +222,9 @@ export function AdminDashboard({ onAddUser }) {
         />
       </div>
 
+      {/* Governance Section */}
+      <GovernanceSection stats={stats} />
+
       {/* Quick Actions & AI Actions - Compact */}
       <QuickActions onAddUser={onAddUser} />
 
@@ -224,21 +240,21 @@ export function AdminDashboard({ onAddUser }) {
         onOpenChange={setGrowthModalOpen}
         title={
           growthMetric === 'students' ? 'Total Students' :
-          growthMetric === 'attendance' ? 'Attendance Rate' :
-          growthMetric === 'fees' ? 'Fee Collection' :
-          'Growth'
+            growthMetric === 'attendance' ? 'Attendance Rate' :
+              growthMetric === 'fees' ? 'Fee Collection' :
+                'Growth'
         }
         metric={growthMetric}
         currentValue={stats ? (
           growthMetric === 'students' ? stats.totalStudents :
-          growthMetric === 'attendance' ? stats.attendanceRate :
-          growthMetric === 'fees' ? stats.feeCollection :
-          0
+            growthMetric === 'attendance' ? stats.attendanceRate :
+              growthMetric === 'fees' ? stats.feeCollection :
+                0
         ) : 0}
         formatValue={
           growthMetric === 'fees' ? formatCurrency :
-          growthMetric === 'attendance' ? formatPercent :
-          formatNumber
+            growthMetric === 'attendance' ? formatPercent :
+              formatNumber
         }
       />
 
