@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { api } from '@/services/api';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { toast } from 'sonner';
 
 export function StudentAttendanceCalendar({
@@ -19,9 +19,9 @@ export function StudentAttendanceCalendar({
   const [attendanceRecords, setAttendanceRecords] = useState(new Map());
   const [loading, setLoading] = useState(false);
 
-  const canViewAttendance = hasPermission('view_students') || 
-    currentUser?.role === 'admin' || 
-    currentUser?.role === 'vice_head' || 
+  const canViewAttendance = hasPermission('view_students') ||
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'vice_head' ||
     currentUser?.role === 'teacher';
 
   useEffect(() => {
@@ -38,15 +38,17 @@ export function StudentAttendanceCalendar({
       const start = startOfMonth(selectedMonth);
       const end = endOfMonth(selectedMonth);
 
-      const { data, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('student_id', student.id)
-        .gte('date', format(start, 'yyyy-MM-dd'))
-        .lte('date', format(end, 'yyyy-MM-dd'))
-        .order('date', { ascending: true });
+      const startStr = format(start, 'yyyy-MM-dd');
+      const endStr = format(end, 'yyyy-MM-dd');
 
-      if (error) throw error;
+      const response = await api.getAttendance({
+        student_id: student.id,
+        start_date: startStr,
+        end_date: endStr
+      });
+
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
 
       const recordsMap = new Map();
       data?.forEach((record) => {
@@ -121,7 +123,7 @@ export function StudentAttendanceCalendar({
     }
   });
 
-  const attendanceRate = monthDays.length > 0 
+  const attendanceRate = monthDays.length > 0
     ? ((stats.present + stats.excused) / monthDays.length * 100).toFixed(1)
     : '0';
 

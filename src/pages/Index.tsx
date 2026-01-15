@@ -39,7 +39,30 @@ const Tools = lazy(() =>
 const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
+<<<<<<< HEAD:src/pages/Index.tsx
+=======
+const Settings = lazy(() =>
+  import('@/pages/Settings').then(module => ({ default: module.Settings }))
+);
+const HostelDashboard = lazy(() =>
+  import('@/pages/Hostel/HostelDashboard').then(module => ({ default: module.default }))
+);
+const ExamDashboard = lazy(() =>
+  import('@/pages/Exam/ExamDashboard').then(module => ({ default: module.default }))
+);
+const LibraryDashboard = lazy(() =>
+  import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
+);
+>>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/pages/Index.jsx
 
+// Import AcademicGovernance
+const AcademicGovernance = lazy(() =>
+  import('@/pages/AcademicGovernance').then(module => ({ default: module.AcademicGovernance }))
+);
+// Import MISSubmission
+const MISSubmission = lazy(() =>
+  import('@/pages/MISSubmission').then(module => ({ default: module.MISSubmission }))
+);
 // Enhanced skeleton loader with shimmer effect
 const PageLoader = () => (
   <div className="space-y-6 animate-fade-in" role="status" aria-label="Loading page">
@@ -79,12 +102,16 @@ function AppContent() {
     'finance': '/finance',
     'facilities': '/facilities',
     'settings': '/settings',
+    'academic-governance': '/governance/academic',
+    'mis-submission': '/governance/mis',
     'personal-details': '/student/personal-details',
     'grades-marks': '/student/grades-marks',
     'student-attendance': '/student/attendance',
     'timetable': '/student/timetable',
     'fee-payment': '/student/fee-payment',
+
     'tools': '/tools',
+    'academic-governance': '/governance/academic',
   };
 
   const pathToTab: Record<string, string> = {
@@ -96,12 +123,16 @@ function AppContent() {
     '/finance': 'finance',
     '/facilities': 'facilities',
     '/settings': 'settings',
+    '/governance/academic': 'academic-governance',
+    '/governance/mis': 'mis-submission',
     '/student/personal-details': 'personal-details',
     '/student/grades-marks': 'grades-marks',
     '/student/attendance': 'student-attendance',
     '/student/timetable': 'timetable',
     '/student/fee-payment': 'fee-payment',
+
     '/tools': 'tools',
+    '/governance/academic': 'academic-governance',
   };
 
   // Initialize from URL on mount
@@ -242,6 +273,14 @@ function AppContent() {
         return 'Fee Payment';
       case '/tools':
         return 'Tools';
+      case '/tools':
+        return 'Tools';
+      case '/governance/academic':
+        return 'Academic Governance';
+      case '/governance/academic':
+        return 'Academic Governance';
+      case '/governance/mis':
+        return 'MIS Data Submission';
       default:
         return 'Dashboard';
     }
@@ -319,6 +358,19 @@ function AppContent() {
             <Tools />
           </Suspense>
         );
+
+      case '/governance/academic':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AcademicGovernance />
+          </Suspense>
+        );
+      case '/governance/mis':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <MISSubmission />
+          </Suspense>
+        );
       case '/finance':
         return (
           <Suspense fallback={<PageLoader />}>
@@ -327,7 +379,6 @@ function AppContent() {
         );
       case '/academics':
       case '/facilities':
-      case '/settings':
         return (
           <div className="flex items-center justify-center h-64 rounded-2xl border border-border bg-card animate-fade-in shadow-depth-1" role="region" aria-label={getPageTitle()}>
             <div className="text-center">
@@ -337,6 +388,12 @@ function AppContent() {
               </p>
             </div>
           </div>
+        );
+      case '/settings':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Settings />
+          </Suspense>
         );
       default:
         return (

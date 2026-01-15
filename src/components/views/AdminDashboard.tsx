@@ -4,6 +4,7 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
+import { GovernanceSection } from '@/components/dashboard/GovernanceSection';
 import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
 import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
 import { getDashboardStats, getGrowthData, getConsolidatedGrowthData, DashboardStats } from '@/services/dashboard';
@@ -46,7 +47,17 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
           ? dashboardStats.totalStudents
           : students.length;
 
+<<<<<<< HEAD:src/components/views/AdminDashboard.tsx
         const totalStaff = typeof dashboardStats.totalStaff === 'number'
+=======
+        // Ensure we get the correct values from stats object
+        // Use stats.totalStudents if available, otherwise fall back to students array length
+        const totalStudents = (typeof dashboardStats.totalStudents === 'number' && dashboardStats.totalStudents !== null)
+          ? dashboardStats.totalStudents
+          : (Array.isArray(students) ? students.length : 0);
+
+        const totalStaff = (typeof dashboardStats.totalStaff === 'number' && dashboardStats.totalStaff !== null)
+>>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/components/views/AdminDashboard.jsx
           ? dashboardStats.totalStaff
           : 0;
 
@@ -58,16 +69,43 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
           ? dashboardStats.feeCollectionPercentage
           : 0;
 
+<<<<<<< HEAD:src/components/views/AdminDashboard.tsx
         const feeCollection = typeof dashboardStats.feeCollection === 'number'
           ? dashboardStats.feeCollection
           : 0;
 
-        setStats({
+=======
+        const feeCollection = (typeof dashboardStats.feeCollection === 'number' && dashboardStats.feeCollection !== null)
+          ? dashboardStats.feeCollection
+          : 0;
+
+        console.log('AdminDashboard - Extracted Stats:', {
           totalStudents,
           totalStaff,
           attendanceRate,
           feeCollection,
           feeCollectionPercentage,
+          feeCollectionPercentage,
+        });
+
+        // Governance Data
+        const placements = dashboardStats.placements || null;
+        const compliance = dashboardStats.compliance || null;
+        const pendingApprovals = dashboardStats.pendingApprovals || 0;
+        const systemVersion = dashboardStats.systemVersion || 'v1.0.0';
+
+>>>>>>> 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5:src/components/views/AdminDashboard.jsx
+        setStats({
+          totalStudents,
+          totalStaff,
+          attendanceRate,
+          feeCollection,
+          feeCollection,
+          feeCollectionPercentage,
+          placements,
+          compliance,
+          pendingApprovals,
+          systemVersion,
         });
         setLoading(false);
       } catch (error) {
@@ -202,6 +240,9 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
           onClick={() => handleCardClick('attendance')}
         />
       </div>
+
+      {/* Governance Section */}
+      <GovernanceSection stats={stats} />
 
       {/* Quick Actions & AI Actions - Compact */}
       <QuickActions onAddUser={onAddUser} />

@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/page-data', async (req, res) => {
   try {
     const { userId, role, date } = req.query;
-    
+
     const students = [];
     const departments = [];
     const attendanceRecords = [];
@@ -23,7 +23,7 @@ router.get('/page-data', async (req, res) => {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (!userError && userData) {
         userInfo = userData;
       }
@@ -34,7 +34,7 @@ router.get('/page-data', async (req, res) => {
       .from('departments')
       .select('*')
       .order('name', { ascending: true });
-    
+
     if (!deptsError && deptsData) {
       departments.push(...deptsData);
     }
@@ -45,7 +45,7 @@ router.get('/page-data', async (req, res) => {
         .from('teacher_departments')
         .select('department_id')
         .eq('teacher_id', userId);
-      
+
       if (!teacherDeptsError && teacherDeptsData) {
         teacherDepartmentIds.push(...teacherDeptsData.map(td => td.department_id));
       }
@@ -60,7 +60,7 @@ router.get('/page-data', async (req, res) => {
         .eq('role', 'student')
         .eq('status', 'active')
         .in('department_id', teacherDepartmentIds);
-      
+
       if (!studentsError && studentsData) {
         students.push(...studentsData);
       }
@@ -71,7 +71,7 @@ router.get('/page-data', async (req, res) => {
         .select('*')
         .eq('role', 'student')
         .eq('status', 'active');
-      
+
       if (!studentsError && studentsData) {
         students.push(...studentsData);
       }
@@ -83,7 +83,7 @@ router.get('/page-data', async (req, res) => {
         .from('attendance')
         .select('*')
         .eq('date', date);
-      
+
       if (!attendanceError && attendanceData) {
         attendanceRecords.push(...attendanceData);
       }
@@ -106,16 +106,18 @@ router.get('/page-data', async (req, res) => {
 // Get attendance records
 router.get('/', async (req, res) => {
   try {
-    const { date, student_id, student_ids } = req.query;
+    const { date, student_id, student_ids, start_date, end_date } = req.query;
     let query = supabase.from('attendance').select('*');
-    
+
     if (date) query = query.eq('date', date);
     if (student_id) query = query.eq('student_id', student_id);
     if (student_ids) {
       const idArray = Array.isArray(student_ids) ? student_ids : student_ids.split(',');
       query = query.in('student_id', idArray);
     }
-    
+    if (start_date) query = query.gte('date', start_date);
+    if (end_date) query = query.lte('date', end_date);
+
     const { data, error } = await query.order('date', { ascending: true });
     if (error) throw error;
     sendSuccess(res, data);
@@ -132,7 +134,7 @@ router.post('/', async (req, res) => {
       .from('attendance')
       .upsert(records, { onConflict: 'student_id,date' })
       .select();
-    
+
     if (error) throw error;
     sendSuccess(res, data);
   } catch (error) {
@@ -144,7 +146,7 @@ router.post('/', async (req, res) => {
 router.post('/mark', async (req, res) => {
   try {
     const { records } = req.body;
-    
+
     // Validate records array
     if (!records || !Array.isArray(records) || records.length === 0) {
       return sendValidationError(res, 'Records are required');
@@ -172,12 +174,12 @@ router.post('/mark', async (req, res) => {
       .from('attendance')
       .upsert(records, { onConflict: 'student_id,date' })
       .select();
-    
+
     if (error) {
       console.error('Attendance mark error:', error);
       throw error;
     }
-    
+
     sendSuccess(res, data);
   } catch (error) {
     handleError(error, res, 'Failed to mark attendance');

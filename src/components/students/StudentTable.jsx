@@ -1,5 +1,5 @@
-import { Pencil, Calendar, Mail } from 'lucide-react';
-import { User } from '@/types/erp';
+import { Pencil, Calendar, Mail, User } from 'lucide-react';
+import { User as UserType } from '@/types/erp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canViewAttendance, viewMode = 'grid' }) {
+export function StudentTable({ students, onEdit, onViewAttendance, onViewProfile, canEdit, canViewAttendance, viewMode = 'grid' }) {
   const isMobile = useIsMobile();
   // Always use grid view on mobile, regardless of viewMode prop
   const effectiveViewMode = isMobile ? 'grid' : viewMode;
@@ -39,12 +39,12 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
                 <TableHead className="font-semibold">Department/Grade</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Joined</TableHead>
-                {(canEdit || canViewAttendance) && <TableHead className="text-right font-semibold">Actions</TableHead>}
+                <TableHead className="text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students.map((student, index) => (
-                <TableRow 
+                <TableRow
                   key={student.id}
                   className="animate-fade-in-up hover:bg-muted/50 transition-colors duration-200"
                   style={{ animationDelay: `${index * 50}ms` }}
@@ -66,7 +66,7 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
                     {student.department || '-'}
                   </TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       variant={student.status === 'active' ? 'default' : 'secondary'}
                       className={student.status === 'active' ? 'bg-success hover:bg-success/90' : ''}
                     >
@@ -80,34 +80,43 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
                       day: 'numeric'
                     })}
                   </TableCell>
-                  {(canEdit || canViewAttendance) && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canViewAttendance && onViewAttendance && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onViewAttendance(student)}
-                            title="View attendance"
-                            className="transition-all duration-200 hover:scale-110 active:scale-95"
-                          >
-                            <Calendar className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canEdit && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEdit(student)}
-                            title="Edit student"
-                            className="transition-all duration-200 hover:scale-110 active:scale-95"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {onViewProfile && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onViewProfile(student)}
+                          title="View Profile"
+                          className="transition-all duration-200 hover:scale-110 active:scale-95"
+                        >
+                          <User className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canViewAttendance && onViewAttendance && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onViewAttendance(student)}
+                          title="View attendance"
+                          className="transition-all duration-200 hover:scale-110 active:scale-95"
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEdit(student)}
+                          title="Edit student"
+                          className="transition-all duration-200 hover:scale-110 active:scale-95"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -125,6 +134,7 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
           key={student.id}
           className="group relative overflow-hidden border border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-200 animate-fade-in-up cursor-pointer"
           style={{ animationDelay: `${index * 50}ms` }}
+          onClick={() => onViewProfile && onViewProfile(student)}
         >
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
@@ -149,8 +159,8 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Department</span>
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className="text-xs bg-muted/50"
                 >
                   {student.department || 'No department'}
@@ -159,7 +169,7 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
 
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Status</span>
-                <Badge 
+                <Badge
                   variant={student.status === 'active' ? 'default' : 'secondary'}
                   className={student.status === 'active' ? 'bg-success hover:bg-success/90 text-xs' : 'text-xs'}
                 >
@@ -179,38 +189,50 @@ export function StudentTable({ students, onEdit, onViewAttendance, canEdit, canV
               </div>
             </div>
 
-            {(canEdit || canViewAttendance) && (
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-                {canViewAttendance && onViewAttendance && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewAttendance(student);
-                    }}
-                    className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
-                  >
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                    Attendance
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(student);
-                    }}
-                    className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
-                  >
-                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+              {onViewProfile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewProfile(student);
+                  }}
+                  className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  <User className="h-3.5 w-3.5 mr-1.5" />
+                  Profile
+                </Button>
+              )}
+              {canViewAttendance && onViewAttendance && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewAttendance(student);
+                  }}
+                  className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                  Attendance
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(student);
+                  }}
+                  className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
