@@ -28,7 +28,7 @@ const navItems = [
   { icon: Users, label: 'User Management', href: '/users', roles: ['admin', 'vice_head'] },
   { icon: GraduationCap, label: 'Students', href: '/students', permission: 'view_students' },
   { icon: Calendar, label: 'Attendance', href: '/attendance', permission: 'manage_attendance' },
-  { icon: BookOpen, label: 'Academics', href: '/academics', permission: 'view_grades' },
+  { icon: BookOpen, label: 'Admissions', href: '/admissions', permission: 'view_grades' },
   { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
   { icon: BedDouble, label: 'Hostel', href: '/hostel' },

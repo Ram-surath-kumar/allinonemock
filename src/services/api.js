@@ -487,6 +487,137 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // ==================== SIM (Student Information Management) ====================
+
+  // Profile
+  async getProfile(userId) {
+    return this.request(`/sim/profiles/${userId}`);
+  }
+
+  async updateProfile(userId, data) {
+    return this.request(`/sim/profiles/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // Admissions
+  async getAdmissions(filters) {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+    }
+    const query = queryParams.toString();
+    return this.request(`/sim/admissions${query ? `?${query}` : ''}`);
+  }
+
+  async getAdmissionById(id) {
+    return this.request(`/sim/admissions/${id}`);
+  }
+
+  async submitAdmissionApplication(data) {
+    return this.request('/sim/admissions/apply', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateAdmissionStatus(id, status, remarks) {
+    return this.request(`/sim/admissions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, remarks })
+    });
+  }
+
+  // Exams
+  async getEntranceExams() {
+    return this.request('/sim/exams');
+  }
+
+  async createEntranceExam(data) {
+    return this.request('/sim/exams', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async submitEntranceScore(data) {
+    return this.request('/sim/exams/scores', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // Merit Lists
+  async getMeritLists() {
+    return this.request('/sim/merit');
+  }
+
+  async generateMeritList(data) {
+    return this.request('/sim/merit/generate', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // Course Registration
+  async getCourseOfferings(semesterId) {
+    return this.request(`/sim/registration/offerings/${semesterId}`);
+  }
+
+  async getAvailableCourses(semesterId, deptId) { // Fallback/Legacy
+    const query = new URLSearchParams({ semester_id: semesterId });
+    if (deptId) query.append('department_id', deptId);
+    return this.request(`/sim/registration/courses/available?${query}`);
+  }
+
+  async registerCourses(data) {
+    /* data structure: { student_id, semester_id, registrations: [...] } */
+    return this.request('/sim/registration/enroll', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async dropCourse(registrationId, reason) {
+    return this.request('/sim/registration/drop', {
+      method: 'POST',
+      body: JSON.stringify({ registration_id: registrationId, reason })
+    });
+  }
+
+  async getMyRegistrations(studentId) {
+    return this.request(`/sim/registration/my-courses/${studentId}`);
+  }
+
+  // Academic Records
+  async getAcademicHistory(studentId) {
+    return this.request(`/sim/academic/history/${studentId}`);
+  }
+
+  // Graduation Audit
+  async getGraduationAudit(studentId) {
+    return this.request(`/sim/graduation/audit/${studentId}`);
+  }
+
+  // Leave Management
+  async getLeaves(studentId) {
+    return this.request(`/sim/leaves/${studentId}`);
+  }
+
+  async getCourseAttendance(studentId) {
+    return this.request(`/sim/attendance/summary/${studentId}`);
+  }
+
+  async applyLeave(data) {
+    return this.request('/sim/leaves/apply', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

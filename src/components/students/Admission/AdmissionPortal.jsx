@@ -1,190 +1,151 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api } from '@/services/api';
 import { toast } from 'sonner';
+import { Loader2, FileText, Award, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ApplicationForm } from './ApplicationForm';
+import { ApplicationStatus } from './ApplicationStatus';
+import { MeritListDisplay } from './MeritListDisplay';
+
+import { EntranceExamCard } from './EntranceExamCard';
+import { AdmissionProfile } from './AdmissionProfile';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AdmissionPortal() {
-    const [admissions, setAdmissions] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [isApplyOpen, setIsApplyOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('application');
+    const [myApplications, setMyApplications] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // New application form state
-    const [formData, setFormData] = useState({
-        applicant_name: '',
-        email: '',
-        phone: '',
-        course_applied: '',
-        dob: ''
-    });
+    const { currentUser } = useAuth();
 
-    useEffect(() => {
-        fetchAdmissions();
-    }, []);
-
-    const fetchAdmissions = async () => {
+    const fetchMyApplications = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/admissions`);
-            const result = await response.json();
-            if (result.status === 'success') {
-                setAdmissions(result.data || []);
+            // In a real app, we would filter by the logged-in user's email or ID
+            // For now, we fetch all to simulate the view or filter by email if available in context
+            const response = await api.getAdmissions(); // This gets ALL for admin dev purposes
+            // TODO: Filter for current user
+            if (response.data) {
+                setMyApplications(response.data);
             }
         } catch (error) {
-            toast.error('Failed to load admissions');
+            console.error(error);
+            toast.error("Failed to load applications");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleApply = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/admissions/apply`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                toast.success(`Application submitted! ID: ${result.data.application_no}`);
-                setIsApplyOpen(false);
-                fetchAdmissions();
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error) {
-            toast.error('Application failed');
-        }
-    };
+    useEffect(() => {
+        fetchMyApplications();
+    }, []);
 
-    const updateStatus = async (id, newStatus) => {
+    const handleApplicationSubmit = async (formData) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/admissions/${id}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            });
-            if (response.ok) {
-                toast.success('Status updated');
-                fetchAdmissions();
+            const response = await api.submitAdmissionApplication(formData);
+            if (response.data) {
+                toast.success("Application Submitted Successfully!");
+                fetchMyApplications();
+                setActiveTab('status');
+            } else if (response.error) {
+                toast.error(response.error);
             }
         } catch (error) {
-            toast.error('Update failed');
+            toast.error("Submission failed");
         }
     };
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold">Admission Management</h2>
-                    <p className="text-muted-foreground">Manage applications, merit lists, and enrollments</p>
-                </div>
-
-                <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
-                    <DialogTrigger asChild>
-                        <Button>New Application</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>New Student Application</DialogTitle></DialogHeader>
-                        <form onSubmit={handleApply} className="space-y-4">
-                            <div>
-                                <label className="text-sm font-medium">Full Name</label>
-                                <Input value={formData.applicant_name} onChange={e => setFormData({ ...formData, applicant_name: e.target.value })} required />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium">Email</label>
-                                    <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium">Phone</label>
-                                    <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium">Course</label>
-                                    <Select onValueChange={v => setFormData({ ...formData, course_applied: v })}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Course" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="B.Tech CS">B.Tech CS</SelectItem>
-                                            <SelectItem value="B.Tech EC">B.Tech EC</SelectItem>
-                                            <SelectItem value="BBA">BBA</SelectItem>
-                                            <SelectItem value="MBA">MBA</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium">DOB</label>
-                                    <Input type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
-                                </div>
-                            </div>
-                            <Button type="submit" className="w-full">Submit Application</Button>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight">Student Admission Portal</h2>
+                <p className="text-muted-foreground">Apply for programs, track status, and view merit lists.</p>
             </div>
 
-            <Card>
-                <CardHeader><CardTitle>Applications</CardTitle></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>App ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Course</TableHead>
-                                <TableHead>Score</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {admissions.map(app => (
-                                <TableRow key={app.id}>
-                                    <TableCell className="font-mono text-xs">{app.application_no}</TableCell>
-                                    <TableCell>
-                                        <div className="font-medium">{app.applicant_name}</div>
-                                        <div className="text-xs text-muted-foreground">{app.email}</div>
-                                    </TableCell>
-                                    <TableCell>{app.course_applied}</TableCell>
-                                    <TableCell>{app.entrance_exam_score || '-'}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={
-                                            app.status === 'admitted' ? 'bg-green-100 text-green-800 border-green-200' :
-                                                app.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                    app.status === 'merit_listed' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''
-                                        }>
-                                            {app.status.replace('_', ' ')}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        {app.status === 'applied' && (
-                                            <Button size="sm" variant="outline" onClick={() => updateStatus(app.id, 'merit_listed')}>Shortlist</Button>
-                                        )}
-                                        {app.status === 'merit_listed' && (
-                                            <Button size="sm" onClick={() => updateStatus(app.id, 'admitted')}>Admit</Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {admissions.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No applications found</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="profile" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> My Profile
+                    </TabsTrigger>
+                    <TabsTrigger value="application" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Apply Now
+                    </TabsTrigger>
+                    <TabsTrigger value="status" className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> My Applications
+                    </TabsTrigger>
+                    <TabsTrigger value="merit" className="flex items-center gap-2">
+                        <Award className="h-4 w-4" /> Merit Lists
+                    </TabsTrigger>
+                    <TabsTrigger value="exams" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" /> Entrance Exams
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="profile" className="space-y-4">
+                    {currentUser?.id ? (
+                        <AdmissionProfile userId={currentUser.user_id || currentUser.id} />
+                    ) : (
+                        <div className="text-center p-10 border rounded-lg">Please log in to view your profile.</div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="application" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>New Admission Application</CardTitle>
+                            <CardDescription>Fill out the form below to apply for a new course.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ApplicationForm onSubmit={handleApplicationSubmit} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="status">
+                    <div className="space-y-4">
+                        {loading ? (
+                            <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                        ) : myApplications.length > 0 ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {myApplications.map(app => (
+                                    <ApplicationStatus key={app.id} application={app} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 border rounded-lg bg-muted/20">
+                                <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                                <h3 className="text-lg font-medium">No Applications Found</h3>
+                                <p className="text-sm text-muted-foreground mt-1">You haven't applied for any courses yet.</p>
+                                <Button variant="link" onClick={() => setActiveTab('application')} className="mt-2">
+                                    Start an Application
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="merit">
+                    <MeritListDisplay />
+                </TabsContent>
+
+                <TabsContent value="exams">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <EntranceExamCard
+                            title="JEE Main"
+                            date="2026-04-15"
+                            description="Joint Entrance Examination for B.Tech admission."
+                        />
+                        <EntranceExamCard
+                            title="CAT 2025"
+                            date="2025-11-24"
+                            description="Common Admission Test for MBA programs."
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
+

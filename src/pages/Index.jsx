@@ -16,9 +16,13 @@ const UserManagement = lazy(() =>
 const Students = lazy(() =>
   import('@/pages/Students').then(module => ({ default: module.Students }))
 );
-const Attendance = lazy(() =>
-  import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
+const Admissions = lazy(() =>
+  import('@/pages/Admissions').then(module => ({ default: module.Admissions }))
 );
+
+// ... (existing lazy imports remain)
+
+
 const PersonalDetails = lazy(() =>
   import('@/pages/student/PersonalDetails').then(module => ({ default: module.PersonalDetails }))
 );
@@ -85,7 +89,7 @@ function AppContent() {
     'users': '/users',
     'students': '/students',
     'attendance': '/attendance',
-    'academics': '/academics',
+    'admissions': '/admissions',
     'finance': '/finance',
     'hostel': '/hostel',
     'exam': '/exam',
@@ -105,7 +109,7 @@ function AppContent() {
     '/users': 'users',
     '/students': 'students',
     '/attendance': 'attendance',
-    '/academics': 'academics',
+    '/admissions': 'admissions',
     '/finance': 'finance',
     '/hostel': 'hostel',
     '/exam': 'exam',
@@ -237,8 +241,8 @@ function AppContent() {
         return 'Students';
       case '/attendance':
         return 'Attendance';
-      case '/academics':
-        return 'Academics';
+      case '/admissions':
+        return 'Admissions';
       case '/finance':
         return 'Finance';
       case '/hostel':
@@ -364,7 +368,12 @@ function AppContent() {
             <LibraryDashboard />
           </Suspense>
         );
-      case '/academics':
+      case '/admissions':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Admissions />
+          </Suspense>
+        );
       case '/facilities':
       case '/settings':
         return (

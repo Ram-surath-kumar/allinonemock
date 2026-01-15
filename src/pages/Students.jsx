@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Pencil, LayoutGrid, List, User, Users, GraduationCap, MessageSquare } from 'lucide-react';
+import { Search, Pencil, LayoutGrid, List, User, Users, GraduationCap, MessageSquare, Filter, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { toast } from 'sonner';
 import { StudentTable } from '@/components/students/StudentTable';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
 import { StudentAttendanceCalendar } from '@/components/students/StudentAttendanceCalendar';
-import { AdmissionPortal } from '@/components/students/Admission/AdmissionPortal';
+
 import { StudentProfileView } from '@/components/students/StudentProfileView';
 import { CommunicationCenter } from '@/components/students/Communication/CommunicationCenter';
+
 import { fetchTeacherDepartments } from '@/services/departments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function Students() {
   const { hasPermission, currentUser } = useAuth();
@@ -205,41 +207,59 @@ export function Students() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 lg:p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
+          <p className="text-muted-foreground">Manage student directory, admissions, and communications.</p>
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px] mb-6">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[800px] mb-6">
           <TabsTrigger value="directory" className="flex gap-2"><Users className="h-4 w-4" /> Directory</TabsTrigger>
-          <TabsTrigger value="admissions" className="flex gap-2"><GraduationCap className="h-4 w-4" /> Admissions</TabsTrigger>
+
+
           <TabsTrigger value="communication" className="flex gap-2"><MessageSquare className="h-4 w-4" /> Message Center</TabsTrigger>
         </TabsList>
 
         <TabsContent value="directory" className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
-            <div className="relative flex-1 min-w-0 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="relative flex-1 w-full sm:max-w-xs">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search students..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-8"
               />
             </div>
-            <div className="hidden md:flex items-center gap-2 border border-border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="h-8 w-8 p-0"
-              >
-                <LayoutGrid className="h-4 w-4" />
+            <div className="flex gap-2 w-full sm:w-auto">
+              {/* View mode toggle */}
+              <div className="hidden md:flex items-center gap-2 border border-border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8 w-8 p-0"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="h-8 w-8 p-0"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Button variant="outline" className="flex-1 sm:flex-none gap-2">
+                <Filter className="h-4 w-4" /> Filter
               </Button>
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-                className="h-8 w-8 p-0"
-              >
-                <List className="h-4 w-4" />
+              <Button className="flex-1 sm:flex-none gap-2">
+                <Plus className="h-4 w-4" /> Add Student
               </Button>
             </div>
           </div>
@@ -291,9 +311,9 @@ export function Students() {
           )}
         </TabsContent>
 
-        <TabsContent value="admissions">
-          <AdmissionPortal />
-        </TabsContent>
+
+
+
 
         <TabsContent value="communication">
           <CommunicationCenter />

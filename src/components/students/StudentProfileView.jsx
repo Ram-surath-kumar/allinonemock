@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { StudentAcademics } from './Profile/StudentAcademics';
 
 export function StudentProfileView({ student, onBack }) {
     const [activeTab, setActiveTab] = useState('personal');
@@ -213,7 +214,7 @@ export function StudentProfileView({ student, onBack }) {
                 </TabsContent>
 
                 <TabsContent value="academic" className="mt-4 space-y-4">
-                    <AcademicTab userId={student.id} />
+                    <StudentAcademics userId={student.id} />
                 </TabsContent>
 
                 <TabsContent value="health" className="mt-4 space-y-4">

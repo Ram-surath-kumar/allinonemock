@@ -1,94 +1,57 @@
 import express from 'express';
-import { supabase, supabaseAdmin } from '../../common.js';
-import { handleError, sendSuccess, sendValidationError } from '../../common.js';
+import { supabase, handleError, sendSuccess } from '../../common.js';
 
 const router = express.Router();
 
-// Get Academic Record for Student
-router.get('/:userId', async (req, res) => {
+// Get Academic History for a Student
+router.get('/history/:student_id', async (req, res) => {
     try {
-        const { userId } = req.params;
+        const { student_id } = req.params;
 
-        // Fetch current semester status
-        const { data: record, error: recordError } = await supabase
-            .from('academic_records')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+        const { data, error } = await supabase
+            .from('student_academic_records')
+            .select(`
+                *,
+                semesters (
+                    name,
+                    academic_year,
+                    start_date,
+                    end_date
+                )
+            `)
+            .eq('student_id', student_id)
+            .order('semesters(start_date)', { ascending: false });
 
-        // Fetch current enrollments
-        const { data: enrollments, error: enrollError } = await supabase
-            .from('enrollments')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'enrolled');
-
-        if (recordError && recordError.code !== 'PGRST116') throw recordError;
-        if (enrollError) throw enrollError;
-
-        res.json({
-            status: 'success',
-            data: {
-                academic_record: record || {},
-                enrollments: enrollments || []
-            },
-            error: null
-        });
+        if (error) throw error;
+        sendSuccess(res, data);
     } catch (error) {
-        handleError(error, res, 'Failed to fetch academic details');
+        handleError(error, res, 'Failed to fetch academic history');
     }
 });
 
-// Register for Semester (Create/Update Academic Record)
-router.post('/:userId/register-semester', async (req, res) => {
+// Calculate/Update GPA (Mock/Placeholder for now)
+router.post('/calculate', async (req, res) => {
     try {
-        const { userId } = req.params;
-        const { semester, academic_year } = req.body;
+        const { student_id, semester_id, sgpa, credits_earned } = req.body;
 
-        const { data, error } = await supabaseAdmin
-            .from('academic_records')
-            .insert({
-                user_id: userId,
-                semester,
-                academic_year,
-                status: 'active'
-            })
-            .select()
-            .single();
+        // In a real system, this would calculate based on 'course_registrations.grade'
+        // For now, we allow manual entry or mock updates
+
+        const { data, error } = await supabase
+            .from('student_academic_records')
+            .upsert({
+                student_id,
+                semester_id,
+                sgpa,
+                credits_earned,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'student_id, semester_id' })
+            .select();
 
         if (error) throw error;
-        res.json({ status: 'success', data, error: null });
+        sendSuccess(res, data);
     } catch (error) {
-        handleError(error, res, 'Failed to register semester');
-    }
-});
-
-// Enroll in Course
-router.post('/:userId/courses', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { course_code, course_name, credits, semester, academic_year } = req.body;
-
-        const { data, error } = await supabaseAdmin
-            .from('enrollments')
-            .insert({
-                user_id: userId,
-                course_code,
-                course_name,
-                credits,
-                semester,
-                academic_year,
-                status: 'enrolled'
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-        res.json({ status: 'success', data, error: null });
-    } catch (error) {
-        handleError(error, res, 'Failed to enroll in course');
+        handleError(error, res, 'Failed to update academic record');
     }
 });
 
