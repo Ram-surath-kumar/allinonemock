@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ROLE_HIERARCHY } from '@/types/erp';
+import { ROLE_HIERARCHY, ROLE_DEFAULT_PERMISSIONS } from '@/types/erp';
 import { api } from '@/services/api';
 import { supabase } from '@/lib/supabase';
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }) {
           name: data.name,
           email: data.email,
           role: data.role,
-          permissions: data.permissions || [],
+          permissions: data.permissions && data.permissions.length > 0 ? data.permissions : (ROLE_DEFAULT_PERMISSIONS[data.role] || []),
           department: data.department,
           createdAt: new Date(data.created_at),
           status: data.status,
@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
         name: data.name,
         email: data.email,
         role: data.role,
-        permissions: data.permissions || [],
+        permissions: data.permissions && data.permissions.length > 0 ? data.permissions : (ROLE_DEFAULT_PERMISSIONS[data.role] || []),
         department: data.department,
         createdAt: new Date(data.created_at),
         status: data.status,
@@ -175,7 +175,7 @@ export function AuthProvider({ children }) {
         name: data.name,
         email: data.email,
         role: data.role,
-        permissions: data.permissions || [],
+        permissions: data.permissions && data.permissions.length > 0 ? data.permissions : (ROLE_DEFAULT_PERMISSIONS[data.role] || []),
         department: data.department,
         createdAt: new Date(data.created_at),
         status: data.status,
@@ -241,7 +241,7 @@ export function AuthProvider({ children }) {
         name: data.name,
         email: data.email,
         role: data.role,
-        permissions: data.permissions || [],
+        permissions: data.permissions && data.permissions.length > 0 ? data.permissions : (ROLE_DEFAULT_PERMISSIONS[data.role] || []),
         department: data.department,
         createdAt: new Date(data.created_at),
         status: data.status,

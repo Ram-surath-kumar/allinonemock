@@ -2,7 +2,7 @@ import { apiCache, getCacheKey } from './cache';
 
 import { supabase } from '@/lib/supabase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Consolidated API endpoints - use these instead of multiple separate calls
 interface DashboardData {
@@ -125,6 +125,12 @@ class ApiClient {
 
                 if (session?.access_token) {
                     headers['Authorization'] = `Bearer ${session.access_token}`;
+                } else {
+                    // Try to get session again if missing
+                    const { data: { session: newSession } } = await supabase.auth.getSession();
+                    if (newSession?.access_token) {
+                        headers['Authorization'] = `Bearer ${newSession.access_token}`;
+                    }
                 }
 
                 const response = await fetch(`${this.baseUrl}${endpoint}`, {
