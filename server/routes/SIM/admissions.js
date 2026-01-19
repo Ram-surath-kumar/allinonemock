@@ -55,7 +55,7 @@ router.post('/apply', async (req, res) => {
             entrance_exam_details, academic_qualifications,
             // UGC Fields
             gender, category, study_mode, nationality_type,
-            bpl_status, pwd_status, minority_status, minority_type
+            bpl_status, pwd_status, minority_status, minority_type, first_graduate_status
         } = req.body;
 
         const application_no = generateAppId();
@@ -79,6 +79,7 @@ router.post('/apply', async (req, res) => {
                 is_bpl: bpl_status,
                 is_pwd: pwd_status,
                 is_minority: minority_status,
+                is_first_graduate: first_graduate_status,
                 minority_type
             })
             .select()

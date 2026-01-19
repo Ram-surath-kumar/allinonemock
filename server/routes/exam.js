@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../common.js';
-import { handleError, sendSuccess } from '../common.js';
+import { handleError, sendSuccess, sendValidationError } from '../common.js';
+import { feeService } from '../services/feeService.js';
 
 const router = express.Router();
 
@@ -12,48 +13,48 @@ router.get('/dashboard', async (req, res) => {
       .from('exams')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (examsError) {
       throw examsError;
     }
-    
+
     // Get exam timetable
     const { data: timetable, error: timetableError } = await supabaseAdmin
       .from('exam_timetable')
       .select('*')
       .order('exam_date', { ascending: true });
-    
+
     if (timetableError) {
       throw timetableError;
     }
-    
+
     // Get hall tickets count
     const { data: hallTickets, error: ticketsError } = await supabaseAdmin
       .from('hall_tickets')
       .select('id, status');
-    
+
     if (ticketsError) {
       throw ticketsError;
     }
-    
+
     // Get seating plans count
     const { data: seatingPlans, error: seatingError } = await supabaseAdmin
       .from('seating_plans')
       .select('id');
-    
+
     if (seatingError) {
       throw seatingError;
     }
-    
+
     // Get exam attendance
     const { data: examAttendance, error: attendanceError } = await supabaseAdmin
       .from('exam_attendance')
       .select('id, status');
-    
+
     if (attendanceError) {
       throw attendanceError;
     }
-    
+
     // Calculate stats
     const totalExams = exams?.length || 0;
     const upcomingExams = exams?.filter(e => {
@@ -66,7 +67,7 @@ router.get('/dashboard', async (req, res) => {
     const totalSeatingPlans = seatingPlans?.length || 0;
     const totalExamAttendance = examAttendance?.length || 0;
     const presentCount = examAttendance?.filter(a => a.status === 'PRESENT').length || 0;
-    
+
     const stats = {
       totalExams,
       upcomingExams,
@@ -77,7 +78,7 @@ router.get('/dashboard', async (req, res) => {
       presentCount,
       attendanceRate: totalExamAttendance > 0 ? Math.round((presentCount / totalExamAttendance) * 100) : 0
     };
-    
+
     sendSuccess(res, {
       stats,
       exams: exams || [],
@@ -93,27 +94,92 @@ router.get('/dashboard', async (req, res) => {
 router.get('/list', async (req, res) => {
   try {
     const { status, academic_calendar_id } = req.query;
-    
+
     let query = supabaseAdmin
       .from('exams')
       .select('*');
-    
+
     if (status) {
       query = query.eq('status', status);
     }
     if (academic_calendar_id) {
       query = query.eq('academic_calendar_id', academic_calendar_id);
     }
-    
+
     const { data, error } = await query.order('start_date', { ascending: false });
-    
+
     if (error) {
       throw error;
     }
-    
+
     sendSuccess(res, data || []);
   } catch (error) {
     handleError(error, res, 'Failed to fetch exams');
+  }
+});
+
+// Register student for exam
+router.post('/register', async (req, res) => {
+  try {
+    const { student_id, exam_id } = req.body;
+
+    if (!student_id || !exam_id) {
+      return sendValidationError(res, 'student_id and exam_id are required');
+    }
+
+    // Check if exam exists
+    const { data: exam, error: examError } = await supabaseAdmin
+      .from('exams')
+      .select('*')
+      .eq('id', exam_id)
+      .single();
+
+    if (examError || !exam) {
+      return res.status(404).json({ data: null, error: 'Exam not found' });
+    }
+
+    // Check if already registered (in exam_attendance)
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('exam_attendance')
+      .select('id')
+      .eq('student_id', student_id)
+      .eq('exam_id', exam_id)
+      .single();
+
+    if (existing) {
+      return res.status(400).json({ data: null, error: 'Student already registered for this exam' });
+    }
+
+    // Create registration (attendance record)
+    const { data, error } = await supabaseAdmin
+      .from('exam_attendance')
+      .insert({
+        student_id,
+        exam_id,
+        status: 'REGISTERED', // Initial status
+        date: new Date().toISOString().split('T')[0]
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // AUTO-EXAM FEE ASSIGNMENT
+    try {
+      const context = {
+        user: { id: 'system' },
+        reason: 'Exam Registration'
+      };
+      await feeService.assignExamFee(student_id, exam_id, context);
+    } catch (feeError) {
+      console.error('Failed to assign exam fee:', feeError);
+    }
+
+    sendSuccess(res, data);
+  } catch (error) {
+    handleError(error, res, 'Failed to register for exam');
   }
 });
 

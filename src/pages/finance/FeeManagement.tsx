@@ -47,7 +47,7 @@ export function FeeManagement() {
             <Tabs defaultValue="structures">
                 <TabsList>
                     <TabsTrigger value="structures">Fee Structures</TabsTrigger>
-                    <TabsTrigger value="categories">Categories</TabsTrigger>
+
                     <TabsTrigger value="heads">Fee Heads</TabsTrigger>
                     <TabsTrigger value="scholarships">Scholarships</TabsTrigger>
                     <TabsTrigger value="assignments">Fee Assignments</TabsTrigger>
@@ -59,9 +59,7 @@ export function FeeManagement() {
                     <FeeStructuresTab structures={structures} categories={categories} heads={heads} refresh={loadData} />
                 </TabsContent>
 
-                <TabsContent value="categories" className="space-y-4">
-                    <CategoriesTab categories={categories} refresh={loadData} />
-                </TabsContent>
+
 
                 <TabsContent value="heads" className="space-y-4">
                     <HeadsTab heads={heads} refresh={loadData} />
@@ -87,70 +85,7 @@ export function FeeManagement() {
     );
 }
 
-function CategoriesTab({ categories, refresh }: { categories: any[], refresh: () => void }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [name, setName] = useState('');
-    const [desc, setDesc] = useState('');
 
-    const handleSubmit = async () => {
-        const res = await api.createFeeCategory({ name, description: desc });
-        if (res.data) {
-            toast.success("Category created");
-            setIsOpen(false);
-            setName(''); setDesc('');
-            refresh();
-        } else {
-            toast.error(res.error || "Failed to create category");
-        }
-    };
-
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Fee Categories</CardTitle>
-                    <CardDescription>Manage student fee categories (e.g., General, OBC)</CardDescription>
-                </div>
-                <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                        <Button><Plus className="mr-2 h-4 w-4" /> Add Category</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>Add Fee Category</DialogTitle></DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Name</Label>
-                                <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. General" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Description</Label>
-                                <Input value={desc} onChange={e => setDesc(e.target.value)} />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleSubmit}>Save</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow><TableHead>Name</TableHead><TableHead>Description</TableHead></TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {categories.map(c => (
-                            <TableRow key={c.id}>
-                                <TableCell className="font-medium">{c.name}</TableCell>
-                                <TableCell>{c.description}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    );
-}
 
 function HeadsTab({ heads, refresh }: { heads: any[], refresh: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -232,7 +167,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
     const [name, setName] = useState('');
     const [batchYear, setBatchYear] = useState(new Date().getFullYear().toString());
     const [semester, setSemester] = useState('1');
-    const [categoryId, setCategoryId] = useState('');
+    // const [categoryId, setCategoryId] = useState(''); // Removed
     const [dueDate, setDueDate] = useState('');
     const [items, setItems] = useState<{ head_id: string, amount: number }[]>([]);
 
@@ -248,7 +183,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
     const totalAmount = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
     const handleSubmit = async () => {
-        if (!name || !batchYear || !categoryId || !dueDate) {
+        if (!name || !batchYear || !dueDate) {
             toast.error("Please fill all required fields");
             return;
         }
@@ -257,7 +192,7 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
             name,
             batch_year: parseInt(batchYear),
             semester,
-            category_id: categoryId,
+            // category_id: categoryId, // Removed
             due_date: dueDate,
             total_amount: totalAmount,
             items: items.filter(i => i.head_id && i.amount > 0)
@@ -300,15 +235,6 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
                             <div className="space-y-2">
                                 <Label>Semester/Term</Label>
                                 <Input value={semester} onChange={e => setSemester(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Category</Label>
-                                <Select value={categoryId} onValueChange={setCategoryId}>
-                                    <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label>Due Date</Label>
@@ -356,7 +282,6 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
                     <TableHeader>
                         <TableRow>
                             <TableHead>Name</TableHead>
-                            <TableHead>Category</TableHead>
                             <TableHead>Batch</TableHead>
                             <TableHead>Total Amount</TableHead>
                             <TableHead>Due Date</TableHead>
@@ -366,7 +291,6 @@ function FeeStructuresTab({ structures, categories, heads, refresh }: { structur
                         {structures.map(s => (
                             <TableRow key={s.id}>
                                 <TableCell className="font-medium">{s.name}</TableCell>
-                                <TableCell>{s.category?.name}</TableCell>
                                 <TableCell>{s.batch_year} - {s.semester}</TableCell>
                                 <TableCell>₹{s.total_amount}</TableCell>
                                 <TableCell>{new Date(s.due_date).toLocaleDateString()}</TableCell>
@@ -474,12 +398,46 @@ function ScholarshipsTab({ scholarships, refresh }: { scholarships: any[], refre
     const [value, setValue] = useState('');
     const [criteria, setCriteria] = useState('');
 
+    // Rule State
+    const [gender, setGender] = useState('any');
+    const [min12th, setMin12th] = useState('');
+    const [min10th, setMin10th] = useState('');
+    const [category, setCategory] = useState('any');
+    const [isBPL, setIsBPL] = useState(false);
+    const [isPWD, setIsPWD] = useState(false);
+    const [isMinority, setIsMinority] = useState(false);
+    const [isFirstGraduate, setIsFirstGraduate] = useState(false);
+
     const handleSubmit = async () => {
-        const res = await api.createScholarship({ name, type, value: parseFloat(value), criteria });
+        const rules = {
+            gender: gender !== 'any' ? gender : undefined,
+            min_marks_12th: min12th ? parseFloat(min12th) : undefined,
+            min_marks_10th: min10th ? parseFloat(min10th) : undefined,
+            category: category !== 'any' ? category : undefined,
+            is_bpl: isBPL ? true : undefined,
+            is_pwd: isPWD ? true : undefined,
+            minority_community: isMinority ? true : undefined,
+            is_first_graduate: isFirstGraduate ? true : undefined
+        };
+
+        // Remove undefined keys
+        Object.keys(rules).forEach(key => rules[key] === undefined && delete rules[key]);
+
+        const res = await api.createScholarship({
+            name,
+            type,
+            value: parseFloat(value),
+            criteria,
+            rules: Object.keys(rules).length > 0 ? rules : null
+        });
+
         if (res.data) {
             toast.success("Scholarship created");
             setIsOpen(false);
+            // Reset ALL state
             setName(''); setValue(''); setCriteria('');
+            setGender('any'); setMin12th(''); setMin10th(''); setCategory('any');
+            setIsBPL(false); setIsPWD(false); setIsMinority(false); setIsFirstGraduate(false);
             refresh();
         } else {
             toast.error(res.error || "Failed to create scholarship");
@@ -497,30 +455,111 @@ function ScholarshipsTab({ scholarships, refresh }: { scholarships: any[], refre
                     <DialogTrigger asChild>
                         <Button><Plus className="mr-2 h-4 w-4" /> Add Scholarship</Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader><DialogTitle>Create Scholarship</DialogTitle></DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Name</Label>
-                                <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Merit Scholarship" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-4">
+                                <h4 className="font-medium border-b pb-2">Basic Info</h4>
+                                <div className="space-y-2">
+                                    <Label>Name</Label>
+                                    <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Merit Scholarship" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Type</Label>
+                                    <Select value={type} onValueChange={setType}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                            <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Value</Label>
+                                    <Input type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="e.g. 20 or 5000" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Description</Label>
+                                    <Input value={criteria} onChange={e => setCriteria(e.target.value)} />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Type</Label>
-                                <Select value={type} onValueChange={setType}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                        <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Value</Label>
-                                <Input type="number" value={value} onChange={e => setValue(e.target.value)} placeholder="e.g. 20 or 5000" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Criteria / Description</Label>
-                                <Input value={criteria} onChange={e => setCriteria(e.target.value)} />
+
+                            <div className="space-y-4">
+                                <h4 className="font-medium border-b pb-2">Eligibility Rules (Optional)</h4>
+                                <div className="space-y-2">
+                                    <Label>Gender</Label>
+                                    <Select value={gender} onValueChange={setGender}>
+                                        <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">Any</SelectItem>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="transgender">Transgender</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Min 12th Marks (%)</Label>
+                                    <Input type="number" value={min12th} onChange={e => setMin12th(e.target.value)} placeholder="e.g. 90" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Min 10th Marks (%)</Label>
+                                    <Input type="number" value={min10th} onChange={e => setMin10th(e.target.value)} placeholder="e.g. 85" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Category</Label>
+                                    <Select value={category} onValueChange={setCategory}>
+                                        <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">Any</SelectItem>
+                                            <SelectItem value="General">General</SelectItem>
+                                            <SelectItem value="OBC">OBC</SelectItem>
+                                            <SelectItem value="SC/ST">SC/ST</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex flex-col gap-2 pt-2">
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="rule_bpl"
+                                            className="h-4 w-4"
+                                            checked={isBPL}
+                                            onChange={e => setIsBPL(e.target.checked)}
+                                        />
+                                        <Label htmlFor="rule_bpl">Must be Below Poverty Line (BPL)</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="rule_pwd"
+                                            className="h-4 w-4"
+                                            checked={isPWD}
+                                            onChange={e => setIsPWD(e.target.checked)}
+                                        />
+                                        <Label htmlFor="rule_pwd">Person with Disability (PWD)</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="rule_minority"
+                                            className="h-4 w-4"
+                                            checked={isMinority}
+                                            onChange={e => setIsMinority(e.target.checked)}
+                                        />
+                                        <Label htmlFor="rule_minority">Minority Community</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="rule_first_grad"
+                                            className="h-4 w-4"
+                                            checked={isFirstGraduate}
+                                            onChange={e => setIsFirstGraduate(e.target.checked)}
+                                        />
+                                        <Label htmlFor="rule_first_grad">First Graduate</Label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>

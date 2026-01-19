@@ -14,7 +14,10 @@ import {
   User as UserIcon,
   Clock,
   FileText,
-  Wrench
+  Wrench,
+  BedDouble,
+  Library,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,9 +46,13 @@ const navItems: NavItem[] = [
   { icon: Users, label: 'User Management', href: '/users', roles: ['admin', 'vice_head'] },
   { icon: GraduationCap, label: 'Students', href: '/students', permission: 'view_students' },
   { icon: Calendar, label: 'Attendance', href: '/attendance', permission: 'manage_attendance' },
-  { icon: BookOpen, label: 'Academics', href: '/academics', permission: 'view_grades' },
+  { icon: BookOpen, label: 'Academic Gov.', href: '/governance/academic', permission: 'view_grades' },
+  { icon: FileText, label: 'MIS Reports', href: '/governance/mis', permission: 'admin' },
   { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
+  { icon: BedDouble, label: 'Hostel', href: '/hostel' },
+  { icon: Library, label: 'Library', href: '/library' },
+  { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
@@ -71,7 +78,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);

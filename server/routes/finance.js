@@ -44,9 +44,9 @@ router.post('/auto-assign/:studentId', authorizeRole(['admin', 'finance']), asyn
 router.get('/fee-categories', async (req, res) => {
     try {
 
-        const { data, error } = await secureDb.get('fee_categories', q => q.order('name'));
+        const data = await secureDb.get('fee_categories', q => q.order('name'));
 
-        if (error) throw error;
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -59,9 +59,9 @@ router.post('/fee-categories', authorizeRole(['admin', 'finance']), async (req, 
 
         const { name, description } = req.body;
         const context = getContext(req, 'Create Fee Category');
-        const { data, error } = await secureDb.create('fee_categories', { name, description }, context);
+        const data = await secureDb.create('fee_categories', { name, description }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -72,9 +72,9 @@ router.post('/fee-categories', authorizeRole(['admin', 'finance']), async (req, 
 router.get('/fee-heads', async (req, res) => {
     try {
 
-        const { data, error } = await secureDb.get('fee_heads', q => q.order('name'));
+        const data = await secureDb.get('fee_heads', q => q.order('name'));
 
-        if (error) throw error;
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -82,16 +82,27 @@ router.get('/fee-heads', async (req, res) => {
 });
 
 // Create Fee Head
+// Create Fee Head
 router.post('/fee-heads', authorizeRole(['admin', 'finance']), async (req, res) => {
     try {
+        const fs = await import('fs');
+        const log = (msg) => {
+            const time = new Date().toISOString();
+            fs.appendFileSync('server_debug_log.txt', `[${time}] ${msg}\n`);
+        };
 
         const { name, type, is_refundable } = req.body;
-        const context = getContext(req, 'Create Fee Head');
-        const { data, error } = await secureDb.create('fee_heads', { name, type, is_refundable }, context);
+        log(`Create Fee Head request: ${JSON.stringify({ name, type, is_refundable })}`);
 
-        if (error) throw error;
+        const context = getContext(req, 'Create Fee Head');
+        const data = await secureDb.create('fee_heads', { name, type, is_refundable }, context);
+
+        log(`Fee Head created successfully: ${JSON.stringify(data)}`);
         res.status(201).json({ data, error: null });
     } catch (error) {
+        const fs = await import('fs');
+        const time = new Date().toISOString();
+        fs.appendFileSync('server_debug_log.txt', `[${time}] Fee Head Creation Error: ${error.message}\n`);
         res.status(500).json({ data: null, error: error.message });
     }
 });
@@ -100,7 +111,7 @@ router.post('/fee-heads', authorizeRole(['admin', 'finance']), async (req, res) 
 router.get('/structures', async (req, res) => {
     try {
         const { batch_year, category_id } = req.query;
-        const { data, error } = await secureDb.get('fee_structures', (query) => {
+        const data = await secureDb.get('fee_structures', (query) => {
             let q = query.select(`
                 *,
                 category:fee_categories!category_id(name),
@@ -124,15 +135,15 @@ router.get('/structures', async (req, res) => {
 // Create Fee Structure
 router.post('/structures', authorizeRole(['admin', 'finance']), async (req, res) => {
     try {
-        const { name, batch_year, semester, category_id, due_date, total_amount, items } = req.body;
+        const { name, batch_year, semester, due_date, total_amount, items } = req.body;
 
         // Create Fee Structure
         const context = getContext(req, 'Create Fee Structure');
-        const { data: structure, error: structError } = await secureDb.create('fee_structures', {
-            name, batch_year, semester, category_id, due_date, total_amount
+        const structure = await secureDb.create('fee_structures', {
+            name, batch_year, semester, due_date, total_amount
         }, context);
 
-        if (structError) throw structError;
+        // if (structError) throw structError;
 
         if (items && items.length > 0) {
             const itemsToInsert = items.map(item => ({
@@ -160,10 +171,15 @@ router.post('/structures', authorizeRole(['admin', 'finance']), async (req, res)
 router.get('/student/:studentId/fees', async (req, res) => {
     try {
         const { studentId } = req.params;
-        const { data, error } = await secureDb.get('student_fee_assignments', q => q
+        const fs = await import('fs');
+        const log = (msg) => fs.appendFileSync('server_debug_log.txt', msg + '\n');
+
+        log(`[DEBUG] Request for Student: ${studentId}`);
+
+        const data = await secureDb.get('student_fee_assignments', q => q
             .select(`
                 *,
-                structure:fee_structures(name, due_date, semester, batch_year),
+                structure:fee_structures(*),
                 installments:fee_installments(*),
                 transactions:transactions(*),
                 adjustments:adjustments(*)
@@ -172,7 +188,15 @@ router.get('/student/:studentId/fees', async (req, res) => {
             .order('created_at', { ascending: false })
         );
 
-        if (error) throw error;
+        // if (error) handled by catch block
+
+        log(`[DEBUG] Found ${data?.length || 0} assignments.`);
+        if (data && data.length > 0) {
+            log(`[DEBUG] First Data: ${JSON.stringify(data[0])}`);
+        } else {
+            log(`[DEBUG] Data is empty!`);
+        }
+
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -184,13 +208,12 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
     try {
         const { student_id, structure_id, scholarship_id } = req.body;
 
-        const { data: structure, error: sErr } = await secureDb.get('fee_structures', q => q.eq('id', structure_id).single());
-
-        if (sErr) throw sErr;
+        const structure = await secureDb.get('fee_structures', q => q.eq('id', structure_id).single());
+        // if (sErr) throw sErr; // Handled by secureDb throw
 
         let discount = 0;
         if (scholarship_id) {
-            const { data: scholarship } = await secureDb.get('scholarships', q => q.eq('id', scholarship_id).single());
+            const scholarship = await secureDb.get('scholarships', q => q.eq('id', scholarship_id).single());
 
             if (scholarship) {
                 if (scholarship.type === 'percentage') {
@@ -204,7 +227,7 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
         const net_amount = structure.total_amount - discount;
         const context = getContext(req, 'Assign Fee Structure');
 
-        const { data, error } = await secureDb.create('student_fee_assignments', {
+        const data = await secureDb.create('student_fee_assignments', {
             student_id,
             structure_id,
             scholarship_id,
@@ -214,7 +237,7 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
             status: 'pending'
         }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -225,8 +248,8 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
 // Manage Fee Assignment Rules
 router.get('/assignment-rules', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('fee_assignment_rules', q => q.order('priority', { ascending: false }));
-        if (error) throw error;
+        const data = await secureDb.get('fee_assignment_rules', q => q.order('priority', { ascending: false }));
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -236,8 +259,8 @@ router.get('/assignment-rules', async (req, res) => {
 router.post('/assignment-rules', authorizeRole(['admin', 'finance']), async (req, res) => {
     try {
         const context = getContext(req, 'Create Fee Assignment Rule');
-        const { data, error } = await secureDb.create('fee_assignment_rules', req.body, context);
-        if (error) throw error;
+        const data = await secureDb.create('fee_assignment_rules', req.body, context);
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -247,8 +270,8 @@ router.post('/assignment-rules', authorizeRole(['admin', 'finance']), async (req
 // Manage Penalty Configs
 router.get('/penalty-configs', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('fee_penalty_configs', q => q.order('created_at'));
-        if (error) throw error;
+        const data = await secureDb.get('fee_penalty_configs', q => q.order('created_at'));
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -290,11 +313,11 @@ router.post('/adjustments', async (req, res) => {
     try {
         const { student_id, assignment_id, type, amount, reason, created_by } = req.body;
         const context = getContext(req, 'Fee Adjustment');
-        const { data, error } = await secureDb.create('adjustments', {
+        const data = await secureDb.create('adjustments', {
             student_id, assignment_id, type, amount, reason, created_by
         }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -304,8 +327,8 @@ router.post('/adjustments', async (req, res) => {
 // Scholarships
 router.get('/scholarships', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('scholarships', q => q.select('*').eq('is_active', true));
-        if (error) throw error;
+        const data = await secureDb.get('scholarships', q => q.select('*').eq('is_active', true));
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -314,10 +337,10 @@ router.get('/scholarships', async (req, res) => {
 
 router.post('/scholarships', authorizeRole(['admin', 'finance']), async (req, res) => {
     try {
-        const { name, type, value, criteria } = req.body;
+        const { name, type, value, criteria, rules } = req.body;
         const context = getContext(req, 'Create Scholarship');
-        const { data, error } = await secureDb.create('scholarships', { name, type, value, criteria }, context);
-        if (error) throw error;
+        const data = await secureDb.create('scholarships', { name, type, value, criteria, rules }, context);
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -336,7 +359,7 @@ router.post('/pay/manual', async (req, res) => {
         // 1. Create Transaction
         const context = getContext(req, 'Manual Payment');
 
-        const { data: transaction, error: txError } = await secureDb.create('transactions', {
+        const transaction = await secureDb.create('transactions', {
             student_id,
             assignment_id,
             amount,
@@ -347,7 +370,7 @@ router.post('/pay/manual', async (req, res) => {
             receipt_number: `REC-${Date.now()}` // Simple generator
         }, context);
 
-        if (txError) throw txError;
+        // if (txError) throw txError;
 
         // 2. Update Fee Assignment (Paid Amount & Status)
         const { data: assignment, error: assignErr } = await secureDb.get('student_fee_assignments', q => q
@@ -445,11 +468,11 @@ router.post('/refund/request', async (req, res) => {
     try {
         const { transaction_id, student_id, amount, reason, requested_by } = req.body;
         const context = getContext(req, 'Refund Request');
-        const { data, error } = await secureDb.create('refund_requests', {
+        const data = await secureDb.create('refund_requests', {
             transaction_id, student_id, amount, reason, requested_by, status: 'requested'
         }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -462,11 +485,11 @@ router.put('/refund/approve/:id', authorizeRole(['admin', 'finance']), async (re
         const { approved_by, status } = req.body; // status: approved/rejected
         const context = getContext(req, 'Approve Refund');
 
-        const { data, error } = await secureDb.update('refund_requests', id, {
+        const data = await secureDb.update('refund_requests', id, {
             status, approved_by, processed_date: new Date()
         }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(200).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -495,20 +518,20 @@ router.get('/refunds', async (req, res) => {
 router.get('/reports/financial-statements', async (req, res) => {
     try {
         // 1. Income (Total Fees Paid)
-        const { data: fees, error: feeErr } = await secureDb.get('student_fee_assignments', q => q.select('paid_amount, net_amount'));
+        const fees = await secureDb.get('student_fee_assignments', q => q.select('paid_amount, net_amount'));
 
-        if (feeErr) throw feeErr;
+        // if (feeErr) throw feeErr;
 
         const totalIncome = fees.reduce((sum, f) => sum + (f.paid_amount || 0), 0);
         const totalReceivables = fees.reduce((sum, f) => sum + (f.net_amount - (f.paid_amount || 0)), 0);
 
         // 2. Expenses (Refunds Approved)
-        const { data: refunds, error: refErr } = await secureDb.get('refund_requests', q => q
+        const refunds = await secureDb.get('refund_requests', q => q
             .select('amount')
             .eq('status', 'approved')
         );
 
-        if (refErr) throw refErr;
+        // if (refErr) throw refErr;
         const totalExpense = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
 
         // 3. Assets (Bank Balances)
@@ -538,8 +561,8 @@ router.get('/reports/financial-statements', async (req, res) => {
 // Get Chart of Accounts
 router.get('/chart-of-accounts', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('chart_of_accounts', q => q.order('code'));
-        if (error) throw error;
+        const data = await secureDb.get('chart_of_accounts', q => q.order('code'));
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -553,11 +576,11 @@ router.post('/journal', async (req, res) => {
 
         // 1. Create Header
         const context = getContext(req, 'Create Journal Entry');
-        const { data: entry, error: entryErr } = await secureDb.create('journal_entries', {
+        const entry = await secureDb.create('journal_entries', {
             date, description, created_by, status: 'posted'
         }, context);
 
-        if (entryErr) throw entryErr;
+        // if (entryErr) throw entryErr;
 
         // 2. Create Lines
         if (lines && lines.length > 0) {
@@ -584,9 +607,9 @@ router.post('/chart-of-accounts', authorizeRole(['admin', 'finance']), async (re
         const { code, name, type, subtype } = req.body;
 
         const context = getContext(req, 'Create Chart of Account');
-        const { data, error } = await secureDb.create('chart_of_accounts', { code, name, type, subtype }, context);
+        const data = await secureDb.create('chart_of_accounts', { code, name, type, subtype }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -599,8 +622,8 @@ router.post('/chart-of-accounts', authorizeRole(['admin', 'finance']), async (re
 
 router.get('/bank-accounts', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('bank_accounts', q => q.select('*'));
-        if (error) throw error;
+        const data = await secureDb.get('bank_accounts', q => q.select('*'));
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -611,7 +634,7 @@ router.post('/bank-accounts', async (req, res) => {
     try {
         const { bank_name, account_number, branch_name, ifsc_code, opening_balance } = req.body;
         const context = getContext(req, 'Create Bank Account');
-        const { data, error } = await secureDb.create('bank_accounts', {
+        const data = await secureDb.create('bank_accounts', {
             bank_name,
             account_number,
             branch_name,
@@ -620,7 +643,7 @@ router.post('/bank-accounts', async (req, res) => {
             current_balance: opening_balance // Init current balance
         }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.status(201).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -766,7 +789,7 @@ router.get('/reports/collection', async (req, res) => {
 // Outstanding Fees Report
 router.get('/reports/outstanding', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('student_fee_assignments', q => q
+        const data = await secureDb.get('student_fee_assignments', q => q
             .select(`
                 *,
                 student:users(name, email, loopid),
@@ -775,7 +798,7 @@ router.get('/reports/outstanding', async (req, res) => {
             .neq('status', 'paid')
         );
 
-        if (error) throw error;
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -785,7 +808,7 @@ router.get('/reports/outstanding', async (req, res) => {
 // Scholarship Usage Report
 router.get('/reports/scholarship-usage', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('student_fee_assignments', q => q
+        const data = await secureDb.get('student_fee_assignments', q => q
             .select(`
                 *,
                 student:users(name, email, loopid),
@@ -794,7 +817,7 @@ router.get('/reports/scholarship-usage', async (req, res) => {
             .not('scholarship_id', 'is', null)
         );
 
-        if (error) throw error;
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -811,31 +834,31 @@ router.get('/reports/scholarship-usage', async (req, res) => {
 router.get('/reconciliation/unmatched', async (req, res) => {
     try {
         // 1. Get all reconciled IDs
-        const { data: reconciled, error: rErr } = await secureDb.get('reconciliations', q => q.select('transaction_id, bank_transaction_id'));
-        if (rErr) throw rErr;
+        const reconciled = await secureDb.get('reconciliations', q => q.select('transaction_id, bank_transaction_id'));
+        // if (rErr) throw rErr;
 
         const reconciledTxIds = reconciled.map(r => r.transaction_id).filter(id => id);
         const reconciledBankIds = reconciled.map(r => r.bank_transaction_id).filter(id => id);
 
         // 2. Get Unmatched System Transactions
-        const { data: system, error: sErr } = await secureDb.get('transactions', (query) => {
+        const system = await secureDb.get('transactions', (query) => {
             let q = query.select('*').eq('status', 'success');
             if (reconciledTxIds.length > 0) {
                 q = q.not('id', 'in', `(${reconciledTxIds.join(',')})`);
             }
             return q;
         });
-        if (sErr) throw sErr;
+        // if (sErr) throw sErr;
 
         // 3. Get Unmatched Bank Transactions
-        const { data: bank, error: bErr } = await secureDb.get('bank_transactions', (query) => {
+        const bank = await secureDb.get('bank_transactions', (query) => {
             let q = query.select('*');
             if (reconciledBankIds.length > 0) {
                 q = q.not('id', 'in', `(${reconciledBankIds.join(',')})`);
             }
             return q;
         });
-        if (bErr) throw bErr;
+        // if (bErr) throw bErr;
 
 
         res.json({ data: { system, bank }, error: null });
@@ -848,9 +871,9 @@ router.post('/reconciliation/match', async (req, res) => {
     try {
         const { transaction_id, bank_transaction_id } = req.body;
         const context = getContext(req, 'Reconciliation Match');
-        const { data, error } = await secureDb.create('reconciliations', { transaction_id, bank_transaction_id }, context);
+        const data = await secureDb.create('reconciliations', { transaction_id, bank_transaction_id }, context);
 
-        if (error) throw error;
+        // if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
