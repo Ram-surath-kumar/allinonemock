@@ -1,3 +1,4 @@
+import { api } from '@/services/api';
 import {
   LayoutDashboard,
   Users,
@@ -5,10 +6,7 @@ import {
   Calendar,
   BookOpen,
   CreditCard,
-<<<<<<< HEAD
-=======
   Settings,
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
   Building2,
   LogOut,
   ChevronLeft,
@@ -92,8 +90,8 @@ export function Sidebar({ currentPath, onNavigate }) {
     };
   }, [isHovered]);
 
-<<<<<<< HEAD
-=======
+
+
   const fetchAllUsers = async () => {
     try {
       setLoadingUsers(true);
@@ -149,15 +147,15 @@ export function Sidebar({ currentPath, onNavigate }) {
     }
   };
 
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+
   const filteredNavItems = navItems.filter(item => {
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
     return true;
   });
 
-<<<<<<< HEAD
-=======
+
+
   const handleUserSwitch = async (user) => {
     if (!user.organization || !user.user_id) {
       console.error('User does not have organization or user_id');
@@ -183,7 +181,7 @@ export function Sidebar({ currentPath, onNavigate }) {
     }
   };
 
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };

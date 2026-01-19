@@ -170,7 +170,6 @@ export function AdminDashboard({ onAddUser }) {
           attendanceRate,
           feeCollection,
           feeCollectionPercentage,
-          feeCollectionPercentage,
         });
 
         // Governance Data
@@ -183,7 +182,6 @@ export function AdminDashboard({ onAddUser }) {
           totalStudents,
           totalStaff,
           attendanceRate,
-          feeCollection,
           feeCollection,
           feeCollectionPercentage,
           placements,

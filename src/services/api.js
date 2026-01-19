@@ -319,7 +319,7 @@ class ApiClient {
     });
   }
 
-  // ==================== CONSOLIDATED ENDPOINTS ====================
+  // ====== CONSOLIDATED ENDPOINTS ======
   // Use these endpoints to reduce API calls from frontend
 
   /**
@@ -421,7 +421,7 @@ class ApiClient {
     return this.request(`/finance${query ? `?${query}` : ''}`);
   }
 
-<<<<<<< HEAD
+
   // Hostel Module
   async getHostelDashboard() {
     return this.request('/hostel/dashboard');
@@ -538,7 +538,9 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
-=======
+
+  }
+
   // --- Tasks ---
   async getTasks(params) {
     const query = new URLSearchParams(params).toString();
@@ -555,7 +557,7 @@ class ApiClient {
 
   async deleteTask(id) {
     return this.request(`/tasks/${id}`, { method: 'DELETE' });
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+
   }
 }
 

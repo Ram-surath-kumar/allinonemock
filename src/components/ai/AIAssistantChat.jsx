@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-<<<<<<< HEAD
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle } from 'lucide-react';
-=======
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, Paperclip, FileText, Image as ImageIcon, Camera } from 'lucide-react';
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle, Paperclip, FileText, Image as ImageIcon, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -48,18 +44,18 @@ export function AIAssistantChat({ onNavigate }) {
     },
   ]);
   const messagesEndRef = useRef(null);
-<<<<<<< HEAD
+
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     action: null,
     title: '',
     description: '',
   });
-=======
+
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const attachMenuRef = useRef(null);
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+
 
   const [attachments, setAttachments] = useState([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -623,7 +619,6 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-<<<<<<< HEAD
       const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(userPrompt);
 
       const isDataQuery = !isAnalyzeCommand && (
@@ -632,12 +627,6 @@ export function AIAssistantChat({ onNavigate }) {
         userPrompt.includes('?') ||
         /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt)
       );
-=======
-      const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-        userPrompt.includes('?') ||
-        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
 
       if (isDataQuery) {
         // Handle data query
@@ -922,10 +911,10 @@ export function AIAssistantChat({ onNavigate }) {
           )}
         </div>
       )}
-<<<<<<< HEAD
+
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+      < AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -946,8 +935,8 @@ export function AIAssistantChat({ onNavigate }) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-=======
+      </AlertDialog >
+
       {/* Camera Modal */}
       {isCameraOpen && (
         <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
@@ -980,7 +969,7 @@ export function AIAssistantChat({ onNavigate }) {
           </div>
         </div>
       )}
->>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
+
     </>,
     document.body
   );
