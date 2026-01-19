@@ -6,37 +6,37 @@ import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load pages with better code splitting
-const Dashboard = lazy(() => 
+const Dashboard = lazy(() =>
   import('@/pages/Dashboard').then(module => ({ default: module.Dashboard }))
 );
-const UserManagement = lazy(() => 
+const UserManagement = lazy(() =>
   import('@/pages/UserManagement').then(module => ({ default: module.UserManagement }))
 );
-const Students = lazy(() => 
+const Students = lazy(() =>
   import('@/pages/Students').then(module => ({ default: module.Students }))
 );
-const Attendance = lazy(() => 
+const Attendance = lazy(() =>
   import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
 );
-const PersonalDetails = lazy(() => 
+const PersonalDetails = lazy(() =>
   import('@/pages/student/PersonalDetails').then(module => ({ default: module.PersonalDetails }))
 );
-const GradesMarks = lazy(() => 
+const GradesMarks = lazy(() =>
   import('@/pages/student/GradesMarks').then(module => ({ default: module.GradesMarks }))
 );
-const AttendanceDetails = lazy(() => 
+const AttendanceDetails = lazy(() =>
   import('@/pages/student/AttendanceDetails').then(module => ({ default: module.AttendanceDetails }))
 );
-const Timetable = lazy(() => 
+const Timetable = lazy(() =>
   import('@/pages/student/Timetable').then(module => ({ default: module.Timetable }))
 );
-const FeePayment = lazy(() => 
+const FeePayment = lazy(() =>
   import('@/pages/student/FeePayment').then(module => ({ default: module.FeePayment }))
 );
-const Tools = lazy(() => 
+const Tools = lazy(() =>
   import('@/pages/Tools').then(module => ({ default: module.Tools }))
 );
-const Finance = lazy(() => 
+const Finance = lazy(() =>
   import('@/pages/Finance').then(module => ({ default: module.Finance }))
 );
 
@@ -125,24 +125,39 @@ function AppContent() {
         setTimeout(() => setIsInitializing(false), 1000);
       }
     };
-    
+
     initializeUser();
   }, [orgName, userId]);
 
+  // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {
     if (currentUser?.organization && currentUser.user_id) {
       const currentTab = tab || pathToTab[location.pathname] || 'dashboard';
       const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
-      
-      // Only update if URL is different
-      if (location.pathname !== newPath && (!orgName || !userId || 
-          orgName !== currentUser.organization.org_name || 
-          parseInt(userId || '0', 10) !== currentUser.user_id)) {
+
+      // If the URL already specifies a user (orgName & userId exist), 
+      // we assume the user intends to be there (potentially switching users).
+      // We only auto-redirect if I am logged in but the URL is generic (e.g. '/')
+      // OR if the mismatched URL is NOT a valid user path loop.
+
+      const isUrlSwitchingUser = orgName && userId && (
+        orgName !== currentUser.organization.org_name ||
+        parseInt(userId, 10) !== currentUser.user_id
+      );
+
+      // If we are switching user via URL, DO NOT redirect back to old user.
+      if (isUrlSwitchingUser) {
+        return;
+      }
+
+      // Only update if URL is different and we are simply fixing the URL 
+      // for the CURRENT user (e.g. they landed on '/')
+      if (location.pathname !== newPath) {
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentUser?.organization?.org_name, currentUser?.user_id]);
+  }, [currentUser?.organization?.org_name, currentUser?.user_id, location.pathname, orgName, userId]);
 
   const handleNavigate = (path) => {
     // For student routes, use the path directly or map to tab name
@@ -177,7 +192,7 @@ function AppContent() {
         return standardPath;
       }
     }
-    
+
     // Fallback: try to extract from location pathname
     const pathParts = location.pathname.split('/').filter(Boolean);
     if (pathParts.length >= 3) {
@@ -192,12 +207,12 @@ function AppContent() {
         return standardPath;
       }
     }
-    
+
     // Final fallback
     if (location.pathname.startsWith('/student/')) {
       return location.pathname;
     }
-    
+
     return '/';
   };
 
@@ -261,9 +276,9 @@ function AppContent() {
       case '/users':
         return (
           <Suspense fallback={<PageLoader />}>
-            <UserManagement 
-              dialogOpen={addUserDialogOpen} 
-              setDialogOpen={setAddUserDialogOpen} 
+            <UserManagement
+              dialogOpen={addUserDialogOpen}
+              setDialogOpen={setAddUserDialogOpen}
             />
           </Suspense>
         );
@@ -349,7 +364,7 @@ function AppContent() {
       setIsInitializing(false);
     }
   }, [currentUser, loading]);
-  
+
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

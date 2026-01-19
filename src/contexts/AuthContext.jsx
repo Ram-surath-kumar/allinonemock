@@ -167,7 +167,7 @@ export function AuthProvider({ children }) {
 
     // Check if it's a UUID (user ID) or a role
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roleOrUserId);
-    
+
     if (isUUID) {
       await loadUserById(roleOrUserId);
     } else {
@@ -190,7 +190,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, canManageRole, hasPermission }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, canManageRole, hasPermission, loading }}>
       {children}
     </AuthContext.Provider>
   );

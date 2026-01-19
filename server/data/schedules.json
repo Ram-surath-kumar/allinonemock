@@ -1,0 +1,79 @@
+[
+  {
+    "id": "1",
+    "subject": "Mathematics",
+    "class_name": "Grade 10-A",
+    "department_id": "dept_10a",
+    "teacher_id": "teacher_1",
+    "teacher_name": "Mr. Teacher",
+    "time": "09:00 AM",
+    "room": "Room 201",
+    "day": "Monday"
+  },
+  {
+    "id": "2",
+    "subject": "Physics",
+    "class_name": "Grade 11-B",
+    "department_id": "dept_11b",
+    "teacher_id": "teacher_1",
+    "teacher_name": "Mr. Teacher",
+    "time": "11:00 AM",
+    "room": "Lab 101",
+    "day": "Monday"
+  },
+  {
+    "id": "1768824515773",
+    "subject": "harish dev skills",
+    "class_name": "harish",
+    "time": "8:00 am",
+    "room": "808",
+    "teacher_id": "8ceba4ef-e005-4ad4-8435-58e8a7483f0c",
+    "teacher_name": "John Teacher",
+    "department_id": "harish",
+    "updated_at": "2026-01-19T12:08:35.773Z"
+  },
+  {
+    "id": "1768824584909",
+    "subject": "vijay market skills",
+    "class_name": "vijay",
+    "time": "9:00 am",
+    "room": "909",
+    "teacher_id": "8ceba4ef-e005-4ad4-8435-58e8a7483f0c",
+    "teacher_name": "John Teacher",
+    "department_id": "vijay",
+    "updated_at": "2026-01-19T12:09:44.909Z"
+  },
+  {
+    "id": "1768825583571",
+    "subject": "mukesh master skills",
+    "class_name": "hh",
+    "time": "10:00 am",
+    "room": "101",
+    "teacher_id": "8ceba4ef-e005-4ad4-8435-58e8a7483f0c",
+    "teacher_name": "John Teacher",
+    "department_id": "hh",
+    "updated_at": "2026-01-19T12:26:23.571Z"
+  },
+  {
+    "id": "1768825719033",
+    "subject": "subanesh grandmaster skills",
+    "class_name": "oj",
+    "time": "11:00am",
+    "room": "202",
+    "teacher_id": "8ceba4ef-e005-4ad4-8435-58e8a7483f0c",
+    "teacher_name": "John Teacher",
+    "department_id": "oj",
+    "updated_at": "2026-01-19T12:28:39.033Z"
+  },
+  {
+    "id": "1768825971019",
+    "subject": "vinay rubber class",
+    "class_name": "uhh",
+    "time": "11:00am ",
+    "room": "303",
+    "teacher_id": "8ceba4ef-e005-4ad4-8435-58e8a7483f0c",
+    "teacher_name": "John Teacher",
+    "department_id": "uhh",
+    "updated_at": "2026-01-19T12:32:51.019Z"
+  }
+]

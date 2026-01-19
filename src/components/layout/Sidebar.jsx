@@ -1,11 +1,11 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  GraduationCap, 
-  Calendar, 
-  BookOpen, 
-  CreditCard, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  Calendar,
+  BookOpen,
+  CreditCard,
+  Settings,
   Building2,
   LogOut,
   ChevronDown,
@@ -113,7 +113,7 @@ export function Sidebar({ currentPath, onNavigate }) {
       if (data && Array.isArray(data)) {
         const orgIds = [...new Set(data.filter((u) => u.org_id).map((u) => u.org_id))];
         const orgMap = new Map();
-        
+
         if (orgIds.length > 0) {
           for (const orgId of orgIds) {
             if (orgId) {
@@ -169,7 +169,7 @@ export function Sidebar({ currentPath, onNavigate }) {
       console.error('User does not have organization or user_id');
       return;
     }
-    
+
     const pathToTab = {
       '/': 'dashboard',
       '/users': 'users',
@@ -180,12 +180,12 @@ export function Sidebar({ currentPath, onNavigate }) {
       '/facilities': 'facilities',
       '/settings': 'settings',
     };
-    
+
     const currentTab = pathToTab[currentPath] || 'dashboard';
-    
+
     if (user.user_id && user.organization?.org_name) {
-      navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
-      await login('', user.organization.org_name, user.user_id);
+      // Force a hard reload to ensure clean state and avoid any caching/context issues
+      window.location.href = `/${user.organization.org_name}/${user.user_id}/${currentTab}`;
     }
   };
 
