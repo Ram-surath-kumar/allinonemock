@@ -103,6 +103,7 @@ function AppContent() {
     'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
+    'tools': '/tools',
     'academic-governance': '/governance/academic',
     'mis-submission': '/governance/mis',
     'personal-details': '/student/personal-details',
@@ -110,9 +111,6 @@ function AppContent() {
     'student-attendance': '/student/attendance',
     'timetable': '/student/timetable',
     'fee-payment': '/student/fee-payment',
-
-    'tools': '/tools',
-    'academic-governance': '/governance/academic',
   };
 
   const pathToTab = {
@@ -127,6 +125,7 @@ function AppContent() {
     '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
+    '/tools': 'tools',
     '/governance/academic': 'academic-governance',
     '/governance/mis': 'mis-submission',
     '/student/personal-details': 'personal-details',
@@ -134,9 +133,6 @@ function AppContent() {
     '/student/attendance': 'student-attendance',
     '/student/timetable': 'timetable',
     '/student/fee-payment': 'fee-payment',
-
-    '/tools': 'tools',
-    '/governance/academic': 'academic-governance',
   };
 
   // Initialize from URL on mount (only if user is already logged in)
@@ -293,10 +289,6 @@ function AppContent() {
         return 'Fee Payment';
       case '/tools':
         return 'Tools';
-      case '/tools':
-        return 'Tools';
-      case '/governance/academic':
-        return 'Academic Governance';
       case '/governance/academic':
         return 'Academic Governance';
       case '/governance/mis':

@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import { api } from '@/services/api';
-=======
->>>>>>> 9837239d8ebb5e4e4504e7d1396f6b45f1ff9414
 import {
   LayoutDashboard,
   Users,
