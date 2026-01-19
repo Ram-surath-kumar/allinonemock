@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -387,13 +388,13 @@ export function TeacherDashboard() {
       {/* Task Assignment Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
         <DialogContent>
-          <DialogHeader>
+          <DialogHeader className="px-0">
             <DialogTitle>Assign Task to Student</DialogTitle>
             <DialogDescription>
               Create a new task for a student.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="task_title">Task Title</Label>
               <Input
@@ -464,15 +465,16 @@ export function TeacherDashboard() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Input
+              <Textarea
                 id="description"
                 value={taskFormData.description}
                 onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
                 placeholder="Task details..."
+                rows={4}
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-0">
             <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveTask}>Assign Task</Button>
           </DialogFooter>

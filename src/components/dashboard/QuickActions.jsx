@@ -32,12 +32,6 @@ const quickActions = [
     color: 'text-blue-600 dark:text-blue-400',
   },
   {
-    icon: FileText,
-    label: 'Generate Report',
-    permission: 'view_students',
-    color: 'text-purple-600 dark:text-purple-400',
-  },
-  {
     icon: Calendar,
     label: 'Schedule Event',
     color: 'text-green-600 dark:text-green-400',
@@ -98,10 +92,6 @@ export function QuickActions({ onAddUser, onAssignTask }) {
 
     await createEventScheduledActivity(eventName, formattedDate);
     toast.success('Event scheduled successfully');
-  };
-
-  const handleGenerateReport = () => {
-    toast.info('Report generation feature coming soon');
   };
 
   const handleSendNotice = () => {
@@ -179,8 +169,6 @@ export function QuickActions({ onAddUser, onAssignTask }) {
       onAddUser?.();
     } else if (action.label === 'Schedule Event') {
       handleScheduleEvent();
-    } else if (action.label === 'Generate Report') {
-      handleGenerateReport();
     } else if (action.label === 'Send Notice') {
       handleSendNotice();
     } else if (action.label === 'Assign Task') {
@@ -207,7 +195,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
                 key={action.label}
                 onClick={() => handleAction(action)}
                 className={cn(
-                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
+                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-sm",
                   "border border-border/30 bg-card/60 backdrop-blur-sm",
                   "hover:border-primary/50 hover:bg-primary/5 hover:shadow-md",
                   "hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]",
@@ -242,7 +230,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
                 key={action.label}
                 onClick={() => handleAIAction(action.label)}
                 className={cn(
-                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
+                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-sm",
                   "border border-border/30 bg-card/60 backdrop-blur-sm",
                   "hover:border-pink-500/50 hover:bg-pink-500/5 hover:shadow-md",
                   "hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]",

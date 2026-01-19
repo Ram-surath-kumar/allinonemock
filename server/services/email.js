@@ -7,11 +7,19 @@ dotenv.config();
 const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
       user: process.env.GMAIL_USER, // Your Gmail address
       pass: process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, ''), // Gmail App Password (removes spaces)
     },
-
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000, // 10 seconds
+    socketTimeout: 10000, // 10 seconds
+    pool: true, // Use connection pooling
+    maxConnections: 1,
+    maxMessages: 3,
   });
 };
 
@@ -133,11 +141,24 @@ This is an automated email. Please do not reply to this message.
       `,
     };
 
+    // Verify connection before sending
+    await transporter.verify();
+    
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending email:', error);
+    
+    // Provide more helpful error messages
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      throw new Error('Email server connection failed. Please check your internet connection and email configuration.');
+    } else if (error.code === 'EAUTH') {
+      throw new Error('Email authentication failed. Please check GMAIL_USER and GMAIL_APP_PASSWORD in server .env file.');
+    } else if (error.responseCode === 535) {
+      throw new Error('Email authentication failed. Invalid Gmail App Password.');
+    }
+    
     throw error;
   }
 }

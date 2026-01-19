@@ -162,7 +162,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden h-9 w-9 rounded-xl"
+            className="md:hidden h-9 w-9 rounded-sm"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -199,7 +199,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-9 w-9 rounded-xl hover-lift"
+            className="h-9 w-9 rounded-sm hover-lift"
             title="Toggle theme"
             aria-label="Toggle theme"
           >
@@ -215,7 +215,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             variant="ghost"
             size="icon"
             onClick={() => onNavigate('/settings')}
-            className="h-9 w-9 rounded-xl hover-lift"
+            className="h-9 w-9 rounded-sm hover-lift"
             title="Settings"
             aria-label="Settings"
           >
@@ -226,7 +226,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
         {/* Notifications */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl">
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-sm">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-1 -top-1 h-5 w-5 flex items-center justify-center rounded-full p-0 text-xs bg-destructive text-destructive-foreground border-2 border-background">

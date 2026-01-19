@@ -20,6 +20,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
@@ -373,19 +374,19 @@ export function AdminDashboard({ onAddUser }) {
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
         <DialogContent className="max-w-md sm:max-w-2xl">
           <Tabs defaultValue="new" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="new">Assign New</TabsTrigger>
               <TabsTrigger value="history">Tasks Created</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="new">
-              <DialogHeader>
+            <TabsContent value="new" className="space-y-6">
+              <DialogHeader className="px-0">
                 <DialogTitle>Assign Task to Member</DialogTitle>
                 <DialogDescription>
                   Create a new task for a student or staff member.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="task_title">Task Title</Label>
                   <Input
@@ -456,15 +457,16 @@ export function AdminDashboard({ onAddUser }) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="description">Description</Label>
-                  <Input
+                  <Textarea
                     id="description"
                     value={taskFormData.description}
                     onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
                     placeholder="Task details..."
+                    rows={4}
                   />
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="px-0">
                 <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>Cancel</Button>
                 <Button onClick={handleSaveTask}>Assign Task</Button>
               </DialogFooter>

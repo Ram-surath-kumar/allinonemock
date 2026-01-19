@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Trash2, Shield } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Shield, Mail } from 'lucide-react';
 import { ROLE_LABELS } from '@/types/erp';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export function UserTable({ users, onEdit, onDelete }) {
+export function UserTable({ users, onEdit, onDelete, onResendEmail }) {
   const { canManageRole } = useAuth();
 
   return (
@@ -83,6 +83,12 @@ export function UserTable({ users, onEdit, onDelete }) {
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
+                        {onResendEmail && user.college_email && (
+                          <DropdownMenuItem onClick={() => onResendEmail(user)}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Resend Email
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem 
                           onClick={() => onDelete(user)}
                           className="text-destructive"
