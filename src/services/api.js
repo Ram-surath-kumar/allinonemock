@@ -421,7 +421,6 @@ class ApiClient {
     return this.request(`/finance${query ? `?${query}` : ''}`);
   }
 
-
   // Hostel Module
   async getHostelDashboard() {
     return this.request('/hostel/dashboard');
@@ -540,7 +539,6 @@ class ApiClient {
     });
 
   }
-
   // --- Tasks ---
   async getTasks(params) {
     const query = new URLSearchParams(params).toString();
@@ -557,8 +555,8 @@ class ApiClient {
 
   async deleteTask(id) {
     return this.request(`/tasks/${id}`, { method: 'DELETE' });
-
   }
 }
+
 
 export const api = new ApiClient(API_BASE_URL);

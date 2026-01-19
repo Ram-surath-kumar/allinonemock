@@ -159,14 +159,10 @@ function AppContent() {
         setTimeout(() => setIsInitializing(false), 1000);
       }
     };
-
-    if (currentUser) {
-      initializeUser();
-    } else {
-      setIsInitializing(false);
-    }
+    initializeUser();
   }, [orgName, userId, currentUser]);
 
+  // Update URL when user changes
   // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {

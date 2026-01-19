@@ -43,8 +43,6 @@ export function AIAssistantChat({ onNavigate }) {
       timestamp: new Date(),
     },
   ]);
-  const messagesEndRef = useRef(null);
-
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     action: null,
@@ -55,12 +53,50 @@ export function AIAssistantChat({ onNavigate }) {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const attachMenuRef = useRef(null);
-
-
+  const messagesEndRef = useRef(null);
   const [attachments, setAttachments] = useState([]);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Camera Functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      // Wait for state update then attach stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      toast.error("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+  };
 
   // Click outside handler for attachment menu
   useEffect(() => {
@@ -390,45 +426,6 @@ export function AIAssistantChat({ onNavigate }) {
     if (confirmDialog.action) {
       await executeAction(confirmDialog.action, true);
     }
-  };
-
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setAttachments(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Camera Functions
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      setCameraStream(stream);
-      setIsCameraOpen(true);
-      // Wait for state update then attach stream
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      }, 100);
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      toast.error("Could not access camera. Please check permissions.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-    setIsCameraOpen(false);
   };
 
   const capturePhoto = () => {
@@ -911,10 +908,8 @@ export function AIAssistantChat({ onNavigate }) {
           )}
         </div>
       )}
-
-
       {/* Confirmation Dialog */}
-      < AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -935,40 +930,41 @@ export function AIAssistantChat({ onNavigate }) {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog >
-
+      </AlertDialog>
       {/* Camera Modal */}
-      {isCameraOpen && (
-        <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
-          <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
+      {
+        isCameraOpen && (
+          <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+            <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
 
-            <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
-              >
-                <X className="h-6 w-6" />
-              </button>
+              <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
 
-              <button
-                type="button"
-                onClick={capturePhoto}
-                className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
-              >
-                <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
-              </button>
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
+                >
+                  <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
     </>,
     document.body
