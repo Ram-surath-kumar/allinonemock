@@ -289,6 +289,36 @@ class ApiClient {
     });
   }
 
+  // Schedules
+  async getSchedules(params) {
+    const queryParams = new URLSearchParams();
+    if (params?.teacher_id) queryParams.append('teacher_id', params.teacher_id);
+    if (params?.department_id) queryParams.append('department_id', params.department_id);
+    if (params?.day) queryParams.append('day', params.day);
+    const query = queryParams.toString();
+    return this.request(`/schedules${query ? `?${query}` : ''}`, {}, false); // Disable cache for schedules
+  }
+
+  async createSchedule(scheduleData) {
+    return this.request('/schedules', {
+      method: 'POST',
+      body: JSON.stringify(scheduleData),
+    });
+  }
+
+  async updateSchedule(id, scheduleData) {
+    return this.request(`/schedules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(scheduleData),
+    });
+  }
+
+  async deleteSchedule(id) {
+    return this.request(`/schedules/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ==================== CONSOLIDATED ENDPOINTS ====================
   // Use these endpoints to reduce API calls from frontend
 
@@ -391,6 +421,7 @@ class ApiClient {
     return this.request(`/finance${query ? `?${query}` : ''}`);
   }
 
+<<<<<<< HEAD
   // Hostel Module
   async getHostelDashboard() {
     return this.request('/hostel/dashboard');
@@ -507,6 +538,24 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+=======
+  // --- Tasks ---
+  async getTasks(params) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/tasks${query ? `?${query}` : ''}`, {}, false);
+  }
+
+  async createTask(data) {
+    return this.request('/tasks', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateTask(id, data) {
+    return this.request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  async deleteTask(id) {
+    return this.request(`/tasks/${id}`, { method: 'DELETE' });
+>>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
   }
 }
 

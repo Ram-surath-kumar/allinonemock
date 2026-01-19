@@ -160,27 +160,54 @@ function AppContent() {
       }
     };
 
+<<<<<<< HEAD
     if (currentUser) {
       initializeUser();
     } else {
       setIsInitializing(false);
     }
   }, [orgName, userId, currentUser]);
+=======
+    initializeUser();
+  }, [orgName, userId]);
+>>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
 
+  // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {
     if (currentUser?.organization && currentUser.user_id) {
       const currentTab = tab || pathToTab[location.pathname] || 'dashboard';
       const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
 
+<<<<<<< HEAD
       // Only update if URL is different
       if (location.pathname !== newPath && (!orgName || !userId ||
         orgName !== currentUser.organization.org_name ||
         parseInt(userId || '0', 10) !== currentUser.user_id)) {
+=======
+      // If the URL already specifies a user (orgName & userId exist), 
+      // we assume the user intends to be there (potentially switching users).
+      // We only auto-redirect if I am logged in but the URL is generic (e.g. '/')
+      // OR if the mismatched URL is NOT a valid user path loop.
+
+      const isUrlSwitchingUser = orgName && userId && (
+        orgName !== currentUser.organization.org_name ||
+        parseInt(userId, 10) !== currentUser.user_id
+      );
+
+      // If we are switching user via URL, DO NOT redirect back to old user.
+      if (isUrlSwitchingUser) {
+        return;
+      }
+
+      // Only update if URL is different and we are simply fixing the URL 
+      // for the CURRENT user (e.g. they landed on '/')
+      if (location.pathname !== newPath) {
+>>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentUser?.organization?.org_name, currentUser?.user_id]);
+  }, [currentUser?.organization?.org_name, currentUser?.user_id, location.pathname, orgName, userId]);
 
   const handleNavigate = (path) => {
     // For student routes, use the path directly or map to tab name
@@ -438,6 +465,7 @@ function AppContent() {
     }
   }, [currentUser, loading]);
 
+<<<<<<< HEAD
   // Show login page if not authenticated - redirect to /login
   useEffect(() => {
     if (!currentUser && !loading && !isInitializing && location.pathname !== '/login') {
@@ -450,6 +478,8 @@ function AppContent() {
     return null; // Will redirect to /login
   }
 
+=======
+>>>>>>> 9837239 (Update AdminDashboard, AI Assistant, and server configurations)
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
