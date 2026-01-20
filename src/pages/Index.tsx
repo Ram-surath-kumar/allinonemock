@@ -16,6 +16,9 @@ const UserManagement = lazy(() =>
 const Students = lazy(() =>
   import('@/pages/Students').then(module => ({ default: module.Students }))
 );
+const Attendance = lazy(() =>
+  import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
+);
 const Admissions = lazy(() =>
   import('@/pages/Admissions').then(module => ({ default: module.Admissions }))
 );
