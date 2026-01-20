@@ -4,7 +4,7 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
-import { GovernanceSection } from '@/components/dashboard/GovernanceSection';
+
 import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
 import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
 import { getDashboardStats, getGrowthData, getConsolidatedGrowthData, DashboardStats } from '@/services/dashboard';
@@ -330,8 +330,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
         />
       </div>
 
-      {/* Governance Section */}
-      <GovernanceSection stats={stats} />
+
 
       {/* Quick Actions & AI Actions - Compact */}
       <QuickActions onAddUser={onAddUser} onAssignTask={handleOpenTaskDialog} />

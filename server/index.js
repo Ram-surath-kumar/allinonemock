@@ -52,7 +52,10 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Also allow any localhost origin (for dynamic ports like 5174, 5175, etc.)
+    const isLocalhost = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+    if (!origin || allowedOrigins.includes(origin) || isLocalhost) {
       callback(null, true);
     } else {
       // In production, allow Vercel preview and production domains

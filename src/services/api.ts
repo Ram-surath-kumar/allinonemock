@@ -219,6 +219,19 @@ class ApiClient {
         });
     }
 
+    async sendWelcomeEmail(data: {
+        college_email: string;
+        loop_email: string;
+        loopid: string;
+        user_name: string;
+        user_id: string;
+    }): Promise<ApiResponse<any>> {
+        return this.request('/users/send-welcome-email', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
     async updateUser(id: string, userData: UserData) {
         return this.request(`/users/${id}`, {
             method: 'PUT',
@@ -477,9 +490,6 @@ class ApiClient {
     async getFinancialStatements(): Promise<ApiResponse<any>> {
         return this.request('/finance/reports/financial-statements');
     }
-
-
-
 
     async getTaxConfig(): Promise<ApiResponse<any>> {
         return this.request('/finance/tax/config');
