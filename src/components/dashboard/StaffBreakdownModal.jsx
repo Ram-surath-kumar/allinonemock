@@ -67,6 +67,15 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
     { name: 'Accountants', value: breakdown.accountant || breakdown.accountants || 0, color: COLORS[3] },
   ].filter(item => item.value > 0) : [];
 
+  // Calculate total for center label
+  const totalStaff = pieData.reduce((sum, item) => sum + item.value, 0);
+  
+  // Add percentage to each item
+  const pieDataWithPercent = pieData.map(item => ({
+    ...item,
+    percent: totalStaff > 0 ? ((item.value / totalStaff) * 100).toFixed(1) : 0
+  }));
+
   const getRoleIcon = (role) => {
     switch (role) {
       case 'teacher':
@@ -154,52 +163,120 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
                   </div>
                 </div>
 
-                {/* Pie Chart */}
-                {pieData.length > 0 && (
-                  <div className="w-full space-y-4">
-                    <div className="h-80 w-full">
+                {/* Enhanced Donut Chart */}
+                {pieDataWithPercent.length > 0 && (
+                  <div className="w-full space-y-6">
+                    <div className="relative h-96 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
+                          <defs>
+                            {pieDataWithPercent.map((entry, index) => (
+                              <filter key={`shadow-${index}`} id={`shadow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                                <feOffset dx="2" dy="2" result="offsetblur"/>
+                                <feComponentTransfer>
+                                  <feFuncA type="linear" slope="0.3"/>
+                                </feComponentTransfer>
+                                <feMerge>
+                                  <feMergeNode/>
+                                  <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                              </filter>
+                            ))}
+                          </defs>
                           <Pie
-                            data={pieData}
+                            data={pieDataWithPercent}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            outerRadius={110}
-                            innerRadius={40}
+                            outerRadius={120}
+                            innerRadius={70}
                             fill="#8884d8"
                             dataKey="value"
-                            animationDuration={800}
-                            paddingAngle={2}
+                            animationBegin={0}
+                            animationDuration={1000}
+                            animationEasing="ease-out"
+                            paddingAngle={3}
+                            cornerRadius={8}
                           >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            {pieDataWithPercent.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.color} 
+                                stroke="hsl(var(--background))"
+                                strokeWidth={2}
+                                style={{
+                                  filter: `drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))`,
+                                  transition: 'opacity 0.3s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.opacity = 0.8;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.opacity = 1;
+                                }}
+                              />
                             ))}
                           </Pie>
                           <Tooltip 
-                            contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
-                              borderRadius: '4px',
-                              padding: '8px 12px',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+                                    <p className="font-semibold text-foreground mb-1">{data.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      <span className="font-medium text-foreground">{data.value}</span> staff members
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {data.percent}% of total
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
                             }}
-                            formatter={(value, name) => [value, name]}
-                            labelStyle={{ fontWeight: 500, marginBottom: '4px' }}
                           />
+                          {/* Center Label */}
+                          <text
+                            x="50%"
+                            y="45%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-3xl font-bold fill-foreground"
+                          >
+                            {totalStaff}
+                          </text>
+                          <text
+                            x="50%"
+                            y="55%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-sm fill-muted-foreground"
+                          >
+                            Total Staff
+                          </text>
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    {/* Custom Legend */}
-                    <div className="flex items-center justify-center gap-6 flex-wrap">
-                      {pieData.map((entry, index) => (
-                        <div key={index} className="flex items-center gap-2">
+                    {/* Enhanced Legend */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {pieDataWithPercent.map((entry, index) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+                        >
                           <div 
-                            className="h-3 w-3 rounded-sm shrink-0" 
+                            className="h-4 w-4 rounded-sm shrink-0 transition-transform group-hover:scale-110" 
                             style={{ backgroundColor: entry.color }}
                           />
-                          <span className="text-sm text-foreground font-medium">{entry.name}</span>
-                          <span className="text-sm text-muted-foreground">({entry.value})</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{entry.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-lg font-bold text-foreground">{entry.value}</span>
+                              <span className="text-xs text-muted-foreground">({entry.percent}%)</span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
