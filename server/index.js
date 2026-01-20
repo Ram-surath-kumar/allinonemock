@@ -31,6 +31,8 @@ import registrationRouter from './routes/SIM/registration.js';
 import graduationRouter from './routes/SIM/graduation.js';
 import leavesRouter from './routes/SIM/leaves.js';
 import courseAttendanceRouter from './routes/SIM/course_attendance.js';
+import schedulesRouter from './routes/schedules.js';
+import tasksRouter from './routes/tasks.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -110,6 +112,8 @@ app.use('/api/sim/academic', academicRouter);
 app.use('/api/sim/graduation', graduationRouter);
 app.use('/api/sim/leaves', leavesRouter);
 app.use('/api/sim/attendance', courseAttendanceRouter);
+app.use('/api/schedules', schedulesRouter);
+app.use('/api/tasks', tasksRouter);
 
 // Future Routes
 // app.use('/api/growth', growthRouter);

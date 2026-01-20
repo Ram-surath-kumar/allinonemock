@@ -126,26 +126,28 @@ export function StudentProfileView({ student, onBack }) {
     if (!profile && loading) return <div className="p-8 text-center">Loading profile...</div>;
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 -mt-3">
             {/* Header */}
-            <div className="flex items-center gap-4 mb-6 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 border-b">
-                <Button variant="outline" size="sm" onClick={onBack}>&larr; Back</Button>
-                <div>
-                    <h2 className="text-2xl font-bold">{student.name}</h2>
-                    <p className="text-muted-foreground text-sm flex items-center gap-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{student.role?.toUpperCase()}</span>
-                        <span>{student.email}</span>
-                        <span>•</span>
-                        <span>{student.department}</span>
+            <div className="flex items-center gap-4 mb-6 sticky top-16 bg-background/95 backdrop-blur z-10 py-4 -mx-3 sm:-mx-4 md:-mx-4 lg:-mx-5 px-3 sm:px-4 md:px-4 lg:px-5 border-b">
+                <Button variant="outline" size="sm" onClick={onBack} className="shrink-0">
+                    ← Back
+                </Button>
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">{student.name}</h2>
+                    <p className="text-muted-foreground text-xs sm:text-sm flex items-center gap-2 flex-wrap">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold shrink-0">{student.role?.toUpperCase()}</span>
+                        <span className="truncate">{student.email}</span>
+                        <span className="shrink-0">•</span>
+                        <span className="truncate">{student.department}</span>
                     </p>
                 </div>
-                <div className="ml-auto">
+                <div className="ml-auto shrink-0">
                     {!isEditing ? (
-                        <Button onClick={() => setIsEditing(true)}>Edit Details</Button>
+                        <Button onClick={() => setIsEditing(true)} size="sm">Edit Details</Button>
                     ) : (
                         <div className="flex gap-2">
-                            <Button variant="ghost" onClick={() => { setIsEditing(false); fetchProfile(); }}>Cancel</Button>
-                            <Button onClick={handleSave} disabled={loading}>Save Changes</Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); fetchProfile(); }}>Cancel</Button>
+                            <Button size="sm" onClick={handleSave} disabled={loading}>Save Changes</Button>
                         </div>
                     )}
                 </div>

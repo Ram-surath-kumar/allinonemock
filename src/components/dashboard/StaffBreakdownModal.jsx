@@ -156,28 +156,53 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
 
                 {/* Pie Chart */}
                 {pieData.length > 0 && (
-                  <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          animationDuration={1000}
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="w-full space-y-4">
+                    <div className="h-80 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={110}
+                            innerRadius={40}
+                            fill="#8884d8"
+                            dataKey="value"
+                            animationDuration={800}
+                            paddingAngle={2}
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '4px',
+                              padding: '8px 12px',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                            }}
+                            formatter={(value, name) => [value, name]}
+                            labelStyle={{ fontWeight: 500, marginBottom: '4px' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Custom Legend */}
+                    <div className="flex items-center justify-center gap-6 flex-wrap">
+                      {pieData.map((entry, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div 
+                            className="h-3 w-3 rounded-sm shrink-0" 
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="text-sm text-foreground font-medium">{entry.name}</span>
+                          <span className="text-sm text-muted-foreground">({entry.value})</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </>

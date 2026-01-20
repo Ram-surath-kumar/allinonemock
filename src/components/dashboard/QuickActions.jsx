@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { 
-  UserPlus, 
-  FileText, 
-  Calendar, 
-  MessageSquare, 
-  Sparkles, 
+import {
+  UserPlus,
+  FileText,
+  Calendar,
+  MessageSquare,
+  Sparkles,
   TrendingUp,
   DollarSign,
   Loader2
@@ -32,15 +32,15 @@ const quickActions = [
     color: 'text-blue-600 dark:text-blue-400',
   },
   {
-    icon: FileText,
-    label: 'Generate Report',
-    permission: 'view_students',
-    color: 'text-purple-600 dark:text-purple-400',
-  },
-  {
     icon: Calendar,
     label: 'Schedule Event',
     color: 'text-green-600 dark:text-green-400',
+  },
+  {
+    icon: FileText, // Reusing FileText or finding a proper Task icon like ClipboardList
+    label: 'Assign Task',
+    permission: 'manage_staff', // Using manage_staff as proxy for Admin/Teacher power for now
+    color: 'text-red-600 dark:text-red-400',
   },
   {
     icon: MessageSquare,
@@ -68,7 +68,7 @@ const aiActions = [
   },
 ];
 
-export function QuickActions({ onAddUser }) {
+export function QuickActions({ onAddUser, onAssignTask }) {
   const { hasPermission } = useAuth();
   const [sendNoticeDialogOpen, setSendNoticeDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -84,18 +84,14 @@ export function QuickActions({ onAddUser }) {
     const eventName = 'School Meeting';
     const eventDate = new Date();
     eventDate.setDate(eventDate.getDate() + 7);
-    const formattedDate = eventDate.toLocaleDateString('en-US', { 
-      month: 'long', 
+    const formattedDate = eventDate.toLocaleDateString('en-US', {
+      month: 'long',
       day: 'numeric',
-      year: 'numeric' 
+      year: 'numeric'
     });
-    
+
     await createEventScheduledActivity(eventName, formattedDate);
     toast.success('Event scheduled successfully');
-  };
-
-  const handleGenerateReport = () => {
-    toast.info('Report generation feature coming soon');
   };
 
   const handleSendNotice = () => {
@@ -173,10 +169,10 @@ export function QuickActions({ onAddUser }) {
       onAddUser?.();
     } else if (action.label === 'Schedule Event') {
       handleScheduleEvent();
-    } else if (action.label === 'Generate Report') {
-      handleGenerateReport();
     } else if (action.label === 'Send Notice') {
       handleSendNotice();
+    } else if (action.label === 'Assign Task') {
+      onAssignTask?.();
     } else {
       action.onClick?.();
     }
@@ -189,17 +185,17 @@ export function QuickActions({ onAddUser }) {
         <div className="flex items-center gap-2 mb-3">
           <div className="h-0.5 w-6 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
           <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
-      </div>
-      
+        </div>
+
         <div className="grid grid-cols-4 gap-2">
-        {filteredActions.map((action, index) => {
-          const Icon = action.icon;
-          return (
+          {filteredActions.map((action, index) => {
+            const Icon = action.icon;
+            return (
               <button
-              key={action.label}
+                key={action.label}
                 onClick={() => handleAction(action)}
                 className={cn(
-                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
+                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-sm",
                   "border border-border/30 bg-card/60 backdrop-blur-sm",
                   "hover:border-primary/50 hover:bg-primary/5 hover:shadow-md",
                   "hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]",
@@ -216,7 +212,7 @@ export function QuickActions({ onAddUser }) {
             );
           })}
         </div>
-              </div>
+      </div>
 
       {/* AI Actions */}
       <div className="rounded-2xl border border-border/30 bg-gradient-to-br from-card/80 via-card/70 to-primary/5 backdrop-blur-xl p-4 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="AI Actions">
@@ -224,8 +220,8 @@ export function QuickActions({ onAddUser }) {
           <div className="h-0.5 w-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></div>
           <Sparkles className="h-3.5 w-3.5 text-pink-500" />
           <h3 className="text-sm font-semibold text-foreground">AI Actions</h3>
-              </div>
-        
+        </div>
+
         <div className="grid grid-cols-3 gap-2">
           {aiActions.map((action, index) => {
             const Icon = action.icon;
@@ -234,7 +230,7 @@ export function QuickActions({ onAddUser }) {
                 key={action.label}
                 onClick={() => handleAIAction(action.label)}
                 className={cn(
-                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
+                  "group flex flex-col items-center justify-center gap-2 p-3 rounded-sm",
                   "border border-border/30 bg-card/60 backdrop-blur-sm",
                   "hover:border-pink-500/50 hover:bg-pink-500/5 hover:shadow-md",
                   "hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98]",
@@ -248,8 +244,8 @@ export function QuickActions({ onAddUser }) {
                   {action.label}
                 </span>
               </button>
-          );
-        })}
+            );
+          })}
         </div>
       </div>
 
@@ -265,7 +261,7 @@ export function QuickActions({ onAddUser }) {
               AI-powered insights and predictions
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="mt-4">
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">

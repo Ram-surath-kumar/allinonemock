@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle, Paperclip, FileText, Image as ImageIcon, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,7 +43,6 @@ export function AIAssistantChat({ onNavigate }) {
       timestamp: new Date(),
     },
   ]);
-  const messagesEndRef = useRef(null);
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     action: null,
@@ -51,6 +50,68 @@ export function AIAssistantChat({ onNavigate }) {
     description: '',
   });
 
+  const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const attachMenuRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const [attachments, setAttachments] = useState([]);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Camera Functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      // Wait for state update then attach stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      toast.error("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+  };
+
+  // Click outside handler for attachment menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target)) {
+        setShowAttachMenu(false);
+      }
+    };
+    if (showAttachMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAttachMenu]);
   useEffect(() => {
     console.log('AIAssistantChat component mounted/updated', { isOpen, document: typeof document !== 'undefined' });
   }, []);
@@ -77,7 +138,7 @@ export function AIAssistantChat({ onNavigate }) {
       if (studentsData) {
         const departmentIds = [...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id))];
         let deptMap = new Map();
-        
+
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
@@ -104,7 +165,7 @@ export function AIAssistantChat({ onNavigate }) {
   };
 
   const addMessage = (role, content) => {
-    const newMessage= {
+    const newMessage = {
       id: Date.now().toString(),
       role,
       content,
@@ -145,7 +206,7 @@ export function AIAssistantChat({ onNavigate }) {
 
       try {
         addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
-        
+
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -157,19 +218,19 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully marked ${action.student_name} as ${action.status}.`);
-        
+
         // Navigate to attendance page
         if (onNavigate) {
           onNavigate('/attendance');
         } else {
           navigate('/attendance');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
         }, 1000);
-        
+
         window.dispatchEvent(new CustomEvent('attendance-updated'));
       } catch (error) {
         console.error('Error marking attendance:', error);
@@ -208,7 +269,7 @@ export function AIAssistantChat({ onNavigate }) {
 
       try {
         addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
-        
+
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -217,14 +278,14 @@ export function AIAssistantChat({ onNavigate }) {
         if (response.error) throw new Error(response.error);
 
         addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
-        
+
         // Navigate to tools page
         if (onNavigate) {
           onNavigate('/tools');
         } else {
           navigate('/tools');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -232,7 +293,7 @@ export function AIAssistantChat({ onNavigate }) {
       } catch (error) {
         console.error('Error creating department:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
-        
+
         // Check if it's a service role key error
         if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
           addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
@@ -255,7 +316,7 @@ export function AIAssistantChat({ onNavigate }) {
         // Show processing status
         const totalStudents = students.length;
         addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
-        
+
         // Delete all students
         const studentIds = students.map(s => s.id);
         let deletedCount = 0;
@@ -264,12 +325,12 @@ export function AIAssistantChat({ onNavigate }) {
         for (let i = 0; i < studentIds.length; i++) {
           const studentId = studentIds[i];
           const currentIndex = i + 1;
-          
+
           // Show progress every 5 students or for the last one
           if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
             addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
           }
-          
+
           try {
             const response = await api.deleteUser(studentId);
             if (response.error) {
@@ -283,7 +344,7 @@ export function AIAssistantChat({ onNavigate }) {
             console.error(`Error deleting student ${studentId}:`, error);
           }
         }
-        
+
         // Show completion status
         if (errorCount > 0 && deletedCount === 0) {
           // Get more details about the first error
@@ -294,22 +355,22 @@ export function AIAssistantChat({ onNavigate }) {
           throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
         }
 
-        const message = deletedCount > 0 
+        const message = deletedCount > 0
           ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
           : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
 
         addMessage('assistant', message);
-        
+
         // Reload students list
         await loadData();
-        
+
         // Navigate to students page
         if (onNavigate) {
           onNavigate('/students');
         } else {
           navigate('/students');
         }
-        
+
         // Close chat after action
         setTimeout(() => {
           setIsOpen(false);
@@ -317,16 +378,46 @@ export function AIAssistantChat({ onNavigate }) {
       } catch (error) {
         console.error('Error deleting students:', error);
         let errorMessage = error.message || 'Failed to delete students';
-        
+
         // Provide more helpful error messages
         if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
           errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
         }
-        
+
         addMessage('assistant', `❌ Error: ${errorMessage}`);
       }
+    } else if (action.action === 'add_applicant') {
+      addMessage('assistant', '📝 Opening Admission Portal...');
+      if (onNavigate) {
+        onNavigate('/students');
+      } else {
+        navigate('/students');
+      }
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1000);
+    } else if (action.action === 'analyze_system') {
+      try {
+        addMessage('assistant', '📊 Gathering real-time data from dashboard...');
+
+        const response = await api.getDashboardData(currentUser?.id, currentUser?.role);
+
+        if (response.error) throw new Error(response.error);
+
+        const dashboardData = response.data;
+
+        // Analyze using the analytics service but with REAL data
+        const analysis = await callGeminiAnalytics("Analyze the entire ERP system based on this data", dashboardData);
+
+        addMessage('assistant', analysis);
+      } catch (error) {
+        console.error('Error analyzing system:', error);
+        addMessage('assistant', '❌ Failed to analyze system data. Please try again.');
+      }
+    } else if (action.action === 'chat') {
+      addMessage('assistant', action.message || 'Hello! How can I help you?');
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", "add applicant", "analyze system", or just say "hi"!');
     }
   };
 
@@ -337,15 +428,31 @@ export function AIAssistantChat({ onNavigate }) {
     }
   };
 
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoRef.current, 0, 0);
+
+      canvas.toBlob((blob) => {
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setAttachments(prev => [...prev, file]);
+        stopCamera();
+      }, 'image/jpeg');
+    }
+  };
+
   const handleDataQuery = async (query) => {
     try {
       addMessage('assistant', '🔄 Processing... Analyzing your question...');
-      
+
       const currentDate = format(new Date(), 'yyyy-MM-dd');
-      
+
       // Parse the query intent
       const intent = await parseDataQueryIntent(query, students, currentDate);
-      
+
       if (intent.confidence < 0.5) {
         addMessage('assistant', 'I\'m not sure I understood your question. Could you rephrase it?');
         return;
@@ -376,7 +483,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const student = matchingStudents[0];
-          
+
           // Get attendance for the date
           const attendanceResponse = await api.getAttendance({
             date: intent.date,
@@ -389,7 +496,7 @@ export function AIAssistantChat({ onNavigate }) {
           }
 
           const attendanceData = attendanceResponse.data;
-          
+
           if (!attendanceData || attendanceData.length === 0) {
             response = `${student.name} has no attendance record for ${intent.date === currentDate ? 'today' : intent.date}.`;
           } else {
@@ -492,7 +599,7 @@ export function AIAssistantChat({ onNavigate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!prompt.trim()) {
       return;
     }
@@ -501,7 +608,7 @@ export function AIAssistantChat({ onNavigate }) {
     setPrompt('');
     addMessage('user', userPrompt);
     setLoading(true);
-    
+
     try {
       // Load data if not loaded
       if (students.length === 0) {
@@ -509,10 +616,14 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-      const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-                         /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-                         userPrompt.includes('?') ||
-                         /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
+      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(userPrompt);
+
+      const isDataQuery = !isAnalyzeCommand && (
+        /^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
+        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
+        userPrompt.includes('?') ||
+        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt)
+      );
 
       if (isDataQuery) {
         // Handle data query
@@ -520,11 +631,11 @@ export function AIAssistantChat({ onNavigate }) {
       } else {
         // Handle action
         addMessage('assistant', '🔄 Processing... Understanding your command...');
-        
+
         const context = {
           students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department'],
+          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department', 'add_applicant', 'analyze_system'],
         };
 
         const action = await callGeminiAPI(userPrompt, context);
@@ -597,14 +708,14 @@ export function AIAssistantChat({ onNavigate }) {
           "flex flex-col overflow-hidden transition-all duration-300",
           isMinimized ? "h-14" : "h-[600px]"
         )}
-        style={{
-          zIndex: 99999,
-          pointerEvents: 'auto',
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px'
-        }}
-        role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+          style={{
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px'
+          }}
+          role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
             <div className="flex items-center gap-2">
@@ -671,13 +782,107 @@ export function AIAssistantChat({ onNavigate }) {
                 </div>
               </ScrollArea>
 
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="px-4 py-2 border-t border-border bg-muted/20 flex gap-2 overflow-x-auto">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="relative flex items-center gap-2 bg-background border border-border p-2 rounded-lg pr-8 shrink-0">
+                      {file.type.startsWith('image/') ? (
+                        <div className="h-10 w-10 rounded overflow-hidden">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      )}
+                      <div className="flex flex-col max-w-[120px]">
+                        <span className="text-xs font-medium truncate">{file.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Input */}
               <form onSubmit={handleSubmit} className="border-t border-border p-4">
                 <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+
+                  <div className="relative flex gap-2 items-center" ref={attachMenuRef}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full shrink-0"
+                      title="Attach..."
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    >
+                      <Paperclip className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                    </Button>
+
+                    {showAttachMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-popover rounded-xl shadow-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
+                        <div className="p-1 flex flex-col">
+                          <button
+                            type="button"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                              setShowAttachMenu(false);
+                            }}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Files</span>
+                              <span className="text-[10px] text-muted-foreground">Upload documents</span>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                            onClick={() => {
+                              startCamera();
+                              setShowAttachMenu(false);
+                            }}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                              <Camera className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Camera</span>
+                              <span className="text-[10px] text-muted-foreground">Take a photo</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <Input
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
+                    placeholder={attachments.length > 0 ? "Describe these files..." : "Ask AI or type commands..."}
                     className="flex-1 rounded-full"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -686,7 +891,11 @@ export function AIAssistantChat({ onNavigate }) {
                       }
                     }}
                   />
-                  <Button type="submit" disabled={loading} size="icon">
+                  <Button
+                    type="submit"
+                    disabled={loading || (!prompt.trim() && attachments.length === 0)}
+                    size="icon"
+                  >
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -699,7 +908,6 @@ export function AIAssistantChat({ onNavigate }) {
           )}
         </div>
       )}
-
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
         <AlertDialogContent>
@@ -723,6 +931,41 @@ export function AIAssistantChat({ onNavigate }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Camera Modal */}
+      {
+        isCameraOpen && (
+          <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+            <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+
+              <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
+                >
+                  <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
     </>,
     document.body
   );

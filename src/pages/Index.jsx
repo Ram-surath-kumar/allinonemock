@@ -110,6 +110,7 @@ function AppContent() {
     'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
+    'tools': '/tools',
     'academic-governance': '/governance/academic',
     'mis-submission': '/governance/mis',
     'personal-details': '/student/personal-details',
@@ -117,9 +118,6 @@ function AppContent() {
     'student-attendance': '/student/attendance',
     'timetable': '/student/timetable',
     'fee-payment': '/student/fee-payment',
-
-    'tools': '/tools',
-    'academic-governance': '/governance/academic',
   };
 
   const pathToTab = {
@@ -134,6 +132,7 @@ function AppContent() {
     '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
+    '/tools': 'tools',
     '/governance/academic': 'academic-governance',
     '/governance/mis': 'mis-submission',
     '/student/personal-details': 'personal-details',
@@ -141,9 +140,6 @@ function AppContent() {
     '/student/attendance': 'student-attendance',
     '/student/timetable': 'timetable',
     '/student/fee-payment': 'fee-payment',
-
-    '/tools': 'tools',
-    '/governance/academic': 'academic-governance',
   };
 
   // Initialize from URL on mount (only if user is already logged in)
@@ -166,28 +162,39 @@ function AppContent() {
         setTimeout(() => setIsInitializing(false), 1000);
       }
     };
-
-    if (currentUser) {
-      initializeUser();
-    } else {
-      setIsInitializing(false);
-    }
+    initializeUser();
   }, [orgName, userId, currentUser]);
 
+  // Update URL when user changes
+  // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {
     if (currentUser?.organization && currentUser.user_id) {
       const currentTab = tab || pathToTab[location.pathname] || 'dashboard';
       const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
 
-      // Only update if URL is different
-      if (location.pathname !== newPath && (!orgName || !userId ||
+      // If the URL already specifies a user (orgName & userId exist), 
+      // we assume the user intends to be there (potentially switching users).
+      // We only auto-redirect if I am logged in but the URL is generic (e.g. '/')
+      // OR if the mismatched URL is NOT a valid user path loop.
+
+      const isUrlSwitchingUser = orgName && userId && (
         orgName !== currentUser.organization.org_name ||
-        parseInt(userId || '0', 10) !== currentUser.user_id)) {
+        parseInt(userId, 10) !== currentUser.user_id
+      );
+
+      // If we are switching user via URL, DO NOT redirect back to old user.
+      if (isUrlSwitchingUser) {
+        return;
+      }
+
+      // Only update if URL is different and we are simply fixing the URL 
+      // for the CURRENT user (e.g. they landed on '/')
+      if (location.pathname !== newPath) {
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentUser?.organization?.org_name, currentUser?.user_id]);
+  }, [currentUser?.organization?.org_name, currentUser?.user_id, location.pathname, orgName, userId]);
 
   const handleNavigate = (path) => {
     // For student routes, use the path directly or map to tab name
@@ -289,10 +296,6 @@ function AppContent() {
         return 'Fee Payment';
       case '/tools':
         return 'Tools';
-      case '/tools':
-        return 'Tools';
-      case '/governance/academic':
-        return 'Academic Governance';
       case '/governance/academic':
         return 'Academic Governance';
       case '/governance/mis':
@@ -456,7 +459,6 @@ function AppContent() {
   if (!currentUser && !loading && !isInitializing) {
     return null; // Will redirect to /login
   }
-
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

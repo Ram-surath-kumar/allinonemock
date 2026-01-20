@@ -1,3 +1,4 @@
+import { api } from '@/services/api';
 import {
   LayoutDashboard,
   Users,
@@ -5,6 +6,7 @@ import {
   Calendar,
   BookOpen,
   CreditCard,
+  Settings,
   Building2,
   LogOut,
   ChevronLeft,
@@ -89,11 +91,97 @@ export function Sidebar({ currentPath, onNavigate }) {
     };
   }, [isHovered]);
 
+
+
+  const fetchAllUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await api.getUsers();
+      if (response.error) throw new Error(response.error);
+      const data = response.data;
+
+      if (data && Array.isArray(data)) {
+        const orgIds = [...new Set(data.filter((u) => u.org_id).map((u) => u.org_id))];
+        const orgMap = new Map();
+
+        if (orgIds.length > 0) {
+          for (const orgId of orgIds) {
+            if (orgId) {
+              const orgResponse = await api.getOrganizations({ id: String(orgId) });
+              if (!orgResponse.error && orgResponse.data && Array.isArray(orgResponse.data) && orgResponse.data.length > 0) {
+                const org = orgResponse.data[0];
+                orgMap.set(org.id, org);
+              }
+            }
+          }
+        }
+
+        const mappedUsers = data.map((row) => {
+          const org = row.org_id ? orgMap.get(row.org_id) : undefined;
+          return {
+            id: row.id,
+            loopid: row.loopid,
+            org_id: row.org_id,
+            user_id: row.user_id,
+            name: row.name,
+            email: row.email,
+            role: row.role,
+            permissions: row.permissions || [],
+            department: row.department,
+            createdAt: new Date(row.created_at),
+            status: row.status,
+            avatar: row.avatar,
+            organization: org ? {
+              id: org.id,
+              org_id: org.org_id,
+              org_code: org.org_code,
+              org_name: org.org_name,
+            } : undefined,
+          };
+        });
+        setAllUsers(mappedUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+
   const filteredNavItems = navItems.filter(item => {
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
     return true;
   });
+
+
+
+  const handleUserSwitch = async (user) => {
+    if (!user.organization || !user.user_id) {
+      console.error('User does not have organization or user_id');
+      return;
+    }
+
+    const pathToTab = {
+      '/': 'dashboard',
+      '/users': 'users',
+      '/students': 'students',
+      '/attendance': 'attendance',
+      '/academics': 'academics',
+      '/finance': 'finance',
+      '/facilities': 'facilities',
+      '/settings': 'settings',
+    };
+
+    const currentTab = pathToTab[currentPath] || 'dashboard';
+
+    if (user.user_id && user.organization?.org_name) {
+      // Force a hard reload to ensure clean state and avoid any caching/context issues
+      window.location.href = `/${user.organization.org_name}/${user.user_id}/${currentTab}`;
+    }
+  };
+
 
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);

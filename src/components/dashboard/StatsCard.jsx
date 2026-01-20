@@ -130,7 +130,7 @@ export function StatsCard({
           
           {/* Animated Icon */}
           <div className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-xl",
+            "flex h-12 w-12 items-center justify-center rounded-sm",
             "transition-all duration-300 group-hover:scale-110 shrink-0",
             "shadow-md",
             iconColor || theme.iconBg

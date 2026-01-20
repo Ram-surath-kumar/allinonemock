@@ -1,14 +1,11 @@
-import { BookOpen, Calendar, Clock, Award } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BookOpen, Calendar, Clock, Award, CheckCircle, Circle } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-
-const upcomingClasses = [
-  { id: 1, subject: 'Mathematics', teacher: 'Ms. Parker', time: '09:00 AM', room: 'Room 201' },
-  { id: 2, subject: 'Physics', teacher: 'Mr. Wilson', time: '10:30 AM', room: 'Lab 102' },
-  { id: 3, subject: 'English', teacher: 'Ms. Davis', time: '01:00 PM', room: 'Room 305' },
-];
+import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const grades = [
   { subject: 'Mathematics', grade: 'A', score: 92 },
@@ -24,10 +21,56 @@ const announcements = [
 ];
 
 export function StudentDashboard() {
+  const { currentUser } = useAuth();
+  const [schedules, setSchedules] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        // Load Schedules
+        const scheduleResponse = await api.getSchedules({});
+        if (scheduleResponse.data) {
+          setSchedules(scheduleResponse.data);
+        }
+
+        // Load Tasks
+        const tasksResponse = await api.getTasks({ assigned_to: currentUser?.id });
+        if (tasksResponse.data) {
+          setTasks(tasksResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [currentUser]);
+
+  const handleToggleStatus = async (task) => {
+    try {
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      // Optimistic update
+      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+
+      await api.updateTask(task.id, { status: newStatus });
+      // Keep optimistic, or reload if needed. Optimistic is better UX.
+    } catch (error) {
+      console.error("Failed to update status", error);
+      // Revert
+      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* ... existing stats ... */}
         <StatsCard
           title="Current GPA"
           value="3.75"
@@ -44,14 +87,14 @@ export function StudentDashboard() {
         />
         <StatsCard
           title="Classes Today"
-          value="5"
-          change="2 completed"
+          value={schedules.length.toString()}
+          change={`${schedules.length} scheduled`}
           icon={BookOpen}
         />
         <StatsCard
           title="Pending Assignments"
-          value="3"
-          change="Due this week"
+          value={tasks.filter(t => t.status === 'pending').length.toString()}
+          change="Due soon"
           icon={Clock}
         />
       </div>
@@ -66,21 +109,25 @@ export function StudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {upcomingClasses.map((classItem, index) => (
-              <div 
-                key={classItem.id}
-                className="rounded-lg border border-border p-3 animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-foreground">{classItem.subject}</p>
-                  <Badge variant="outline" className="text-xs">{classItem.time}</Badge>
+            {schedules.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No classes scheduled.</p>
+            ) : (
+              schedules.map((classItem, index) => (
+                <div
+                  key={classItem.id}
+                  className="rounded-lg border border-border p-3 animate-slide-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{classItem.subject}</p>
+                    <Badge variant="outline" className="text-xs">{classItem.time}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {classItem.teacher_name || 'Teacher'} • {classItem.room}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {classItem.teacher} • {classItem.room}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -94,7 +141,7 @@ export function StudentDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             {grades.map((item, index) => (
-              <div 
+              <div
                 key={item.subject}
                 className="space-y-2 animate-slide-up"
                 style={{ animationDelay: `${index * 100}ms` }}
@@ -112,33 +159,45 @@ export function StudentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Announcements */}
+        {/* My Assignments */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              Announcements
+              <Clock className="h-5 w-5 text-primary" />
+              My Assignments
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {announcements.map((item, index) => (
-              <div 
-                key={item.id}
-                className="rounded-lg border border-border p-3 animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-foreground text-sm">{item.title}</p>
-                  <Badge 
-                    variant={item.type === 'event' ? 'default' : 'secondary'}
-                    className="text-xs"
+            {tasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No pending assignments.</p>
+            ) : (
+              tasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className="rounded-lg border border-border p-3 animate-slide-up flex items-start gap-3 group"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <button
+                    onClick={() => handleToggleStatus(task)}
+                    className="mt-0.5 text-muted-foreground hover:text-primary transition-colors focus:outline-none"
                   >
-                    {item.type}
-                  </Badge>
+                    {task.status === 'completed' ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Circle className="h-5 w-5" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className={`font-medium text-sm ${task.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                        {task.title}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Due: {task.due_date} • By: {task.assigned_by_name || 'Teacher'}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{item.date}</p>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

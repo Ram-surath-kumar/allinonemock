@@ -157,15 +157,6 @@ export function Students() {
     return matchesSearch;
   });
 
-  const handleEdit = (student) => {
-    if (!canEdit) {
-      toast.error('You do not have permission to edit students');
-      return;
-    }
-    setSelectedStudent(student);
-    setEditDialogOpen(true);
-  };
-
   const handleViewAttendance = (student) => {
     if (!canViewAttendance) {
       toast.error('You do not have permission to view attendance');
@@ -301,10 +292,8 @@ export function Students() {
           ) : (
             <StudentTable
               students={filteredStudents}
-              onEdit={handleEdit}
               onViewAttendance={handleViewAttendance}
               onViewProfile={handleViewProfile}
-              canEdit={canEdit}
               canViewAttendance={canViewAttendance}
               viewMode={viewMode}
             />
