@@ -69,6 +69,16 @@ class ApiClient {
           apiCache.set(cacheKey, result.data);
         }
 
+        // Invalidate cache on successful write operations (POST, PUT, DELETE)
+        if (!isGet && response.ok && result.error === null) {
+          const parts = endpoint.split('?')[0].split('/');
+          const resource = parts[0] || parts[1]; // Handle both 'exam/create' and '/exam/create'
+          if (resource) {
+            console.log(`[API] Invalidating cache for resource: ${resource}`);
+            apiCache.invalidate(resource);
+          }
+        }
+
         return result;
       } catch (error) {
         console.error(`API Error [${endpoint}]:`, error);
@@ -126,6 +136,13 @@ class ApiClient {
     return this.request(`/sim/profiles/${userId}`, {
       method: 'POST',
       body: JSON.stringify(profileData),
+    });
+  }
+
+  async sendBulkMessage(data) {
+    return this.request('/sim/communications/send-bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 

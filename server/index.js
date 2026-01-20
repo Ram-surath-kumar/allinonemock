@@ -69,6 +69,12 @@ app.use(express.json());
 // Apply Audit Logger
 app.use(auditLogger);
 
+// Debug Logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} | ${req.method} ${req.path}`);
+  next();
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend API is running' });
