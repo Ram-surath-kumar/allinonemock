@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
   { icon: GraduationCap, label: 'Students', href: '/students', permission: 'view_students' },
   { icon: Calendar, label: 'Attendance', href: '/attendance', permission: 'manage_attendance' },
   { icon: BookOpen, label: 'Academic Gov.', href: '/governance/academic', permission: 'view_grades' },
-  { icon: FileText, label: 'MIS Reports', href: '/governance/mis', permission: 'admin' },
+  { icon: FileText, label: 'MIS Reports', href: '/governance/mis', roles: ['admin', 'vice_head'] },
   { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
   { icon: BedDouble, label: 'Hostel', href: '/hostel' },

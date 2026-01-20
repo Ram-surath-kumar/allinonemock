@@ -27,9 +27,31 @@ const App = () => (
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Index />} />
+
+              {/* Main Sidebar Routes */}
+              <Route path="/users" element={<Index />} />
+              <Route path="/students" element={<Index />} />
+              <Route path="/attendance" element={<Index />} />
+              <Route path="/finance" element={<Index />} />
+              <Route path="/facilities" element={<Index />} />
+              <Route path="/hostel" element={<Index />} />
+              <Route path="/library" element={<Index />} />
+              <Route path="/exam" element={<Index />} />
+              <Route path="/tools" element={<Index />} />
+              <Route path="/settings" element={<Index />} />
+
+              {/* Governance & Academics */}
+              <Route path="/academics" element={<Index />} />
+              <Route path="/governance/*" element={<Index />} />
+
+              {/* Student Portal Routes */}
+              <Route path="/student/*" element={<Index />} />
+
+              {/* Dynamic Routes */}
               <Route path="/:orgName/:userId" element={<Index />} />
               <Route path="/:orgName/:userId/:tab" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+              {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

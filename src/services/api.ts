@@ -656,6 +656,27 @@ class ApiClient {
         return this.request('/library/dashboard');
     }
 
+    async getLibraryBooks(filters?: {
+        title?: string;
+        author?: string;
+        isbn?: string;
+        category?: string;
+        status?: string;
+    }): Promise<ApiResponse<any[]>> {
+        const queryParams = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+        }
+        const query = queryParams.toString();
+        return this.request<any[]>(`/library/books${query ? `?${query}` : ''}`);
+    }
+
+    async getLibraryMember(id: string): Promise<ApiResponse<any>> {
+        return this.request<any>(`/library/members/${id}`);
+    }
+
     async getExamDashboard(): Promise<ApiResponse<any>> {
         return this.request('/exam/dashboard');
     }
