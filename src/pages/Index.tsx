@@ -19,6 +19,9 @@ const Students = lazy(() =>
 const Admissions = lazy(() =>
   import('@/pages/Admissions').then(module => ({ default: module.Admissions }))
 );
+const Attendance = lazy(() =>
+  import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
+);
 
 // ... (existing lazy imports remain)
 

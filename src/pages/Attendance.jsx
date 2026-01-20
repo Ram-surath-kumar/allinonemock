@@ -19,6 +19,7 @@ import { fetchDepartments, fetchTeacherDepartments } from '@/services/department
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function Attendance() {
   const { currentUser, hasPermission } = useAuth();
@@ -28,6 +29,7 @@ export function Attendance() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [category, setCategory] = useState('student'); // 'student' or 'staff'
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
   const [attendanceRecords, setAttendanceRecords] = useState(new Map());
   const [hideMarked, setHideMarked] = useState(false);
@@ -43,7 +45,7 @@ export function Attendance() {
       if (currentUser?.role === 'teacher') {
         // Use the passed teacherDeptIds (from async call) or fallback to state
         const deptIdsToUse = teacherDeptIds.length > 0 ? teacherDeptIds : teacherDepartmentIds;
-        
+
         if (deptIdsToUse.length === 0) {
           // Teacher with no departments assigned - show no students
           setStudents([]);
@@ -59,7 +61,7 @@ export function Attendance() {
           // Fetch department names separately
           const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id))];
           const deptMap = new Map();
-          
+
           if (departmentIds.length > 0) {
             const deptResponse = await api.getDepartments({ ids: departmentIds });
             if (!deptResponse.error && deptResponse.data) {
@@ -99,7 +101,7 @@ export function Attendance() {
         // Fetch department names separately
         const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id))];
         const deptMap = new Map();
-        
+
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
@@ -136,32 +138,49 @@ export function Attendance() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Use consolidated API to get all data in one call
       const response = await api.getAttendancePageData(
         currentUser?.id,
         currentUser?.role,
-        format(selectedDate, 'yyyy-MM-dd')
+        format(selectedDate, 'yyyy-MM-dd'),
+        category
       );
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
-      
+
       if (response.data) {
         // Set departments
         const deptData = response.data.departments;
         setDepartments(deptData);
-        
+
+        // Create department map
+        const deptMap = new Map();
+        if (Array.isArray(deptData)) {
+          deptData.forEach(dept => {
+            if (dept.id) deptMap.set(dept.id, dept.name);
+          });
+        }
+
         // Set teacher department IDs
         if (response.data.teacherDepartmentIds) {
           setTeacherDepartmentIds(response.data.teacherDepartmentIds);
         }
-        
-        // Set students
+
+        // Set students with department names mapped
         const studentsData = response.data.students;
-        setStudents(studentsData);
-        
+        if (Array.isArray(studentsData)) {
+          const mappedStudents = studentsData.map(student => ({
+            ...student,
+            department: student.department_id ? (deptMap.get(student.department_id) || null) : null
+          }));
+          setStudents(mappedStudents);
+        } else {
+          setStudents([]);
+        }
+
         // Set attendance records
         if (response.data.attendanceRecords) {
           const recordsMap = new Map();
@@ -177,7 +196,7 @@ export function Attendance() {
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.role, currentUser?.id, selectedDate]);
+  }, [currentUser?.role, currentUser?.id, selectedDate, category]);
 
   const loadAttendanceForDate = useCallback(async () => {
     if (!selectedDate || students.length === 0) return;
@@ -190,9 +209,9 @@ export function Attendance() {
         currentUser?.role,
         dateStr
       );
-      
+
       if (response.error) throw new Error(response.error);
-      
+
       if (response.data?.attendanceRecords) {
         const recordsMap = new Map();
         response.data.attendanceRecords.forEach(record => {
@@ -220,10 +239,10 @@ export function Attendance() {
 
   // Reload students when teacher department IDs change
   useEffect(() => {
-    if (currentUser?.role === 'teacher' && teacherDepartmentIds.length > 0) {
+    if (category === 'student' && currentUser?.role === 'teacher' && teacherDepartmentIds.length > 0) {
       loadStudents(teacherDepartmentIds);
     }
-  }, [teacherDepartmentIds, currentUser?.role, loadStudents]);
+  }, [teacherDepartmentIds, currentUser?.role, loadStudents, category]);
 
   // Listen for attendance updates from AI assistant
   useEffect(() => {
@@ -328,7 +347,7 @@ export function Attendance() {
       // When selected, use clean primary border with subtle background
       return 'border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-lg shadow-sm';
     }
-    
+
     // When not selected, show status with colored left border
     switch (status) {
       case 'present':
@@ -375,7 +394,7 @@ export function Attendance() {
   };
 
   // Get available departments for filter
-  const availableDepartments = currentUser?.role === 'teacher' 
+  const availableDepartments = currentUser?.role === 'teacher'
     ? departments.filter(d => teacherDepartmentIds.includes(d.id))
     : departments;
 
@@ -385,10 +404,16 @@ export function Attendance() {
       <div className="flex flex-col gap-3">
         {/* First row: Search, Filters, Date */}
         <div className="flex flex-col sm:flex-row gap-3">
+          <Tabs value={category} onValueChange={setCategory} className="w-full sm:w-auto">
+            <TabsList>
+              <TabsTrigger value="student">Students</TabsTrigger>
+              <TabsTrigger value="staff">Staff</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search students..."
+              placeholder={`Search ${category === 'staff' ? 'staff' : 'students'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-10"
@@ -432,16 +457,16 @@ export function Attendance() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2.5">
-            <Checkbox
-              id="hide-marked"
-              checked={hideMarked}
-              onCheckedChange={(checked) => setHideMarked(checked)}
+              <Checkbox
+                id="hide-marked"
+                checked={hideMarked}
+                onCheckedChange={(checked) => setHideMarked(checked)}
                 className="h-4 w-4"
-            />
-            <Label htmlFor="hide-marked" className="cursor-pointer text-sm">
+              />
+              <Label htmlFor="hide-marked" className="cursor-pointer text-sm">
                 Hide marked
-            </Label>
-          </div>
+              </Label>
+            </div>
 
             {canManageAttendance && filteredStudents.length > 0 && (
               <div className="flex items-center gap-2.5">
@@ -458,28 +483,28 @@ export function Attendance() {
           </div>
 
           <div className="flex items-center gap-2.5">
-          {canManageAttendance && selectedStudentIds.size > 0 && (
+            {canManageAttendance && selectedStudentIds.size > 0 && (
               <div className="flex gap-2 animate-fade-in-up">
-              <Button
-                onClick={() => markAttendance('present')}
-                size="sm"
+                <Button
+                  onClick={() => markAttendance('present')}
+                  size="sm"
                   className="bg-green-500 hover:bg-green-600 h-9 px-4"
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
                   Mark {selectedStudentIds.size} Present
-              </Button>
-              <Button
-                onClick={() => markAttendance('absent')}
-                size="sm"
-                variant="destructive"
+                </Button>
+                <Button
+                  onClick={() => markAttendance('absent')}
+                  size="sm"
+                  variant="destructive"
                   className="h-9 px-4"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
                   Mark {selectedStudentIds.size} Absent
                 </Button>
               </div>
             )}
-            
+
             {canManageAttendance && filteredStudents.length > 0 && (
               <div className="flex items-center gap-1 border border-border rounded-lg p-1">
                 <Button
@@ -497,9 +522,9 @@ export function Attendance() {
                   className="h-8 w-8 p-0"
                 >
                   <List className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -542,119 +567,119 @@ export function Attendance() {
         <div className="space-y-4">
           {filteredStudents.length === 0 ? (
             <div className="text-center py-8 rounded-xl border border-border bg-card">
-              <p className="text-muted-foreground">No students found</p>
+              <p className="text-muted-foreground">No {category === 'staff' ? 'staff members' : 'students'} found</p>
             </div>
           ) : (
             <>
               {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredStudents.map((student, index) => {
-                  const attendance = getAttendanceStatus(student.id);
-                  const isSelected = selectedStudentIds.has(student.id);
-                  
-                  return (
-                    <div
-                      key={student.id}
-                      className={`relative rounded-xl p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${
-                        isSelected 
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredStudents.map((student, index) => {
+                    const attendance = getAttendanceStatus(student.id);
+                    const isSelected = selectedStudentIds.has(student.id);
+
+                    return (
+                      <div
+                        key={student.id}
+                        className={`relative rounded-xl p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${isSelected
                           ? getStatusStyles(attendance?.status || '', true)
-                          : attendance 
+                          : attendance
                             ? getStatusStyles(attendance.status, false) + ' hover:shadow-md hover:scale-[1.02]'
                             : 'border border-border bg-card hover:border-primary/50 hover:shadow-md hover:scale-[1.02]'
-                      }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
-                    >
-                      {canManageAttendance && (
-                        <div className="absolute top-3 right-3 z-10">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleStudentSelection(student.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-background"
-                          />
+                          }`}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
+                      >
+                        {canManageAttendance && (
+                          <div className="absolute top-3 right-3 z-10">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleStudentSelection(student.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-background"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary shrink-0">
+                              {student.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <p className="font-medium text-foreground truncate flex-1">
+                              {student.name}
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {(student.role === 'student' || student.role === 'teacher')
+                              ? (student.department || 'No department')
+                              : (student.role ? student.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Staff')}
+                          </p>
+                          {attendance && (
+                            <p className={`text-sm font-semibold ${attendance.status === 'present' ? 'text-green-600 dark:text-green-400' :
+                              attendance.status === 'absent' ? 'text-red-600 dark:text-red-400' :
+                                attendance.status === 'late' ? 'text-yellow-600 dark:text-yellow-400' :
+                                  'text-blue-600 dark:text-blue-400'
+                              }`}>
+                              {getStatusText(attendance.status)}
+                            </p>
+                          )}
                         </div>
-                      )}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredStudents.map((student, index) => {
+                    const attendance = getAttendanceStatus(student.id);
+                    const isSelected = selectedStudentIds.has(student.id);
+
+                    return (
+                      <div
+                        key={student.id}
+                        className={`relative p-4 rounded-xl transition-all duration-200 cursor-pointer animate-fade-in-up ${isSelected
+                          ? getStatusStyles(attendance?.status || '', true)
+                          : attendance
+                            ? getStatusStyles(attendance.status, false) + ' hover:shadow-md'
+                            : 'border border-border bg-card hover:border-primary/50 hover:shadow-md'
+                          }`}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
+                      >
+                        <div className="flex items-center gap-4">
+                          {canManageAttendance && (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleStudentSelection(student.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary shrink-0">
                             {student.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                          <p className="font-medium text-foreground truncate flex-1">
-                            {student.name}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground truncate">
+                              {student.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {(student.role === 'student' || student.role === 'teacher')
+                                ? (student.department || 'No department')
+                                : (student.role ? student.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Staff')}
+                            </p>
+                          </div>
+                          {attendance && (
+                            <p className={`text-sm font-semibold shrink-0 ${attendance.status === 'present' ? 'text-green-600 dark:text-green-400' :
+                              attendance.status === 'absent' ? 'text-red-600 dark:text-red-400' :
+                                attendance.status === 'late' ? 'text-yellow-600 dark:text-yellow-400' :
+                                  'text-blue-600 dark:text-blue-400'
+                              }`}>
+                              {getStatusText(attendance.status)}
+                            </p>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {student.department || 'No department'}
-                        </p>
-                        {attendance && (
-                          <p className={`text-sm font-semibold ${
-                            attendance.status === 'present' ? 'text-green-600 dark:text-green-400' :
-                            attendance.status === 'absent' ? 'text-red-600 dark:text-red-400' :
-                            attendance.status === 'late' ? 'text-yellow-600 dark:text-yellow-400' :
-                            'text-blue-600 dark:text-blue-400'
-                          }`}>
-                            {getStatusText(attendance.status)}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-              ) : (
-              <div className="space-y-3">
-                {filteredStudents.map((student, index) => {
-                  const attendance = getAttendanceStatus(student.id);
-                  const isSelected = selectedStudentIds.has(student.id);
-                  
-                  return (
-                    <div
-                      key={student.id}
-                      className={`relative p-4 rounded-xl transition-all duration-200 cursor-pointer animate-fade-in-up ${
-                        isSelected 
-                          ? getStatusStyles(attendance?.status || '', true)
-                          : attendance 
-                            ? getStatusStyles(attendance.status, false) + ' hover:shadow-md'
-                            : 'border border-border bg-card hover:border-primary/50 hover:shadow-md'
-                      }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
-                    >
-                      <div className="flex items-center gap-4">
-                        {canManageAttendance && (
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleStudentSelection(student.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        )}
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary shrink-0">
-                          {student.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground truncate">
-                            {student.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {student.department || 'No department'}
-                          </p>
-                        </div>
-                        {attendance && (
-                          <p className={`text-sm font-semibold shrink-0 ${
-                            attendance.status === 'present' ? 'text-green-600 dark:text-green-400' :
-                            attendance.status === 'absent' ? 'text-red-600 dark:text-red-400' :
-                            attendance.status === 'late' ? 'text-yellow-600 dark:text-yellow-400' :
-                            'text-blue-600 dark:text-blue-400'
-                          }`}>
-                            {getStatusText(attendance.status)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
               )}
             </>
           )}

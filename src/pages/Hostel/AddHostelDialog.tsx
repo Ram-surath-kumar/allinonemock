@@ -32,7 +32,10 @@ export function AddHostelDialog({ open, onOpenChange, onSuccess }: AddHostelDial
         capacity: '',
         gender: 'Male',
         address: '',
-        contact_info: ''
+        gender: 'Male',
+        address: '',
+        contact_info: '',
+        description: ''
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +66,8 @@ export function AddHostelDialog({ open, onOpenChange, onSuccess }: AddHostelDial
                 capacity: '',
                 gender: 'Male',
                 address: '',
-                contact_info: ''
+                contact_info: '',
+                description: ''
             });
         } catch (error: any) {
             toast.error(error.message || 'Failed to create hostel');
@@ -139,6 +143,16 @@ export function AddHostelDialog({ open, onOpenChange, onSuccess }: AddHostelDial
                             placeholder="Warden/Office number"
                             value={formData.contact_info}
                             onChange={(e) => setFormData({ ...formData, contact_info: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                            id="description"
+                            placeholder="Additional details..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         />
                     </div>
 

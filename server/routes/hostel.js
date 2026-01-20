@@ -84,7 +84,7 @@ router.get('/', async (req, res) => {
 // Create a new hostel
 router.post('/', async (req, res) => {
   try {
-    const { name, address, capacity, description } = req.body;
+    const { name, address, capacity, description, type, gender, contact_info, facilities } = req.body;
 
     if (!name) {
       return sendValidationError(res, 'name is required');
@@ -96,7 +96,11 @@ router.post('/', async (req, res) => {
         name,
         address: address || null,
         capacity: capacity || null,
-        description: description || null
+        description: description || null,
+        type: type || null,
+        gender: gender || null,
+        contact_info: contact_info || null,
+        facilities: facilities || {}
       })
       .select()
       .single();

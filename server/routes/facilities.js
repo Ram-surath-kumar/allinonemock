@@ -13,6 +13,38 @@ const handleError = (res, error, message = 'An error occurred') => {
     res.status(500).json({ error: message, details: error.message });
 };
 
+// GET / - List all facilities (rooms flattened)
+router.get('/', async (req, res) => {
+    try {
+        const { data: rooms, error: roomError } = await supabase
+            .from('facilities_rooms')
+            .select('id, room_name, room_number, building_id')
+            .order('room_name');
+
+        if (roomError) throw roomError;
+
+        const { data: buildings, error: bldError } = await supabase
+            .from('facilities_buildings')
+            .select('id, name');
+
+        if (bldError) throw bldError;
+
+        // Map building names
+        const buildingMap = new Map((buildings || []).map(b => [b.id, b.name]));
+
+        const facilities = rooms.map(room => ({
+            id: room.id,
+            name: room.room_name || `Room ${room.room_number}`,
+            building: buildingMap.get(room.building_id) || 'Unknown Building',
+            fullName: `${room.room_name || `Room ${room.room_number}`} (${buildingMap.get(room.building_id) || 'Unknown Building'})`
+        }));
+
+        res.json({ data: facilities });
+    } catch (error) {
+        handleError(res, error, 'Failed to fetch all facilities');
+    }
+});
+
 // GET /hierarchy
 // Returns a tree: Buildings -> Floors -> Rooms
 router.get('/hierarchy', async (req, res) => {

@@ -51,6 +51,7 @@ import { api } from '@/services/api';
 import { Check, ChevronsUpDown, Calendar, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
     title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -62,6 +63,7 @@ const formSchema = z.object({
     recipient_roles: z.array(z.string()).refine((value) => value.length > 0, {
         message: "You must select at least one recipient role.",
     }),
+    facility_id: z.string().optional(),
 });
 
 const rolesList = [
@@ -74,7 +76,9 @@ const rolesList = [
 ];
 
 export function ScheduleEventDialog({ open, onOpenChange }) {
+    const { currentUser } = useAuth();
     const [departments, setDepartments] = useState([]);
+    const [facilities, setFacilities] = useState([]);
     const [events, setEvents] = useState([]);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
     const [roleOpen, setRoleOpen] = useState(false);
@@ -89,6 +93,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
             location: '',
             description: '',
             recipient_roles: [],
+            facility_id: '',
         },
     });
 
@@ -99,6 +104,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
     useEffect(() => {
         if (open) {
             loadDepartments();
+            loadFacilities();
             loadEvents();
             form.reset({
                 title: '',
@@ -108,6 +114,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                 location: '',
                 description: '',
                 recipient_roles: [],
+                facility_id: '',
             });
         }
     }, [open, form]);
@@ -123,6 +130,16 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
             toast.error('Failed to load departments');
         } finally {
             setLoadingDepartments(false);
+        }
+    };
+
+    const loadFacilities = async () => {
+        try {
+            const { data, error } = await api.getFacilities();
+            if (error) throw new Error(error);
+            setFacilities(data || []);
+        } catch (error) {
+            console.error('Error loading facilities:', error);
         }
     };
 
@@ -146,10 +163,11 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                 toast.warning('Note: You are scheduling an event in the past');
             }
 
-            // Cleanup department_id if hidden
             const finalValues = {
                 ...values,
                 department_id: showDepartment ? values.department_id : null,
+                userId: currentUser?.id,
+                facility_id: values.facility_id
             };
 
             const { error } = await api.createEvent(finalValues);
@@ -189,6 +207,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                     <div>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                <input type="hidden" {...form.register('facility_id')} />
                                 <FormField
                                     control={form.control}
                                     name="title"
@@ -225,9 +244,9 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                                                         </Button>
                                                     </FormControl>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-[300px] p-0">
-                                                    <Command>
-                                                        <CommandInput placeholder="Search role..." />
+                                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                                    <Command className="w-full">
+                                                        <CommandInput placeholder="Search roles..." />
                                                         <CommandList>
                                                             <CommandEmpty>No role found.</CommandEmpty>
                                                             <CommandGroup>
@@ -339,15 +358,59 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                                 <FormField
                                     control={form.control}
                                     name="location"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Location *</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="e.g. Main Auditorium" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
+                                    render={({ field }) => {
+                                        // Determine select value based on current field value
+                                        const isCustom = field.value && !facilities.some(f => f.fullName === field.value);
+                                        const selectValue = isCustom ? 'custom' : (field.value || undefined);
+
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>Location *</FormLabel>
+                                                <Select
+                                                    value={selectValue}
+                                                    onValueChange={(val) => {
+                                                        if (val === 'custom') {
+                                                            field.onChange(''); // Clear for typing
+                                                            form.setValue('facility_id', null);
+                                                        } else {
+                                                            field.onChange(val);
+                                                            const facility = facilities.find(f => f.fullName === val);
+                                                            if (facility) {
+                                                                form.setValue('facility_id', facility.id);
+                                                            } else {
+                                                                form.setValue('facility_id', null);
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select Location" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {facilities.map((fac) => (
+                                                            <SelectItem key={fac.id} value={fac.fullName}>
+                                                                {fac.fullName}
+                                                            </SelectItem>
+                                                        ))}
+                                                        <SelectItem value="custom">Other (Enter manually)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+
+                                                {selectValue === 'custom' && (
+                                                    <div className="mt-2 animate-fade-in-up">
+                                                        <Input
+                                                            placeholder="Enter custom location..."
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }}
                                 />
 
                                 <FormField

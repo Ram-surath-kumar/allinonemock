@@ -230,6 +230,10 @@ class ApiClient {
     });
   }
 
+  async getFacilities() {
+    return this.request('/facilities', {}, false);
+  }
+
   // Teacher Departments
   async getTeacherDepartments(teacherId) {
     return this.request(`/teacher-departments/${teacherId}`);
@@ -359,12 +363,14 @@ class ApiClient {
   async getAttendancePageData(
     userId,
     role,
-    date
+    date,
+    category = 'student'
   ) {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
     if (role) params.append('role', role);
     if (date) params.append('date', date);
+    if (category) params.append('category', category);
     const query = params.toString();
     return this.request(`/attendance/page-data${query ? `?${query}` : ''}`);
   }
