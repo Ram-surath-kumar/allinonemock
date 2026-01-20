@@ -16,9 +16,13 @@ const UserManagement = lazy(() =>
 const Students = lazy(() =>
   import('@/pages/Students').then(module => ({ default: module.Students }))
 );
-const Attendance = lazy(() =>
-  import('@/pages/Attendance').then(module => ({ default: module.Attendance }))
+const Admissions = lazy(() =>
+  import('@/pages/Admissions').then(module => ({ default: module.Admissions }))
 );
+
+// ... (existing lazy imports remain)
+
+
 const PersonalDetails = lazy(() =>
   import('@/pages/student/PersonalDetails').then(module => ({ default: module.PersonalDetails }))
 );
@@ -51,6 +55,9 @@ const ExamDashboard = lazy(() =>
 );
 const LibraryDashboard = lazy(() =>
   import('@/pages/Library/LibraryDashboard').then(module => ({ default: module.default }))
+);
+const Facilities = lazy(() =>
+  import('@/pages/Facilities').then(module => ({ default: module.default }))
 );
 
 // Import AcademicGovernance
@@ -96,7 +103,7 @@ function AppContent() {
     'users': '/users',
     'students': '/students',
     'attendance': '/attendance',
-    'academics': '/academics',
+    'admissions': '/admissions',
     'finance': '/finance',
     'hostel': '/hostel',
     'exam': '/exam',
@@ -118,7 +125,7 @@ function AppContent() {
     '/users': 'users',
     '/students': 'students',
     '/attendance': 'attendance',
-    '/academics': 'academics',
+    '/admissions': 'admissions',
     '/finance': 'finance',
     '/hostel': 'hostel',
     '/exam': 'exam',
@@ -263,8 +270,8 @@ function AppContent() {
         return 'Students';
       case '/attendance':
         return 'Attendance';
-      case '/academics':
-        return 'Academics';
+      case '/admissions':
+        return 'Admissions';
       case '/finance':
         return 'Finance';
       case '/hostel':
@@ -407,17 +414,17 @@ function AppContent() {
             <LibraryDashboard />
           </Suspense>
         );
-      case '/academics':
+      case '/admissions':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Admissions />
+          </Suspense>
+        );
       case '/facilities':
         return (
-          <div className="flex items-center justify-center h-64 rounded-2xl border border-border bg-card animate-fade-in shadow-depth-1" role="region" aria-label={getPageTitle()}>
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-foreground">{getPageTitle()}</h2>
-              <p className="mt-2 text-muted-foreground">
-                This section is coming soon. Currently viewing as {currentUser && ROLE_LABELS[currentUser.role]}.
-              </p>
-            </div>
-          </div>
+          <Suspense fallback={<PageLoader />}>
+            <Facilities />
+          </Suspense>
         );
       case '/settings':
         return (

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { StudentAcademics } from './Profile/StudentAcademics';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export function StudentProfileView({ student, onBack }) {
@@ -179,18 +180,8 @@ export function StudentProfileView({ student, onBack }) {
                     </Card>
                 </TabsContent>
 
-                {/* 2. ACADEMIC */}
-                <TabsContent value="academic" className="mt-6 space-y-6">
-                    <Card>
-                        {renderSectionHeader(<GraduationCap className="h-5 w-5" />, "Academic Record")}
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {renderInput("Student ID (Auto-Generated)", "student_id_no")}
-                            {renderInput("College Email (Auto-Generated)", "college_email")}
-                            {renderInput("Section", "section")}
-                            {renderInput("Enrollment Date", "enrollment_date", "date")}
-                        </CardContent>
-                    </Card>
-                    <AcademicTab userId={student.id} />
+                <TabsContent value="academic" className="mt-4 space-y-4">
+                    <StudentAcademics userId={student.id} />
                 </TabsContent>
 
                 {/* 3. CONTACT & ADDRESS */}
@@ -276,7 +267,7 @@ export function StudentProfileView({ student, onBack }) {
                 </TabsContent>
 
             </Tabs>
-        </div>
+        </div >
     );
 }
 

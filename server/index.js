@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Import route modules
+// Import route modules
 import usersRouter from './routes/users.js';
 import organizationsRouter from './routes/organizations.js';
 import departmentsRouter from './routes/departments.js';
@@ -18,18 +19,24 @@ import examRouter from './routes/exam.js';
 import academicRouter from './routes/academic.js';
 import misRouter from './routes/mis.js';
 import financeRouter from './routes/finance.js';
+import facilitiesRouter from './routes/facilities.js';
 
 import profilesRouter from './routes/SIM/profiles.js';
 import admissionsRouter from './routes/SIM/admissions.js';
 import simAcademicRouter from './routes/SIM/academic.js';
 import communicationsRouter from './routes/SIM/communications.js';
+import simExamsRouter from './routes/SIM/exams.js';
+import meritRouter from './routes/SIM/merit.js';
+import registrationRouter from './routes/SIM/registration.js';
+import graduationRouter from './routes/SIM/graduation.js';
+import leavesRouter from './routes/SIM/leaves.js';
+import courseAttendanceRouter from './routes/SIM/course_attendance.js';
 import schedulesRouter from './routes/schedules.js';
 import tasksRouter from './routes/tasks.js';
 import eventsRouter from './routes/events.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
-
 
 dotenv.config();
 
@@ -99,19 +106,28 @@ app.use('/api/library', libraryRouter);
 app.use('/api/hostel', hostelRouter);
 app.use('/api/exam', examRouter);
 
+// Generic Routes
 app.use('/api/academic', academicRouter);
 app.use('/api/mis', misRouter);
 app.use('/api/finance', financeRouter);
+app.use('/api/facilities', facilitiesRouter);
 
+// SIM Routes
 app.use('/api/sim/profiles', profilesRouter);
 app.use('/api/sim/admissions', admissionsRouter);
-app.use('/api/sim/academic', simAcademicRouter);
 app.use('/api/sim/communications', communicationsRouter);
+app.use('/api/sim/exams', simExamsRouter);
+app.use('/api/sim/merit', meritRouter);
+app.use('/api/sim/registration', registrationRouter);
+app.use('/api/sim/academic', academicRouter);
+app.use('/api/sim/graduation', graduationRouter);
+app.use('/api/sim/leaves', leavesRouter);
+app.use('/api/sim/attendance', courseAttendanceRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/events', eventsRouter);
 
-// TODO: Register these routes once created
+// Future Routes
 // app.use('/api/growth', growthRouter);
 
 
