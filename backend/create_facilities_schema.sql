@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS facilities_rooms (
     maintenance JSONB DEFAULT '{}'::jsonb,
     -- { "cleanliness_score": 8, "last_cleaned": "2024-01-01", "last_serviced": "2024-01-01", "pending_repairs": [], "next_schedule": "2024-02-01" }
 
+    equipment JSONB DEFAULT '{}'::jsonb,
+    -- { "furniture": { "chairs_count": 50 }, "technology": { "has_projector": true } }
+
+    allocation JSONB DEFAULT '{}'::jsonb,
+    -- { "dept_assigned": "CSE", "faculty": "Dr. Smith" }
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -132,3 +138,19 @@ BEGIN
     END IF;
 
 END $$;
+
+-- 5. Documents Table
+CREATE TABLE IF NOT EXISTS facilities_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_id UUID REFERENCES facilities_rooms(id) ON DELETE CASCADE,
+    doc_type TEXT CHECK (doc_type IN ('Layout', 'Photo', 'Certificate', 'Report', 'Other')),
+    name TEXT NOT NULL,
+    url TEXT NOT NULL, -- In a real app, this points to Storage bucket
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_docs_room ON facilities_documents(room_id);
+ALTER TABLE facilities_documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow read access for authenticated users" ON facilities_documents FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow write access for authenticated users" ON facilities_documents FOR ALL TO authenticated USING (true);
+

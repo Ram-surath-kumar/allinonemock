@@ -15,11 +15,19 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SpecializedEquipmentManager } from '@/components/facilities/SpecializedEquipmentManager';
+import { RoomBookingManager } from '@/components/facilities/RoomBookingManager';
+import { DocumentManager } from '@/components/facilities/DocumentManager';
 
-export default function RoomForm({ roomId, onSaved }) {
+export default function RoomForm({ roomId, onSaved, onAddRoom }) {
     const [loading, setLoading] = useState(false);
+    const [savedRoom, setSavedRoom] = useState(null); // RAW data from backend to preserve hidden fields
     const [equipmentList, setEquipmentList] = useState([]); // For specialized items array
+
     const [activeTab, setActiveTab] = useState("identification");
+    const [isViewMode, setIsViewMode] = useState(false); // Toggle between Edit Form and View Details
+    const [isBookingOpen, setIsBookingOpen] = useState(false);
 
     const { register, handleSubmit, reset, setValue, watch, control } = useForm({
         defaultValues: {
@@ -99,6 +107,7 @@ export default function RoomForm({ roomId, onSaved }) {
     useEffect(() => {
         if (roomId) {
             fetchRoomDetails();
+            setIsViewMode(false); // Reset to edit mode when switching rooms
         } else {
             // Reset to defaults
             reset({
@@ -110,17 +119,21 @@ export default function RoomForm({ roomId, onSaved }) {
                 allocation: {}
             });
             setEquipmentList([]);
+            setSavedRoom(null);
+            setIsViewMode(false);
         }
     }, [roomId]);
 
     const fetchRoomDetails = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/facilities/rooms/${roomId}`);
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${baseUrl}/facilities/rooms/${roomId}`);
             const result = await response.json();
 
             if (result.data) {
                 const room = result.data;
+                setSavedRoom(room); // Persist full object
                 // Defensively merge with defaults to avoid uncontrolled input errors
                 reset({
                     ...room,
@@ -130,7 +143,7 @@ export default function RoomForm({ roomId, onSaved }) {
                     maintenance: room.maintenance || { cleanliness_score: 5 },
                     allocation: room.allocation || {}
                 });
-                setEquipmentList(room.equipment || []); // Uses distinct table if implemented, or fallback
+                setEquipmentList(room.equipment_list || []); // Uses distinct table if implemented, or fallback
             }
         } catch (error) {
             console.error(error);
@@ -150,12 +163,35 @@ export default function RoomForm({ roomId, onSaved }) {
                 // though JS usually handles JSON flexibility well.
                 capacity: Number(data.capacity) || 0,
                 floor_number: Number(data.floor_number) || 0,
-                // Save the categorized equipment state into the JSONB 'equipment_json' column (proposed)
-                // or 'physical_specs' if we reuse that. We will use a generic approach here.
-                // Assuming backend expects these keys in the body to merge into JSONB columns.
+                // Sanitize Enums: Empty string violates CHECK constraint, so send NULL key used by Supabase/Postgres
+                room_type: data.room_type || null,
+                status: data.status || 'Active',
+
+                // Save the categorized equipment state into the JSONB 'equipment' column
+                // but we must remove API-only fields that aren't columns.
+                equipment_json: undefined,
+                equipment_list: undefined,
+                // Critical: Ensure ID is present for UPSERT to work as UPDATE.
+                // If roomId is passed, use it.
+                id: roomId,
+                // Ensure building_id is preserved from original fetch or form
+                building_id: savedRoom?.building_id || data.building_id,
             };
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/facilities/rooms`, {
+            // Clean up undefined/nulls if needed, or just delete them
+            delete payload.equipment_json;
+            delete payload.equipment_list;
+            // Remove the building object if it exists (from the backend join)
+            // as it is not a column in the rooms table and causes upsert failure
+            delete payload.building;
+
+            // Verify connection URL
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const url = `${baseUrl}/facilities/rooms`;
+
+            console.log("Saving to:", url);
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -164,17 +200,210 @@ export default function RoomForm({ roomId, onSaved }) {
 
             if (result.data) {
                 toast.success("Room saved successfully");
+                setSavedRoom(result.data); // Update local state with latest verified data
+                setIsViewMode(true); // Switch to View Mode
                 if (onSaved) onSaved(result.data);
             } else {
-                toast.error("Failed to save room");
+                console.error("Save error:", result);
+                const msg = result.error?.message || result.error || "Failed to save room";
+                toast.error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
             }
         } catch (error) {
-            console.error(error);
-            toast.error("An error occurred");
+            console.error("Room Save Exception:", error);
+            toast.error(`Error: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
+
+
+
+    if (isViewMode && savedRoom) {
+        return (
+            <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-300">
+                <div className="flex justify-between items-center shrink-0">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight text-green-700">
+                            Room {savedRoom.room_number || 'Details'} Saved
+                        </h2>
+                        <p className="text-muted-foreground">Successfully updated room configuration.</p>
+                    </div>
+                    <Button onClick={() => setIsViewMode(false)} variant="outline">
+                        <Loader2 className="mr-2 h-4 w-4 opacity-0" /> {/* Spacer */}
+                        Edit Room Again
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Room Overview</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-muted-foreground block">Room Name</span>
+                                    <span className="font-medium">{savedRoom.room_name || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Room Number</span>
+                                    <span className="font-medium">{savedRoom.room_number}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Building</span>
+                                    <span className="font-medium">{savedRoom.building?.code || 'MAB'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Floor</span>
+                                    <span className="font-medium">{savedRoom.floor_number}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Type</span>
+                                    <span className="font-medium">{savedRoom.room_type || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Status</span>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${savedRoom.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {savedRoom.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div className="space-y-6">
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Capabilities & Features</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm max-h-[400px] overflow-y-auto pr-2">
+                                {/* Physical Specs */}
+                                <div>
+                                    <h4 className="font-semibold mb-2 text-muted-foreground uppercase text-xs">Physical Specs</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex justify-between border-b pb-1">
+                                            <span className="text-muted-foreground">Capacity</span>
+                                            <span className="font-medium">{savedRoom.capacity} Students</span>
+                                        </div>
+                                        {Object.entries(savedRoom.physical_specs || {}).map(([key, val]) => val && (
+                                            <div key={key} className="flex justify-between border-b pb-1">
+                                                <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                                                <span className="font-medium">{val}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Equipment: Furniture */}
+                                {savedRoom.equipment?.furniture && Object.values(savedRoom.equipment.furniture).some(v => v) && (
+                                    <div>
+                                        <h4 className="font-semibold mb-2 text-muted-foreground uppercase text-xs mt-4">Furniture</h4>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {Object.entries(savedRoom.equipment.furniture).map(([key, val]) => val && (
+                                                <div key={key} className="flex justify-between border-b pb-1">
+                                                    <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ').replace('count', '')}</span>
+                                                    <span className="font-medium">{val}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Equipment: Technology */}
+                                {savedRoom.equipment?.technology && (
+                                    <div>
+                                        <h4 className="font-semibold mb-2 text-muted-foreground uppercase text-xs mt-4">Technology</h4>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {Object.entries(savedRoom.equipment.technology).map(([key, val]) => {
+                                                if (!val) return null;
+                                                if (typeof val === 'boolean') {
+                                                    return <div key={key} className="col-span-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> <span className="capitalize">{key.replace('has_', '').replace(/_/g, ' ')}</span></div>;
+                                                }
+                                                return (
+                                                    <div key={key} className="flex justify-between border-b pb-1">
+                                                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ').replace('count', '')}</span>
+                                                        <span className="font-medium">{val}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Equipment: Utilities */}
+                                {savedRoom.equipment?.utilities && (
+                                    <div>
+                                        <h4 className="font-semibold mb-2 text-muted-foreground uppercase text-xs mt-4">Utilities</h4>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {Object.entries(savedRoom.equipment.utilities).map(([key, val]) => {
+                                                if (!val) return null;
+                                                if (typeof val === 'boolean') {
+                                                    return <div key={key} className="col-span-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> <span className="capitalize">{key.replace('has_', '').replace(/_/g, ' ')}</span></div>;
+                                                }
+                                                return (
+                                                    <div key={key} className="flex justify-between border-b pb-1">
+                                                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ').replace('count', '')}</span>
+                                                        <span className="font-medium">{val}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Accessibility */}
+                                {savedRoom.accessibility && Object.values(savedRoom.accessibility).some(v => v) && (
+                                    <div>
+                                        <h4 className="font-semibold mb-2 text-muted-foreground uppercase text-xs mt-4">Accessibility</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(savedRoom.accessibility).map(([key, val]) => {
+                                                if (!val) return null;
+                                                if (typeof val === 'boolean') {
+                                                    return <span key={key} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs border border-blue-100 capitalize">{key.replace(/_/g, ' ')}</span>;
+                                                }
+                                                return null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Placeholder for User Requested Options */}
+                        <Card className="border-blue-200 bg-blue-50/50">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg text-blue-800">Next Actions</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-col gap-2">
+                                    <Button variant="secondary" className="justify-start bg-white hover:bg-blue-100" onClick={onAddRoom}>
+                                        <Plus className="mr-2 h-4 w-4" /> Add Another Room
+                                    </Button>
+
+                                    <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="secondary" className="justify-start bg-white hover:bg-blue-100">
+                                                <Plus className="mr-2 h-4 w-4" /> Book this Room
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-3xl">
+                                            <DialogHeader>
+                                                <DialogTitle>Manage Bookings for {savedRoom.room_number}</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="py-2">
+                                                <RoomBookingManager roomId={roomId} />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                    {/* Additional options to be defined by user */}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 h-full flex flex-col">
@@ -261,12 +490,12 @@ export default function RoomForm({ roomId, onSaved }) {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+                            </CardContent >
+                        </Card >
+                    </TabsContent >
 
                     {/* 2. Physical Specifications */}
-                    <TabsContent value="physical" className="mt-0">
+                    < TabsContent value="physical" className="mt-0" >
                         <Card>
                             <CardHeader>
                                 <CardTitle>Physical Specifications</CardTitle>
@@ -328,13 +557,13 @@ export default function RoomForm({ roomId, onSaved }) {
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent >
 
                     {/* 3. Equipment & Furnishings */}
-                    <TabsContent value="equipment" className="mt-0 space-y-4">
+                    < TabsContent value="equipment" className="mt-0 space-y-4" >
 
                         {/* 3a. Furniture */}
-                        <Card>
+                        < Card >
                             <CardHeader className="pb-3 bg-muted/20">
                                 <CardTitle className="text-base font-semibold">1. Furniture</CardTitle>
                             </CardHeader>
@@ -364,10 +593,10 @@ export default function RoomForm({ roomId, onSaved }) {
                                     <Input type="number" {...register('equipment.furniture.noticeboards_count')} />
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card >
 
                         {/* 3b. Technology Equipment */}
-                        <Card>
+                        < Card >
                             <CardHeader className="pb-3 bg-muted/20">
                                 <CardTitle className="text-base font-semibold">2. Technology Equipment</CardTitle>
                             </CardHeader>
@@ -441,10 +670,10 @@ export default function RoomForm({ roomId, onSaved }) {
                                     </div>
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card >
 
                         {/* 3c. Utilities */}
-                        <Card>
+                        < Card >
                             <CardHeader className="pb-3 bg-muted/20">
                                 <CardTitle className="text-base font-semibold">3. Utilities in Room</CardTitle>
                             </CardHeader>
@@ -487,24 +716,25 @@ export default function RoomForm({ roomId, onSaved }) {
                                     <label htmlFor="water" className="text-sm font-medium cursor-pointer">Water Supply Available</label>
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card >
 
                         {/* 3d. Specialized */}
-                        <Card>
-                            <CardHeader className="pb-3 bg-muted/20 flex flex-row items-center justify-between">
+                        < Card >
+                            <CardHeader className="pb-3 bg-muted/20">
                                 <CardTitle className="text-base font-semibold">4. Specialized Equipment</CardTitle>
-                                <Button size="sm" variant="ghost" onClick={() => toast.info('Coming soon')}><Plus className="h-4 w-4 mr-2" />Add Item</Button>
                             </CardHeader>
                             <CardContent className="pt-4">
-                                <div className="text-sm text-center text-muted-foreground border border-dashed py-4 rounded">
-                                    Usage: Log specific items like Microscopes, Spectrometers, etc.
-                                </div>
+                                <SpecializedEquipmentManager
+                                    roomId={roomId}
+                                    equipmentList={equipmentList}
+                                    onUpdate={fetchRoomDetails}
+                                />
                             </CardContent>
-                        </Card>
-                    </TabsContent>
+                        </Card >
+                    </TabsContent >
 
                     {/* 4. Accessibility Features */}
-                    <TabsContent value="accessibility" className="mt-0">
+                    < TabsContent value="accessibility" className="mt-0" >
                         <Card>
                             <CardHeader>
                                 <CardTitle>Accessibility Features (PWD - NAAC)</CardTitle>
@@ -595,10 +825,10 @@ export default function RoomForm({ roomId, onSaved }) {
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent >
 
                     {/* 5. Maintenance Status */}
-                    <TabsContent value="maintenance" className="mt-0">
+                    < TabsContent value="maintenance" className="mt-0" >
                         <Card>
                             <CardHeader>
                                 <CardTitle>Maintenance Status</CardTitle>
@@ -642,10 +872,10 @@ export default function RoomForm({ roomId, onSaved }) {
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent >
 
                     {/* 6. Booking & Allocation */}
-                    <TabsContent value="booking" className="mt-0">
+                    < TabsContent value="booking" className="mt-0" >
                         <div className="space-y-4">
                             {/* Regular Allocation */}
                             <Card>
@@ -697,50 +927,25 @@ export default function RoomForm({ roomId, onSaved }) {
                                 </CardContent>
                             </Card>
 
-                            {/* Bookings for Special Events */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Bookings for Special Events</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-center p-4 border rounded border-dashed text-muted-foreground">
-                                        Calendar Integration Coming Soon
-                                    </div>
-                                </CardContent>
-                            </Card>
+
                         </div>
-                    </TabsContent>
+                    </TabsContent >
 
                     {/* 7. Documentation */}
-                    <TabsContent value="documentation" className="mt-0">
+                    < TabsContent value="documentation" className="mt-0" >
                         <Card>
                             <CardHeader>
                                 <CardTitle>Documentation</CardTitle>
                                 <CardDescription>Blueprints, photos, and records.</CardDescription>
                             </CardHeader>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Button variant="outline" className="h-20 flex flex-col gap-1 border-dashed">
-                                    <Plus className="h-4 w-4" />
-                                    <span>Upload Room Layout/Blueprint</span>
-                                </Button>
-                                <Button variant="outline" className="h-20 flex flex-col gap-1 border-dashed">
-                                    <Plus className="h-4 w-4" />
-                                    <span>Upload Equipment Photos</span>
-                                </Button>
-                                <Button variant="outline" className="h-20 flex flex-col gap-1 border-dashed">
-                                    <Plus className="h-4 w-4" />
-                                    <span>Upload Condition Photos</span>
-                                </Button>
-                                <Button variant="outline" className="h-20 flex flex-col gap-1 border-dashed">
-                                    <Plus className="h-4 w-4" />
-                                    <span>Upload Safety Certificate</span>
-                                </Button>
+                            <CardContent>
+                                <DocumentManager roomId={roomId} />
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent >
 
-                </div>
-            </Tabs>
+                </div >
+            </Tabs >
         </form>
     );
 }
