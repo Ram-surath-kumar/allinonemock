@@ -253,8 +253,22 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
 
 // Send welcome email
 router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async (req, res) => {
+  const fs = await import('fs');
+  const path = await import('path');
+  const logFile = path.join(process.cwd(), 'server', 'server_debug.log');
+
+  const log = (msg) => {
+    const timestamp = new Date().toISOString();
+    const logMsg = `[${timestamp}] ${msg}\n`;
+    console.log(msg); // Keep console log
+    fs.appendFileSync(logFile, logMsg); // Append to file
+  };
+
+  log('---- [DEBUG] /send-welcome-email called ----');
+
   try {
     const { college_email, loop_email, loopid, user_name, user_id } = req.body;
+    log(`[DEBUG] Request body: ${JSON.stringify({ college_email, loop_email, loopid, user_name, user_id })}`);
 
     if (!college_email) {
       return sendValidationError(res, 'College email is required');
@@ -266,7 +280,13 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
 
     const { sendWelcomeEmail, generatePassword } = await import('../services/email.js');
     const password = generatePassword();
-    const { createClient } = await import('@supabase/supabase-js');
+    log(`[DEBUG] Generated password: ${password}`);
+
+    // Verify Supabase Admin Client
+    if (!supabaseAdmin) {
+      log('[DEBUG] ❌ CRITICAL: supabaseAdmin client is undefined!');
+      throw new Error('Server misconfiguration: supabaseAdmin is missing');
+    }
 
     let authUserCreated = false;
     try {
@@ -277,6 +297,7 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
 
       if (user_id) userMetadata.user_id = user_id;
 
+      log(`[DEBUG] Attempting to create auth user: ${loop_email}`);
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: loop_email,
         password: password,
@@ -285,6 +306,8 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
       });
 
       if (createError) {
+        log(`[DEBUG] Auth user creation returned error: ${createError.message}`);
+
         const isExistingUserError =
           (createError.code === 'email_exists') ||
           (createError.message && (
@@ -294,13 +317,19 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
           ));
 
         if (isExistingUserError) {
+          log('[DEBUG] User exists. Attempting to update password...');
+
           // Use Management API to list users and find by email
           const supabaseUrl = process.env.SUPABASE_URL;
           const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-          if (!supabaseUrl || !supabaseServiceKey) throw new Error('Supabase configuration missing');
+          if (!supabaseUrl || !supabaseServiceKey) {
+            log('[DEBUG] ❌ Missing Supabase Env Vars during update workaround');
+            throw new Error('Supabase configuration missing');
+          }
 
-          const listResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+          log('[DEBUG] Fetching user list from Auth API...');
+          const listResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -309,12 +338,23 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
             }
           });
 
-          if (!listResponse.ok) throw new Error(`Failed to list users: ${listResponse.statusText}`);
+          if (!listResponse.ok) {
+            log(`[DEBUG] ❌ Failed to list users. Status: ${listResponse.status} ${listResponse.statusText}`);
+            const errText = await listResponse.text();
+            log(`[DEBUG] Response body: ${errText}`);
+            throw new Error(`Failed to list users: ${listResponse.statusText}`);
+          }
 
           const usersResp = await listResponse.json();
+          // Detailed search log
+          log(`[DEBUG] User list fetched. Total users found: ${usersResp.users?.length || 0}`);
+
           const existingUser = usersResp.users?.find(u => u.email === loop_email);
 
           if (existingUser) {
+            log(`[DEBUG] Found existing user ID: ${existingUser.id}`);
+            log('[DEBUG] Updating user password...');
+
             const updateResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${existingUser.id}`, {
               method: 'PUT',
               headers: {
@@ -329,26 +369,38 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
               })
             });
 
-            if (!updateResponse.ok) throw new Error('Failed to update user password');
+            if (!updateResponse.ok) {
+              log(`[DEBUG] ❌ Password update failed. Status: ${updateResponse.status}`);
+              const errText = await updateResponse.text();
+              log(`[DEBUG] Update Error Body: ${errText}`);
+              throw new Error('Failed to update user password');
+            }
+
+            log('[DEBUG] ✅ Password updated successfully via Admin API.');
             authUserCreated = true;
           } else {
+            log('[DEBUG] ❌ User exists according to createError, but NOT found in list!?');
             throw new Error(`User already exists but could not be found via API.`);
           }
         } else {
+          log('[DEBUG] ❌ Create error was NOT existing user error. Rethrowing.');
           throw createError;
         }
       } else {
+        log(`[DEBUG] ✅ Auth user created successfully: ${JSON.stringify(newUser)}`);
         authUserCreated = true;
       }
     } catch (authError) {
-      console.error('❌ CRITICAL: Error creating/updating auth user:', authError);
+      log(`❌ CRITICAL: Error creating/updating auth user: ${authError.message}`);
       return handleError(authError, res, 'Failed to create/update auth user. Email not sent.');
     }
 
     if (!authUserCreated) {
+      log('[DEBUG] ❌ authUserCreated flag is false after attempts.');
       return handleError(new Error('Auth user creation failed'), res, 'Failed to create auth user. Email not sent.');
     }
 
+    log('[DEBUG] Sending welcome email...');
     await sendWelcomeEmail(
       college_email,
       loop_email || '',
@@ -356,9 +408,19 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
       password,
       user_name || 'User'
     );
+    log('[DEBUG] ✅ Welcome email sent.');
 
     sendSuccess(res, { success: true, message: 'Welcome email sent successfully' });
   } catch (error) {
+    console.error('[DEBUG] ❌ Catch block in route handler:', error);
+    // Try to log to file if fs/log function available
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const logFile = path.join(process.cwd(), 'server', 'server_debug.log');
+      fs.appendFileSync(logFile, `[ERROR] Catch block: ${error.message}\n`);
+    } catch (e) { }
+
     handleError(error, res, 'Failed to send welcome email');
   }
 });

@@ -1,27 +1,19 @@
-services:
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:3001/api
-    depends_on:
-      - backend
+version: '3.8'
 
+services:
   backend:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+    build: ./server
     ports:
       - "3001:3001"
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     environment:
       - PORT=3001
-      # Initial environment variables; users might need to mount .env or pass keys
+      # Add other env vars from .env manually or use env_file
+    env_file:
+      - ./server/.env
+
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

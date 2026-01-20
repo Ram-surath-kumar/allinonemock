@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bell, Search, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AISearchBar } from '@/components/ui/AISearchBar';
 import {
   Popover,
   PopoverContent,
@@ -72,9 +72,9 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
 
     try {
       setLoading(true);
-      const response = await api.getNotifications({ 
-        user_id: currentUser.id, 
-        limit: 10 
+      const response = await api.getNotifications({
+        user_id: currentUser.id,
+        limit: 10
       });
 
       if (response.error) throw new Error(response.error);
@@ -183,15 +183,11 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Pill Search Bar */}
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            placeholder="Search..." 
-            className="w-48 md:w-64 pl-9 pr-4 h-9 rounded-full bg-background/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all"
-            aria-label="Search"
-          />
-        </div>
+        {/* AI-Powered Search Bar */}
+        <AISearchBar
+          onNavigate={onNavigate}
+          className="hidden sm:block"
+        />
 
         {/* Theme Toggle */}
         {mounted && (
@@ -208,7 +204,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             <span className="sr-only">Toggle theme</span>
           </Button>
         )}
-        
+
         {/* Settings */}
         {onNavigate && (
           <Button

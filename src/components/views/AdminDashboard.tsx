@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Users, GraduationCap, DollarSign, TrendingUp } from 'lucide-react';
+import { Users, GraduationCap, IndianRupee, TrendingUp } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
-import { GovernanceSection } from '@/components/dashboard/GovernanceSection';
+
 import { GrowthChartModal } from '@/components/dashboard/GrowthChartModal';
 import { StaffBreakdownModal } from '@/components/dashboard/StaffBreakdownModal';
-import { getDashboardStats, getGrowthData, getConsolidatedGrowthData } from '@/services/dashboard';
+import { getDashboardStats, getGrowthData, getConsolidatedGrowthData, DashboardStats } from '@/services/dashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { Button } from '@/components/ui/button';
@@ -42,15 +42,28 @@ import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from '@/components/ui/badge';
 
-export function AdminDashboard({ onAddUser }) {
+interface AdminDashboardProps {
+  onAddUser: () => void;
+}
+
+export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
   const { currentUser } = useAuth();
   const { dashboardData, loading: dashboardLoading, refreshDashboard } = useDashboard();
-  const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [changeTexts, setChangeTexts] = useState({});
-  const [sparklineData, setSparklineData] = useState({});
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [changeTexts, setChangeTexts] = useState<{
+    students?: string;
+    staff?: string;
+    attendance?: string;
+    fees?: string;
+  }>({});
+  const [sparklineData, setSparklineData] = useState<{
+    students?: number[];
+    staff?: number[];
+    attendance?: number[];
+  }>({});
   const [growthModalOpen, setGrowthModalOpen] = useState(false);
-  const [growthMetric, setGrowthMetric] = useState('students');
+  const [growthMetric, setGrowthMetric] = useState<'students' | 'staff' | 'attendance' | 'fees'>('students');
   const [staffModalOpen, setStaffModalOpen] = useState(false);
 
   // Task state
@@ -135,33 +148,26 @@ export function AdminDashboard({ onAddUser }) {
     if (dashboardData) {
       try {
         // Extract stats from consolidated response
-        const dashboardStats = dashboardData.stats || {};
-        const students = dashboardData.students || [];
+        const dashboardStats = dashboardData.stats as Record<string, unknown>;
+        const students = dashboardData.students as unknown[] || [];
 
-        // Debug: Log the raw data
-        console.log('AdminDashboard - dashboardData:', dashboardData);
-        console.log('AdminDashboard - dashboardStats:', dashboardStats);
-        console.log('AdminDashboard - students array length:', students.length);
-
-        // Ensure we get the correct values from stats object
-        // Use stats.totalStudents if available, otherwise fall back to students array length
-        const totalStudents = (typeof dashboardStats.totalStudents === 'number' && dashboardStats.totalStudents !== null)
+        const totalStudents = (typeof dashboardStats.totalStudents === 'number')
           ? dashboardStats.totalStudents
           : (Array.isArray(students) ? students.length : 0);
 
-        const totalStaff = (typeof dashboardStats.totalStaff === 'number' && dashboardStats.totalStaff !== null)
+        const totalStaff = (typeof dashboardStats.totalStaff === 'number')
           ? dashboardStats.totalStaff
           : 0;
 
-        const attendanceRate = (typeof dashboardStats.attendanceRate === 'number' && dashboardStats.attendanceRate !== null)
+        const attendanceRate = typeof dashboardStats.attendanceRate === 'number'
           ? dashboardStats.attendanceRate
           : 0;
 
-        const feeCollectionPercentage = (typeof dashboardStats.feeCollectionPercentage === 'number' && dashboardStats.feeCollectionPercentage !== null)
+        const feeCollectionPercentage = typeof dashboardStats.feeCollectionPercentage === 'number'
           ? dashboardStats.feeCollectionPercentage
           : 0;
 
-        const feeCollection = (typeof dashboardStats.feeCollection === 'number' && dashboardStats.feeCollection !== null)
+        const feeCollection = (typeof dashboardStats.feeCollection === 'number')
           ? dashboardStats.feeCollection
           : 0;
 
@@ -190,17 +196,13 @@ export function AdminDashboard({ onAddUser }) {
           pendingApprovals,
           systemVersion,
         });
-        setIsLoading(false);
+        setLoading(false);
       } catch (error) {
         console.error('Error processing dashboard data:', error);
-        console.error('Dashboard data:', dashboardData);
-        setIsLoading(false);
+        setLoading(false);
       }
-    } else {
-      // If no dashboard data and not loading, set loading to false
-      if (!dashboardLoading) {
-        setIsLoading(false);
-      }
+    } else if (!dashboardLoading) {
+      setLoading(false);
     }
   }, [dashboardData, dashboardLoading]);
 
@@ -256,23 +258,23 @@ export function AdminDashboard({ onAddUser }) {
     }
   };
 
-  const formatNumber = (num) => {
+  const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num);
   };
 
-  const formatCurrency = (num) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (num: number) => {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(num);
   };
 
-  const formatPercent = (num) => {
+  const formatPercent = (num: number) => {
     return `${num.toFixed(1)}%`;
   };
 
-  const handleCardClick = (metric) => {
+  const handleCardClick = (metric: 'students' | 'staff' | 'attendance' | 'fees') => {
     if (metric === 'staff') {
       setStaffModalOpen(true);
     } else {
@@ -287,7 +289,7 @@ export function AdminDashboard({ onAddUser }) {
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Students"
-          value={isLoading ? '...' : formatNumber(stats?.totalStudents || 0)}
+          value={loading ? '...' : formatNumber(stats?.totalStudents || 0)}
           change={changeTexts.students}
           changeType={changeTexts.students?.startsWith('+') ? 'positive' : changeTexts.students?.startsWith('-') ? 'negative' : 'neutral'}
           icon={GraduationCap}
@@ -297,7 +299,7 @@ export function AdminDashboard({ onAddUser }) {
         />
         <StatsCard
           title="Staff Members"
-          value={isLoading ? '...' : formatNumber(stats?.totalStaff || 0)}
+          value={loading ? '...' : formatNumber(stats?.totalStaff || 0)}
           change={changeTexts.staff}
           changeType={changeTexts.staff?.startsWith('+') ? 'positive' : changeTexts.staff?.startsWith('-') ? 'negative' : 'neutral'}
           icon={Users}
@@ -307,10 +309,10 @@ export function AdminDashboard({ onAddUser }) {
         />
         <StatsCard
           title="Fee Collection"
-          value={isLoading ? '...' : formatCurrency(stats?.feeCollection || 0)}
+          value={loading ? '...' : formatCurrency(stats?.feeCollection || 0)}
           change={changeTexts.fees}
           changeType="neutral"
-          icon={DollarSign}
+          icon={IndianRupee}
           gradient="from-yellow-500/20 via-orange-500/20 to-red-500/20"
           sparklineData={[]}
           showChart={false}
@@ -318,7 +320,7 @@ export function AdminDashboard({ onAddUser }) {
         />
         <StatsCard
           title="Attendance Rate"
-          value={isLoading ? '...' : formatPercent(stats?.attendanceRate || 0)}
+          value={loading ? '...' : formatPercent(stats?.attendanceRate || 0)}
           change={changeTexts.attendance}
           changeType={changeTexts.attendance?.startsWith('+') ? 'positive' : changeTexts.attendance?.startsWith('-') ? 'negative' : 'neutral'}
           icon={TrendingUp}
@@ -328,8 +330,7 @@ export function AdminDashboard({ onAddUser }) {
         />
       </div>
 
-      {/* Governance Section */}
-      <GovernanceSection stats={stats} />
+
 
       {/* Quick Actions & AI Actions - Compact */}
       <QuickActions onAddUser={onAddUser} onAssignTask={handleOpenTaskDialog} />

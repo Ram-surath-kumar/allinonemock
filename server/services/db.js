@@ -1,4 +1,4 @@
-
+// server/services/db.js
 import { supabaseAdmin } from '../common.js';
 import { encryptData, decryptData, maskData } from '../utils/security.js';
 import { SENSITIVE_FIELDS, MASK_FIELDS } from '../config/securityConfig.js';
@@ -58,6 +58,8 @@ const logAudit = async (action, entity, recordId, changes, context) => {
         // Requirement: "Failure to log = operation fails"
         // Since we log *after* op usually, to enforce this we might need to rollback.
         // But preventing the *next* step or flagging inconsistency is practical here.
+        // But we want to avoid crashing production on audit glitch if possible, but security says otherwise.
+        // We will LOG ERROR and throw for now.
         throw new Error('Audit Logging Failed - Operation Aborted per Security Policy');
     }
 }

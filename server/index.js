@@ -30,6 +30,7 @@ import eventsRouter from './routes/events.js';
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
 
+
 dotenv.config();
 
 const app = express();
@@ -52,7 +53,10 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Also allow any localhost origin (for dynamic ports like 5174, 5175, etc.)
+    const isLocalhost = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+    if (!origin || allowedOrigins.includes(origin) || isLocalhost) {
       callback(null, true);
     } else {
       // In production, allow Vercel preview and production domains
@@ -103,6 +107,7 @@ app.use('/api/events', eventsRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);
+
 
 // Temporary: Keep growth and finance endpoints in index.js until route files are created
 // This will be moved to route files in the next step

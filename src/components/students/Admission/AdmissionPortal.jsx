@@ -47,6 +47,7 @@ export function AdmissionPortal() {
         minority_status: false,
         minority_type: '',
         pwd_status: false,
+        first_graduate_status: false,
         nationality_type: 'Indian'
     });
 
@@ -218,6 +219,7 @@ export function AdmissionPortal() {
                                             <SelectContent>
                                                 <SelectItem value="Male">Male</SelectItem>
                                                 <SelectItem value="Female">Female</SelectItem>
+                                                <SelectItem value="Transgender">Transgender</SelectItem>
                                                 <SelectItem value="Other">Other</SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -273,6 +275,10 @@ export function AdmissionPortal() {
                                     <div className="flex items-center gap-2">
                                         <input type="checkbox" className="h-4 w-4" checked={formData.minority_status} onChange={e => setFormData({ ...formData, minority_status: e.target.checked })} />
                                         <label className="text-sm">Minority Comunity</label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input type="checkbox" className="h-4 w-4" checked={formData.first_graduate_status} onChange={e => setFormData({ ...formData, first_graduate_status: e.target.checked })} />
+                                        <label className="text-sm">First Graduate</label>
                                     </div>
                                     {formData.minority_status && (
                                         <div>
