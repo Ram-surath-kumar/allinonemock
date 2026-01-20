@@ -98,7 +98,7 @@ export function RecentActivity() {
                 key={activity.id} 
                   className={cn(
                     "relative flex gap-4 animate-fade-in-up group",
-                    "hover:bg-muted/30 p-2.5 rounded-xl transition-all duration-200",
+                    "hover:bg-muted/30 p-2.5 rounded-sm transition-all duration-200",
                     "hover:scale-[1.01] hover:-translate-y-0.5"
                   )}
                 style={{ animationDelay: `${index * 100}ms` }}
@@ -106,7 +106,7 @@ export function RecentActivity() {
                   {/* Timeline dot - centered */}
                   <div className="relative z-10 flex-shrink-0 w-12 flex items-center justify-center">
                     <div className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full",
+                      "flex h-12 w-12 items-center justify-center rounded-sm",
                       "border-2 border-background shadow-md",
                       "transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg",
                       activity.color || "bg-gradient-to-br from-primary/20 to-primary/10"
@@ -115,7 +115,7 @@ export function RecentActivity() {
                     </div>
                     {/* Glow effect */}
                     <div className={cn(
-                      "absolute inset-0 rounded-full opacity-0 group-hover:opacity-100",
+                      "absolute inset-0 rounded-sm opacity-0 group-hover:opacity-100",
                       "transition-opacity duration-200 blur-xl",
                       "bg-primary/30"
                     )} />

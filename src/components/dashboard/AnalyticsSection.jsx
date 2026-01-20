@@ -239,7 +239,7 @@ export function AnalyticsSection() {
       <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 glass-modern" role="region" aria-label="Attendance Trend Chart">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-sm bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center">
               <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
@@ -289,7 +289,7 @@ export function AnalyticsSection() {
       <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 glass-modern" role="region" aria-label="Fee Collection Chart">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/20 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-sm bg-gradient-to-br from-green-500/20 to-green-600/20 flex items-center justify-center">
               <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
             </div>
             <div>
@@ -381,7 +381,7 @@ export function AnalyticsSection() {
       <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 glass-modern" role="region" aria-label="Student Growth Chart">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-sm bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center">
               <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
@@ -431,7 +431,7 @@ export function AnalyticsSection() {
       <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3.5 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 glass-modern" role="region" aria-label="Today Summary Chart">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-600/20 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-sm bg-gradient-to-br from-pink-500/20 to-pink-600/20 flex items-center justify-center">
               <TrendingUp className="h-4 w-4 text-pink-600 dark:text-pink-400" />
             </div>
             <div>

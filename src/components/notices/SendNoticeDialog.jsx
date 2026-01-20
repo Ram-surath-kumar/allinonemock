@@ -336,7 +336,7 @@ export function SendNoticeDialog({ open, onOpenChange }) {
                                   className="text-sm font-medium cursor-pointer flex-1"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-xs font-medium text-primary">
                                       {user.name.split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div>

@@ -1,37 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle, Paperclip, FileText, Image as ImageIcon, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent, AIAction, AIContext, DataQueryIntent } from '@/services/gemini';
+import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent } from '@/services/gemini';
 import { api } from '@/services/api';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
 
-interface AIAssistantChatProps {
-  onNavigate?: (path: string) => void;
-}
 
-export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
+
+
+export function AIAssistantChat({ onNavigate }) {
   const { currentUser, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [messages, setMessages] = useState<Message[]>([
+  const [students, setStudents] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [messages, setMessages] = useState([
     {
       id: '1',
       role: 'assistant',
@@ -39,7 +43,78 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       timestamp: new Date(),
     },
   ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    action: null,
+    title: '',
+    description: '',
+  });
+
+  const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const attachMenuRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const [attachments, setAttachments] = useState([]);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Camera Functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      // Wait for state update then attach stream
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      toast.error("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+  };
+
+  // Click outside handler for attachment menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target)) {
+        setShowAttachMenu(false);
+      }
+    };
+    if (showAttachMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAttachMenu]);
+  useEffect(() => {
+    console.log('AIAssistantChat component mounted/updated', { isOpen, document: typeof document !== 'undefined' });
+  }, []);
 
   useEffect(() => {
     if (isOpen && students.length === 0) {
@@ -61,20 +136,20 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       const studentsData = studentsResponse.data;
 
       if (studentsData) {
-        const departmentIds = [...new Set(studentsData.filter((u: any) => u.department_id).map((u: any) => u.department_id))];
-        let deptMap = new Map<string, string>();
+        const departmentIds = [...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id))];
+        let deptMap = new Map();
 
         if (departmentIds.length > 0) {
           const deptResponse = await api.getDepartments({ ids: departmentIds });
           if (!deptResponse.error && deptResponse.data) {
-            deptResponse.data.forEach((dept: any) => {
+            deptResponse.data.forEach((dept) => {
               deptMap.set(dept.id, dept.name);
             });
             setDepartments(deptResponse.data);
           }
         }
 
-        const studentsWithDept = studentsData.map((row: any) => ({
+        const studentsWithDept = studentsData.map((row) => ({
           id: row.id,
           name: row.name,
           email: row.email,
@@ -89,8 +164,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
     }
   };
 
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
-    const newMessage: Message = {
+  const addMessage = (role, content) => {
+    const newMessage = {
       id: Date.now().toString(),
       role,
       content,
@@ -99,11 +174,23 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const executeAction = async (action: AIAction) => {
-    // Check for clarification needed FIRST
-    if (action.needs_clarification) {
-      addMessage('assistant', action.clarification_question || 'I need more details to proceed.');
-      return; // Stop execution, wait for user input
+  // Check if action is risky and requires confirmation
+  const isRiskyAction = (action) => {
+    const riskyActions = ['delete_students', 'delete_all_students', 'remove_all_students'];
+    return riskyActions.includes(action.action) || (action.delete_all === true);
+  };
+
+  const executeAction = async (action, skipConfirmation = false) => {
+    // Check if action requires confirmation
+    if (!skipConfirmation && isRiskyAction(action)) {
+      const studentCount = students.length;
+      setConfirmDialog({
+        open: true,
+        action: action,
+        title: '⚠️ Risky Action - Delete All Students',
+        description: `This action will permanently delete ALL ${studentCount} student${studentCount !== 1 ? 's' : ''} from the system. This cannot be undone. Are you sure you want to proceed?`,
+      });
+      return;
     }
 
     if (action.action === 'mark_attendance') {
@@ -118,6 +205,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       }
 
       try {
+        addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
+
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -143,11 +232,12 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
         }, 1000);
 
         window.dispatchEvent(new CustomEvent('attendance-updated'));
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error marking attendance:', error);
         addMessage('assistant', `❌ Error: ${error.message || 'Failed to mark attendance'}`);
       }
     } else if (action.action === 'edit_student') {
+      addMessage('assistant', '🔄 Processing... Opening students page for editing...');
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -156,8 +246,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-      addMessage('assistant', 'Opening students page for editing...');
     } else if (action.action === 'view_student') {
+      addMessage('assistant', `🔄 Processing... Opening students page to view ${action.student_name || 'student'}...`);
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -166,7 +256,6 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-      addMessage('assistant', `Opening students page to view ${action.student_name || 'student'}...`);
     } else if (action.action === 'add_department') {
       if (!action.department_name) {
         addMessage('assistant', 'I couldn\'t identify the department name. Please specify it clearly, e.g., "add new department with name Computer Science"');
@@ -179,6 +268,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       }
 
       try {
+        addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
+
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -210,58 +301,153 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           addMessage('assistant', `❌ Error: ${errorMessage}`);
         }
       }
-    } else if (['create_fee_structure', 'manage_fee_categories', 'view_student_fees'].includes(action.action)) {
-      if (onNavigate) onNavigate('/finance?tab=fees');
-      else navigate('/finance?tab=fees');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Fee Management...');
-    } else if (action.action === 'record_payment') {
-      if (onNavigate) onNavigate('/finance?tab=collections');
-      else navigate('/finance?tab=collections');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Collections to record payment...');
-    } else if (['request_refund', 'approve_refund'].includes(action.action)) {
-      if (onNavigate) onNavigate('/finance?tab=refunds');
-      else navigate('/finance?tab=refunds');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Refunds section...');
-    } else if (['add_bank_account', 'record_bank_transaction'].includes(action.action)) {
-      if (onNavigate) onNavigate('/finance?tab=bank');
-      else navigate('/finance?tab=bank');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Bank Management...');
-    } else if (['create_journal_entry', 'view_chart_of_accounts'].includes(action.action)) {
-      if (onNavigate) onNavigate('/finance?tab=accounting');
-      else navigate('/finance?tab=accounting');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Accounting...');
-    } else if (['update_tax_config', 'view_gst_report'].includes(action.action)) {
-      if (onNavigate) onNavigate('/finance?tab=tax');
-      else navigate('/finance?tab=tax');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Tax & Compliance...');
-    } else if (action.action === 'reconcile_transactions') {
-      if (onNavigate) onNavigate('/finance?tab=reconciliation');
-      else navigate('/finance?tab=reconciliation');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Reconciliation...');
-    } else if (action.action === 'view_reports') {
-      if (onNavigate) onNavigate('/finance?tab=reports');
-      else navigate('/finance?tab=reports');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Finance Reports...');
-    } else if (action.action === 'view_finance_dashboard') {
-      if (onNavigate) onNavigate('/finance?tab=dashboard');
-      else navigate('/finance?tab=dashboard');
-      setTimeout(() => setIsOpen(false), 500);
-      addMessage('assistant', 'Opening Finance Dashboard...');
+    } else if (action.action === 'delete_students') {
+      if (!action.delete_all) {
+        addMessage('assistant', 'I couldn\'t understand the delete command. Please specify "delete all students" to delete all students.');
+        return;
+      }
+
+      if (!hasPermission('manage_staff')) {
+        addMessage('assistant', 'You don\'t have permission to delete students.');
+        return;
+      }
+
+      try {
+        // Show processing status
+        const totalStudents = students.length;
+        addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
+
+        // Delete all students
+        const studentIds = students.map(s => s.id);
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < studentIds.length; i++) {
+          const studentId = studentIds[i];
+          const currentIndex = i + 1;
+
+          // Show progress every 5 students or for the last one
+          if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
+            addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
+          }
+
+          try {
+            const response = await api.deleteUser(studentId);
+            if (response.error) {
+              errorCount++;
+              console.error(`Error deleting student ${studentId}:`, response.error);
+            } else {
+              deletedCount++;
+            }
+          } catch (error) {
+            errorCount++;
+            console.error(`Error deleting student ${studentId}:`, error);
+          }
+        }
+
+        // Show completion status
+        if (errorCount > 0 && deletedCount === 0) {
+          // Get more details about the first error
+          let errorDetails = '';
+          if (errorCount > 0) {
+            errorDetails = ' This may be due to foreign key constraints or missing permissions.';
+          }
+          throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
+        }
+
+        const message = deletedCount > 0
+          ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
+          : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
+
+        addMessage('assistant', message);
+
+        // Reload students list
+        await loadData();
+
+        // Navigate to students page
+        if (onNavigate) {
+          onNavigate('/students');
+        } else {
+          navigate('/students');
+        }
+
+        // Close chat after action
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 2000);
+      } catch (error) {
+        console.error('Error deleting students:', error);
+        let errorMessage = error.message || 'Failed to delete students';
+
+        // Provide more helpful error messages
+        if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
+          errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
+        }
+
+        addMessage('assistant', `❌ Error: ${errorMessage}`);
+      }
+    } else if (action.action === 'add_applicant') {
+      addMessage('assistant', '📝 Opening Admission Portal...');
+      if (onNavigate) {
+        onNavigate('/students');
+      } else {
+        navigate('/students');
+      }
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 1000);
+    } else if (action.action === 'analyze_system') {
+      try {
+        addMessage('assistant', '📊 Gathering real-time data from dashboard...');
+
+        const response = await api.getDashboardData(currentUser?.id, currentUser?.role);
+
+        if (response.error) throw new Error(response.error);
+
+        const dashboardData = response.data;
+
+        // Analyze using the analytics service but with REAL data
+        const analysis = await callGeminiAnalytics("Analyze the entire ERP system based on this data", dashboardData);
+
+        addMessage('assistant', analysis);
+      } catch (error) {
+        console.error('Error analyzing system:', error);
+        addMessage('assistant', '❌ Failed to analyze system data. Please try again.');
+      }
+    } else if (action.action === 'chat') {
+      addMessage('assistant', action.message || 'Hello! How can I help you?');
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try specific finance commands like "create fee structure", "record payment", "check refunds", or ask me a question about your data.');
+      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", "add applicant", "analyze system", or just say "hi"!');
     }
   };
 
-  const handleDataQuery = async (query: string) => {
+  const handleConfirmAction = async () => {
+    setConfirmDialog({ ...confirmDialog, open: false });
+    if (confirmDialog.action) {
+      await executeAction(confirmDialog.action, true);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoRef.current, 0, 0);
+
+      canvas.toBlob((blob) => {
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setAttachments(prev => [...prev, file]);
+        stopCamera();
+      }, 'image/jpeg');
+    }
+  };
+
+  const handleDataQuery = async (query) => {
     try {
+      addMessage('assistant', '🔄 Processing... Analyzing your question...');
+
       const currentDate = format(new Date(), 'yyyy-MM-dd');
 
       // Parse the query intent
@@ -283,7 +469,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
 
           // Find student
           const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name!.toLowerCase())
+            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
@@ -328,7 +514,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           if (intent.department) {
             // Find matching department
             const matchingDepts = departments.filter(
-              d => d.name.toLowerCase().includes(intent.department!.toLowerCase())
+              d => d.name.toLowerCase().includes(intent.department.toLowerCase())
             );
 
             if (matchingDepts.length > 0) {
@@ -337,7 +523,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
             } else {
               // Try fuzzy match
               filteredStudents = students.filter(
-                s => s.department?.toLowerCase().includes(intent.department!.toLowerCase())
+                s => s.department?.toLowerCase().includes(intent.department.toLowerCase())
               );
             }
           }
@@ -358,7 +544,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           }
 
           const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name!.toLowerCase())
+            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
@@ -377,7 +563,7 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
 
         default: {
           // Use analytics function for general queries
-          const generateHistorical = (current: number, count: number = 6) => {
+          const generateHistorical = (current, count = 6) => {
             const data = [];
             for (let i = count - 1; i >= 0; i--) {
               data.push(Math.max(0, current + (Math.random() - 0.5) * (current * 0.1)));
@@ -405,13 +591,13 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       }
 
       addMessage('assistant', response);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error processing data query:', error);
       addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your query'}`);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!prompt.trim()) {
@@ -430,61 +616,84 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
       }
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-      const isDataQuery = /^(what|how|is|are|was|were|show|tell|give|list|display|analyze|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
+      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(userPrompt);
+
+      const isDataQuery = !isAnalyzeCommand && (
+        /^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
         /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
         userPrompt.includes('?') ||
-        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt);
+        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt)
+      );
 
       if (isDataQuery) {
-        // Handle as data query - query database
+        // Handle data query
         await handleDataQuery(userPrompt);
       } else {
+        // Handle action
+        addMessage('assistant', '🔄 Processing... Understanding your command...');
 
-        // Handle as action
-        // Format history for context (exclude last user message which is current prompt)
-        // We only want previous turns
-        const history = messages.slice(0, messages.length - (loading ? 0 : 0)).map(m => ({
-          role: m.role,
-          content: m.content
-        }));
-
-        const context: AIContext = {
-          students: students,
+        const context = {
+          students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student'],
-          history: history
+          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department', 'add_applicant', 'analyze_system'],
         };
 
         const action = await callGeminiAPI(userPrompt, context);
 
-        if (action.confidence < 0.5) {
-          addMessage('assistant', `I'm not confident I understood that (${(action.confidence * 100).toFixed(0)}% confidence). ${action.message || 'Could you rephrase your request?'}`);
-        } else {
+        if (action.confidence >= 0.7) {
           await executeAction(action);
+        } else {
+          addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", or ask me a question about your data.');
         }
       }
-    } catch (error: any) {
-      console.error('Error processing AI command:', error);
-      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your request'}`);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your message'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
+  // Ensure we have document available (client-side only)
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return null; // SSR safety check
+  }
+
+  // Ensure document.body exists
+  if (!document.body) {
+    return null;
+  }
+
+  // Render using portal to document.body to ensure it's always on top
+  return createPortal(
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Positioned at bottom-right corner */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
           className={cn(
-            "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full",
+            "fixed h-14 w-14 rounded-full",
             "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
-            "shadow-depth-2 hover:shadow-glow transition-all duration-300",
-            "hover-lift active:scale-95",
+            "shadow-lg hover:shadow-xl transition-all duration-300",
+            "hover:scale-110 active:scale-95",
             "flex items-center justify-center",
             "group focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
           )}
+          style={{
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: '56px',
+            height: '56px'
+          }}
           aria-label="Open AI Assistant"
         >
           <Sparkles className="h-6 w-6 animate-pulse group-hover:animate-spin transition-transform" />
@@ -492,33 +701,36 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
         </button>
       )}
 
-      {/* Chat Widget */}
+      {/* Chat Widget - Positioned at bottom-right corner */}
       {isOpen && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-50 rounded-2xl shadow-depth-3",
-          "bg-card border border-border/30 glass-modern",
-          "transition-all duration-300",
-          isMinimized ? "w-80 h-16" : "w-96 h-[600px]",
-          "flex flex-col overflow-hidden"
-        )} role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+          "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
+          "flex flex-col overflow-hidden transition-all duration-300",
+          isMinimized ? "h-14" : "h-[600px]"
+        )}
+          style={{
+            zIndex: 99999,
+            pointerEvents: 'auto',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px'
+          }}
+          role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <Sparkles className="h-5 w-5 text-primary" />
               {!isMinimized && (
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">AI Assistant</h3>
+                  <h3 className="text-sm font-semibold">AI Assistant</h3>
                   <p className="text-xs text-muted-foreground">Ask me anything</p>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
                 onClick={() => setIsMinimized(!isMinimized)}
               >
                 {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
@@ -526,7 +738,6 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
                 onClick={() => setIsOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -544,27 +755,25 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
                       key={message.id}
                       className={cn(
                         "flex",
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                        message.role === 'user' ? "justify-end" : "justify-start"
                       )}
                     >
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
-                          message.role === 'user'
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground"
-                        )}
-                      >
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
+                      <div className={cn(
+                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                        message.role === 'user'
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      )}>
+                        {message.content}
+                        <div className="text-xs opacity-70 mt-1">
                           {format(message.timestamp, 'HH:mm')}
-                        </p>
+                        </div>
                       </div>
                     </div>
                   ))}
                   {loading && (
                     <div className="flex justify-start">
-                      <div className="bg-muted rounded-2xl px-4 py-2.5">
+                      <div className="bg-muted rounded-lg px-3 py-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                       </div>
                     </div>
@@ -573,14 +782,107 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
                 </div>
               </ScrollArea>
 
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="px-4 py-2 border-t border-border bg-muted/20 flex gap-2 overflow-x-auto">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="relative flex items-center gap-2 bg-background border border-border p-2 rounded-lg pr-8 shrink-0">
+                      {file.type.startsWith('image/') ? (
+                        <div className="h-10 w-10 rounded overflow-hidden">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                      )}
+                      <div className="flex flex-col max-w-[120px]">
+                        <span className="text-xs font-medium truncate">{file.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Input */}
-              <form onSubmit={handleSubmit} className="p-4 border-t border-border/30">
+              <form onSubmit={handleSubmit} className="border-t border-border p-4">
                 <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+
+                  <div className="relative flex gap-2 items-center" ref={attachMenuRef}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full shrink-0"
+                      title="Attach..."
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    >
+                      <Paperclip className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                    </Button>
+
+                    {showAttachMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-popover rounded-xl shadow-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
+                        <div className="p-1 flex flex-col">
+                          <button
+                            type="button"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                              setShowAttachMenu(false);
+                            }}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Files</span>
+                              <span className="text-[10px] text-muted-foreground">Upload documents</span>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                            onClick={() => {
+                              startCamera();
+                              setShowAttachMenu(false);
+                            }}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                              <Camera className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Camera</span>
+                              <span className="text-[10px] text-muted-foreground">Take a photo</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <Input
-                    placeholder="Ask me anything..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
+                    placeholder={attachments.length > 0 ? "Describe these files..." : "Ask AI or type commands..."}
                     className="flex-1 rounded-full"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -591,10 +893,8 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
                   />
                   <Button
                     type="submit"
+                    disabled={loading || (!prompt.trim() && attachments.length === 0)}
                     size="icon"
-                    disabled={loading || !prompt.trim()}
-                    className="rounded-full shrink-0 hover-lift focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-                    aria-label="Send message"
                   >
                     {loading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -608,6 +908,65 @@ export function AIAssistantChat({ onNavigate }: AIAssistantChatProps) {
           )}
         </div>
       )}
-    </>
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {confirmDialog.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="pt-2">
+              {confirmDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Delete All Students
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Camera Modal */}
+      {
+        isCameraOpen && (
+          <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+            <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+
+              <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
+                >
+                  <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+    </>,
+    document.body
   );
 }

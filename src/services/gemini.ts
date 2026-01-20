@@ -9,69 +9,28 @@ const MODEL_OPTIONS = [
   'gemini-pro',        // Legacy model
 ];
 
-const getModelUrl = (model: string, version: string = 'v1beta') => {
+const getModelUrl = (model, version = 'v1beta') => {
   return `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent`;
 };
 
-export interface AIAction {
-  action: 'mark_attendance' | 'edit_student' | 'view_student' | 'add_department' |
-  'create_fee_structure' | 'manage_fee_categories' | 'record_payment' | 'view_student_fees' |
-  'request_refund' | 'approve_refund' | 'add_bank_account' | 'record_bank_transaction' |
-  'create_journal_entry' | 'view_chart_of_accounts' | 'update_tax_config' | 'view_gst_report' |
-  'reconcile_transactions' | 'view_reports' | 'view_finance_dashboard' | 'unknown';
-  student_name?: string;
-  department?: string;
-  department_name?: string;
-  status?: 'present' | 'absent' | 'late' | 'excused';
-  student_id?: string;
-  date?: string;
-  amount?: number;
-  fee_type?: string;
-  payment_method?: string;
-  reason?: string;
-  bank_name?: string;
-  confidence: number;
-  message?: string;
-  needs_clarification?: boolean;
-  clarification_question?: string;
-}
 
-export interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
 
-export interface StudentData {
-  id: string;
-  name: string;
-  email: string;
-  department: string | null;
-  department_id?: string;
-}
 
-export interface ExtractedStudentData {
-  name: string;
-  loopid: string;
-  department?: string;
-  department_id?: string;
-  year?: string;
-  semester?: string;
-  phone?: string;
-  address?: string;
-}
+
+
 
 /**
  * Extract student data from uploaded image/file using Gemini Vision API
  * @param file - The file to extract data from
  * @param userPrompt - Optional user instructions (e.g., "Add students to CPEI department")
  */
-export async function extractStudentDataFromFile(file: File, userPrompt?: string): Promise<ExtractedStudentData[]> {
+export async function extractStudentDataFromFile(file, userPrompt) {
   try {
     // Convert file to base64
-    const base64 = await new Promise<string>((resolve, reject) => {
+    const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const result = reader.result as string;
+        const result = reader.result;
         // Remove data URL prefix
         const base64String = result.split(',')[1];
         resolve(base64String);
@@ -91,9 +50,6 @@ ${userPrompt ? `USER INSTRUCTIONS: ${userPrompt}\n\nPlease follow these instruct
 CRITICAL: You MUST return ONLY a valid JSON array. No markdown, no code blocks, no explanations, no additional text. Just the raw JSON array.
 
 Extract ALL student information from the provided file/image. Return a JSON array of student objects with this EXACT structure:
-
-[
-  {
     "name": "Full name of the student",
     "loopid": "Loop ID or Student ID (REQUIRED - extract any ID number you find)",
     "department": "Department name (optional)",
@@ -113,8 +69,6 @@ STRICT REQUIREMENTS:
 6. Return ONLY the JSON array, nothing else. No markdown code blocks, no explanations.
 
 VALID EXAMPLE (copy this format exactly):
-[
-  {
     "name": "John Doe",
     "loopid": "10334343",
     "department": "Computer Science"
@@ -220,18 +174,18 @@ Now extract the student data and return ONLY the JSON array:`;
           }
         }
 
-        let extractedData: ExtractedStudentData[];
+        let extractedData;
         try {
           extractedData = JSON.parse(jsonText);
         } catch (parseError) {
           console.error('JSON Parse Error:', parseError);
           console.error('Attempted to parse:', jsonText.substring(0, 200));
-          throw new Error(`Failed to parse AI response as JSON. AI may have returned invalid format.`);
+          throw new Error(`Failed to parse AI response. AI may have returned invalid format.`);
         }
 
         if (!Array.isArray(extractedData)) {
           console.error('AI response is not an array:', typeof extractedData, extractedData);
-          throw new Error('Invalid response format: expected array, got ' + typeof extractedData);
+          throw new Error('Invalid response format, got ' + typeof extractedData);
         }
 
         if (extractedData.length === 0) {
@@ -240,7 +194,7 @@ Now extract the student data and return ONLY the JSON array:`;
         }
 
         // Validate and clean the data
-        // Note: loopid will be auto-generated as org_id + user_id when user is created, so we don't require it here
+        // Note: loopid will be auto-generated+ user_id when user is created, so we don't require it here
         const validatedData = extractedData.map((student, index) => {
           // Ensure name exists - if not, generate one
           let name = student.name?.trim() || '';
@@ -248,7 +202,7 @@ Now extract the student data and return ONLY the JSON array:`;
             name = `Student ${index + 1}`;
           }
 
-          // Loopid is optional - it will be generated as org_id + user_id when the user is created
+          // Loopid is optional - it will be generated+ user_id when the user is created
           // We can still extract it if present in the document, but it's not required
           let loopid = student.loopid?.trim() || '';
           if (loopid) {
@@ -296,61 +250,11 @@ Now extract the student data and return ONLY the JSON array:`;
   }
 }
 
-export interface AIContext {
-  students: StudentData[];
-  currentDate: string;
-  availableActions: string[];
-  history?: Message[];
-}
-
-export interface AnalyticsData {
-  attendance?: {
-    current: number;
-    trend: 'up' | 'down' | 'stable';
-    prediction: number;
-    insights: string[];
-  };
-  finance?: {
-    current: number;
-    trend: 'up' | 'down' | 'stable';
-    prediction: number;
-    insights: string[];
-  };
-  students?: {
-    current: number;
-    trend: 'up' | 'down' | 'stable';
-    prediction: number;
-    insights: string[];
-  };
-}
-
-export interface DataQueryIntent {
-  queryType: 'attendance_check' | 'student_count' | 'attendance_list' | 'student_info' | 'general';
-  student_name?: string;
-  department?: string;
-  date?: string;
-  status?: string;
-  confidence: number;
-}
-
-interface GeminiResponse {
-  candidates?: Array<{
-    content?: {
-      parts?: Array<{
-        text?: string;
-      }>;
-    };
-  }>;
-  error?: {
-    message?: string;
-  };
-}
-
 async function tryGeminiModel(
-  model: string,
-  systemPrompt: string,
-  apiVersion: string = 'v1beta'
-): Promise<GeminiResponse> {
+  model,
+  systemPrompt,
+  apiVersion = 'v1beta'
+) {
   const url = `${getModelUrl(model, apiVersion)}?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(url, {
@@ -380,62 +284,55 @@ async function tryGeminiModel(
 }
 
 export async function callGeminiAPI(
-  prompt: string,
-  context: AIContext
-): Promise<AIAction> {
-  // Format history for context
-  const historyText = context.history
-    ? context.history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
-    : '';
-
-  const systemPrompt = `You are an AI assistant for a school ERP system. Parse natural language commands and return ONLY valid JSON, no markdown.
+  prompt,
+  context
+) {
+  const systemPrompt = `You are an AI assistant for a school ERP system. Parse natural language commands and return ONLY valid JSON, no markdown, no explanations.
 
 Available actions:
-1. mark_attendance - Mark attendance (status: present, absent, late, excused)
+1. mark_attendance - Mark attendance (status)
 2. edit_student - Edit student info
 3. view_student - View student info
-4. add_department - Add/create a new department (requires department_name)
-5. create_fee_structure - Create/Define new fee structure
-6. manage_fee_categories - Manage fee categories
-7. record_payment - Record fee payment (Requires: student_name, amount)
-8. view_student_fees - View fees for a student
-9. request_refund - Request a refund
-10. approve_refund - Approve refunds
-11. add_bank_account - Add a new bank account
-12. record_bank_transaction - Record bank transaction
-13. create_journal_entry - Create manual journal entry
-14. view_chart_of_accounts - View chart of accounts
-15. update_tax_config - Update Tax/GST configuration
-16. view_gst_report - View GST Reports
-17. reconcile_transactions - Reconcile bank transactions
-18. view_reports - View Finance Reports
-19. view_finance_dashboard - Go to Finance Dashboard
-20. unknown - Unclear command
+4. add_department - Add/create a new department (requires department_name field)
+5. delete_students - Delete all students or specific students (requires confirmation)
+6. add_applicant - Add a new student applicant (Admission Portal)
+7. analyze_system - Analyze the entire ERP system (Dashboard data)
+8. chat - General conversation, greetings, or non-command interactions
+9. unknown - Unclear command
 
 Available students:
 ${context.students.length > 0 ? context.students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
 
 Current date: ${context.currentDate}
 
-Conversation History (Use this to understand context):
-${historyText}
+Examples:
+- "add new department with name Computer Science" → {"action":"add_department","department_name":"Computer Science","confidence":0.95}
+- "create department Mathematics" → {"action":"add_department","department_name":"Mathematics","confidence":0.9}
+- "add department Physics" → {"action":"add_department","department_name":"Physics","confidence":0.9}
+- "delete all students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
+- "delete all the students" → {"action":"delete_students","delete_all":true,"confidence":0.95}
+- "remove all students" → {"action":"delete_students","delete_all":true,"confidence":0.9}
+- "add applicant Vijay" → {"action":"add_applicant","student_name":"Vijay","confidence":0.95}
+- "add new student Vijay" → {"action":"add_applicant","student_name":"Vijay","confidence":0.9}
+- "analyze system" → {"action":"analyze_system","confidence":0.95}
+- "analyze erp" → {"action":"analyze_system","confidence":0.95}
+- "hi" → {"action":"chat","message":"Hello! How can I help you with the ERP today?","confidence":0.95}
+- "hello" → {"action":"chat","message":"Hi there! I'm ready to help you manage students, departments, and more.","confidence":0.95}
+- "who are you" → {"action":"chat","message":"I am the SchoolSphere AI Assistant. I can help you manage your school data.","confidence":0.95}
 
-INSTRUCTIONS:
-1. If the user's intent is clear but MISSING REQUIRED DETAILS, set "needs_clarification": true and "clarification_question": "Your question here".
-   - Example: User says "Record payment". You need student name and amount. Return: {"action":"record_payment", "needs_clarification": true, "clarification_question": "Who is the payment for and what is the amount?", "confidence": 0.9}
-2. If the user provides details later, merge with history to form complete action.
-3. If the user wants to navigate (e.g., "Open fee structure"), just return the action without clarification.
+Return ONLY this JSON structure (no markdown, no code blocks){"action":"mark_attendance","student_name":"Laxman","department":"BSC Comp Science","status":"absent","confidence":0.95,"message":"Mark Laxman"}
 
 Examples:
-- "record payment" → {"action":"record_payment","needs_clarification":true,"clarification_question":"Which student is making the payment?","confidence":0.95}
-- "record payment for Laxman" → {"action":"record_payment","student_name":"Laxman","needs_clarification":true,"clarification_question":"How much is the payment amount?","confidence":0.95}
-- "payment of 5000 for Laxman" → {"action":"record_payment","student_name":"Laxman","amount":5000,"confidence":0.95}
-- "create fee structure" → {"action":"create_fee_structure","confidence":0.95} (Navigation only, no clarification needed)
+Input: "mark Laxman from department BSC Comp Science"
+Output{"action":"mark_attendance","student_name":"Laxman","department":"BSC Comp Science","status":"absent","confidence":0.95,"message":"Mark Laxman"}
+
+Input: "mark John"
+Output{"action":"mark_attendance","student_name":"John","status":"present","confidence":0.9,"message":"Mark John"}
 
 Now parse: ${prompt}`;
 
   // Try models in order until one works
-  let lastError: Error | null = null;
+  let lastError = null;
 
   for (const model of MODEL_OPTIONS) {
     try {
@@ -475,16 +372,16 @@ Now parse: ${prompt}`;
 
 // New function to parse data query intent
 export async function parseDataQueryIntent(
-  prompt: string,
-  students: StudentData[],
-  currentDate: string
-): Promise<DataQueryIntent> {
+  prompt,
+  students,
+  currentDate
+) {
   const systemPrompt = `You are an AI assistant that understands questions about school data. Parse the question and return ONLY valid JSON, no markdown, no explanations.
 
 Available students:
-\${students.length > 0 ? students.map(s => \`- \${s.name} (ID: \${s.id}, Department: \${s.department || 'N/A'})\`).join('\\n') : 'No students available'}
+${students.length > 0 ? students.map(s => `- ${s.name} (ID: ${s.id}, Department: ${s.department || 'N/A'})`).join('\n') : 'No students available'}
 
-Current date: \${currentDate}
+Current date: ${currentDate}
 
 Query types:
 1. attendance_check - Check if a student is present/absent on a specific date (e.g., "is laxman present today")
@@ -493,22 +390,21 @@ Query types:
 4. student_info - Get information about a student
 5. general - Other queries
 
-Return ONLY this JSON structure (no markdown, no code blocks):
-{"queryType":"attendance_check","student_name":"Laxman","date":"2024-01-15","confidence":0.95}
+Return ONLY this JSON structure (no markdown, no code blocks){"queryType":"attendance_check","student_name":"Laxman","date":"2024-01-15","confidence":0.95}
 
 Examples:
 Input: "is laxman present today"
-Output: {"queryType":"attendance_check","student_name":"Laxman","date":"\${currentDate}","confidence":0.9}
+Output{"queryType":"attendance_check","student_name":"Laxman","date":"${currentDate}","confidence":0.9}
 
 Input: "how many students are there in bsc comp science"
-Output: {"queryType":"student_count","department":"BSC Comp Science","confidence":0.95}
+Output{"queryType":"student_count","department":"BSC Comp Science","confidence":0.95}
 
 Input: "show me students in computer science"
-Output: {"queryType":"student_count","department":"Computer Science","confidence":0.85}
+Output{"queryType":"student_count","department":"Computer Science","confidence":0.85}
 
-Now parse: \${prompt}`;
+Now parse: ${prompt}`;
 
-  let lastError: Error | null = null;
+  let lastError = null;
 
   for (const model of MODEL_OPTIONS) {
     try {
@@ -587,21 +483,17 @@ Now parse: \${prompt}`;
 
 // New function for analytics queries
 export async function callGeminiAnalytics(
-  query: string,
-  data: {
-    attendance?: { current: number; historical: number[] };
-    finance?: { current: number; historical: number[] };
-    students?: { current: number; historical: number[] };
-  }
-): Promise<string> {
+  query,
+  data
+) {
   const systemPrompt = `You are an AI analytics assistant for a school ERP system. Analyze the provided data and provide insights, predictions, and recommendations.
 
 Current Data:
-\${data.attendance ? \`Attendance: Current \${data.attendance.current}%, Historical: \${data.attendance.historical.join(', ')}\` : ''}
-\${data.finance ? \`Finance: Current $\${data.finance.current.toLocaleString()}, Historical: $\${data.finance.historical.map(v => v.toLocaleString()).join(', $')}\` : ''}
-\${data.students ? \`Students: Current \${data.students.current}, Historical: \${data.students.historical.join(', ')}\` : ''}
+${data.attendance ? `Attendance: Current ${data.attendance.current}%, Historical: ${data.attendance.historical.join(', ')}` : ''}
+${data.finance ? `Finance: Current $${data.finance.current.toLocaleString()}, Historical: $${data.finance.historical.map(v => v.toLocaleString()).join(', $')}` : ''}
+${data.students ? `Students: Current ${data.students.current}, Historical: ${data.students.historical.join(', ')}` : ''}
 
-Query: \${query}
+Query: ${query}
 
 Provide a concise, actionable response with:
 1. Key insights from the data
@@ -611,7 +503,7 @@ Provide a concise, actionable response with:
 
 Keep the response under 200 words and be specific with numbers.`;
 
-  let lastError: Error | null = null;
+  let lastError = null;
 
   for (const model of MODEL_OPTIONS) {
     try {
@@ -624,27 +516,16 @@ Keep the response under 200 words and be specific with numbers.`;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
-        continue;
+        continue; // Try next model
       }
-      break;
+      throw lastError;
     }
   }
 
-  // Fallback to v1
-  try {
-    const response = await tryGeminiModel('gemini-pro', systemPrompt, 'v1');
-    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (text) {
-      return text.trim();
-    }
-  } catch (error) {
-    // Ignore
-  }
-
-  throw lastError || new Error('Failed to generate analytics');
+  throw lastError || new Error('Failed to get analytics response from Gemini API');
 }
 
-function parseAIResponse(text: string, context: AIContext): AIAction {
+function parseAIResponse(text, context) {
   try {
     // Check for department creation commands first
     const departmentMatch = text.match(/add\s+(?:new\s+)?department\s+(?:with\s+name\s+)?["']?([^"']+)["']?/i);
@@ -653,7 +534,7 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
         action: 'add_department',
         department_name: departmentMatch[1].trim(),
         confidence: 0.9,
-        message: `Creating department: \${departmentMatch[1].trim()}`,
+        message: `Creating department: ${departmentMatch[1].trim()}`,
       };
     }
 
@@ -680,7 +561,7 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
       }
     }
 
-    let parsed: Partial<AIAction>;
+    let parsed;
     try {
       parsed = JSON.parse(jsonText);
     } catch (parseError) {
@@ -694,19 +575,29 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
         action: 'add_department',
         department_name: parsed.department_name,
         confidence: parsed.confidence || 0.8,
-        message: parsed.message || `Creating department: \${parsed.department_name}`,
+        message: parsed.message || `Creating department: ${parsed.department_name}`,
+      };
+    }
+
+    // Check if parsed action is delete_students
+    if (parsed.action === 'delete_students') {
+      return {
+        action: 'delete_students',
+        delete_all: parsed.delete_all || true,
+        confidence: parsed.confidence || 0.8,
+        message: parsed.message || 'Delete all students',
       };
     }
 
     // Find student by name and department if provided
     if (parsed.student_name) {
       let matchingStudents = context.students.filter(
-        s => s.name.toLowerCase().includes(parsed.student_name!.toLowerCase())
+        s => s.name.toLowerCase().includes(parsed.student_name.toLowerCase())
       );
 
       if (parsed.department) {
         matchingStudents = matchingStudents.filter(
-          s => s.department?.toLowerCase().includes(parsed.department!.toLowerCase())
+          s => s.department?.toLowerCase().includes(parsed.department.toLowerCase())
         );
       }
 
@@ -721,7 +612,7 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
         parsed.student_id = matchingStudents[0].id;
         parsed.student_name = matchingStudents[0].name;
         parsed.confidence = (parsed.confidence || 0.8) * 0.7;
-        parsed.message = `\${parsed.message || ''} (Multiple students found, using first match)`;
+        parsed.message = `${parsed.message || ''} (Multiple students found, using first match)`;
       }
     }
 
@@ -737,18 +628,6 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
       status: parsed.status,
       student_id: parsed.student_id,
       date: parsed.date || context.currentDate,
-
-      // Finance fields
-      amount: parsed.amount,
-      fee_type: parsed.fee_type,
-      payment_method: parsed.payment_method,
-      reason: parsed.reason,
-      bank_name: parsed.bank_name,
-
-      // Conversation fields
-      needs_clarification: parsed.needs_clarification,
-      clarification_question: parsed.clarification_question,
-
       confidence: parsed.confidence || 0.5,
       message: parsed.message || 'Action parsed',
     };
@@ -758,7 +637,7 @@ function parseAIResponse(text: string, context: AIContext): AIAction {
     return {
       action: 'unknown',
       confidence: 0,
-      message: errorMessage,
+      message: 'Failed to parse command',
     };
   }
 }

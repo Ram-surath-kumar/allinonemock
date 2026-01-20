@@ -1,4 +1,4 @@
-import { Pencil, Calendar, Mail, User } from 'lucide-react';
+import { Calendar, Mail, User } from 'lucide-react';
 import { User as UserType } from '@/types/erp';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export function StudentTable({ students, onEdit, onViewAttendance, onViewProfile, canEdit, canViewAttendance, viewMode = 'grid' }) {
+export function StudentTable({ students, onViewAttendance, onViewProfile, canViewAttendance, viewMode = 'grid' }) {
   const isMobile = useIsMobile();
   // Always use grid view on mobile, regardless of viewMode prop
   const effectiveViewMode = isMobile ? 'grid' : viewMode;
@@ -102,17 +102,6 @@ export function StudentTable({ students, onEdit, onViewAttendance, onViewProfile
                           className="transition-all duration-200 hover:scale-110 active:scale-95"
                         >
                           <Calendar className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(student)}
-                          title="Edit student"
-                          className="transition-all duration-200 hover:scale-110 active:scale-95"
-                        >
-                          <Pencil className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -216,20 +205,6 @@ export function StudentTable({ students, onEdit, onViewAttendance, onViewProfile
                 >
                   <Calendar className="h-3.5 w-3.5 mr-1.5" />
                   Attendance
-                </Button>
-              )}
-              {canEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(student);
-                  }}
-                  className="flex-1 text-xs h-8 transition-all duration-200 hover:scale-105 active:scale-95"
-                >
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                  Edit
                 </Button>
               )}
             </div>

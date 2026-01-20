@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Login } from '@/pages/Login';
 import { ROLE_LABELS } from '@/types/erp';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -83,22 +84,26 @@ const PageLoader = () => (
 
 function AppContent() {
   const { currentUser, login, loading } = useAuth();
-  const { orgName, userId, tab } = useParams<{ orgName?: string; userId?: string; tab?: string }>();
+  const { orgName, userId, tab } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Map tab names to paths
-  const tabToPath: Record<string, string> = {
+  const tabToPath = {
     'dashboard': '/',
     'users': '/users',
     'students': '/students',
     'attendance': '/attendance',
     'academics': '/academics',
     'finance': '/finance',
+    'hostel': '/hostel',
+    'exam': '/exam',
+    'library': '/library',
     'facilities': '/facilities',
     'settings': '/settings',
+    'tools': '/tools',
     'academic-governance': '/governance/academic',
     'mis-submission': '/governance/mis',
     'personal-details': '/student/personal-details',
@@ -106,22 +111,21 @@ function AppContent() {
     'student-attendance': '/student/attendance',
     'timetable': '/student/timetable',
     'fee-payment': '/student/fee-payment',
-
-    'tools': '/tools',
-    'hostel': '/hostel',
-    'library': '/library',
-    'examinations': '/exam',
   };
 
-  const pathToTab: Record<string, string> = {
+  const pathToTab = {
     '/': 'dashboard',
     '/users': 'users',
     '/students': 'students',
     '/attendance': 'attendance',
     '/academics': 'academics',
     '/finance': 'finance',
+    '/hostel': 'hostel',
+    '/exam': 'exam',
+    '/library': 'library',
     '/facilities': 'facilities',
     '/settings': 'settings',
+    '/tools': 'tools',
     '/governance/academic': 'academic-governance',
     '/governance/mis': 'mis-submission',
     '/student/personal-details': 'personal-details',
@@ -129,26 +133,20 @@ function AppContent() {
     '/student/attendance': 'student-attendance',
     '/student/timetable': 'timetable',
     '/student/fee-payment': 'fee-payment',
-
-    '/tools': 'tools',
-    '/hostel': 'hostel',
-    '/library': 'library',
-    '/exam': 'examinations',
   };
 
-  // Initialize from URL on mount
+  // Initialize from URL on mount (only if user is already logged in)
   useEffect(() => {
     const initializeUser = async () => {
       try {
-        if (orgName && userId) {
+        if (currentUser && orgName && userId) {
           const userIdNum = parseInt(userId, 10);
           if (!isNaN(userIdNum)) {
-            // Load user by org name and user_id
-            login('', orgName, userIdNum);
+            // Load user by org name and user_id if URL params don't match current user
+            if (currentUser.organization?.org_name !== orgName || currentUser.user_id !== userIdNum) {
+              login('', orgName, userIdNum);
+            }
           }
-        } else if (!currentUser) {
-          // Default to admin if no user and no URL params
-          login('admin');
         }
       } catch (error) {
         console.error('Error initializing user:', error);
@@ -157,42 +155,53 @@ function AppContent() {
         setTimeout(() => setIsInitializing(false), 1000);
       }
     };
-
     initializeUser();
-  }, [orgName, userId]);
+  }, [orgName, userId, currentUser]);
 
+  // Update URL when user changes
+  // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {
     if (currentUser?.organization && currentUser.user_id) {
       const currentTab = tab || pathToTab[location.pathname] || 'dashboard';
       const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
 
-      // Only update if URL is different
-      if (location.pathname !== newPath && (!orgName || !userId ||
+      // If the URL already specifies a user (orgName & userId exist), 
+      // we assume the user intends to be there (potentially switching users).
+      // We only auto-redirect if I am logged in but the URL is generic (e.g. '/')
+      // OR if the mismatched URL is NOT a valid user path loop.
+
+      const isUrlSwitchingUser = orgName && userId && (
         orgName !== currentUser.organization.org_name ||
-        parseInt(userId || '0', 10) !== currentUser.user_id)) {
+        parseInt(userId, 10) !== currentUser.user_id
+      );
+
+      // If we are switching user via URL, DO NOT redirect back to old user.
+      if (isUrlSwitchingUser) {
+        return;
+      }
+
+      // Only update if URL is different and we are simply fixing the URL 
+      // for the CURRENT user (e.g. they landed on '/')
+      if (location.pathname !== newPath) {
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentUser?.organization?.org_name, currentUser?.user_id]);
+  }, [currentUser?.organization?.org_name, currentUser?.user_id, location.pathname, orgName, userId]);
 
-  const handleNavigate = (path: string) => {
-    // Split path and query params
-    const [pathPart, queryPart] = path.split('?');
-    const queryString = queryPart ? `?${queryPart}` : '';
-
+  const handleNavigate = (path) => {
     // For student routes, use the path directly or map to tab name
-    if (pathPart.startsWith('/student/')) {
-      const tabName = pathToTab[pathPart] || pathPart.replace('/student/', '').replace(/-/g, '-');
+    if (path.startsWith('/student/')) {
+      const tabName = pathToTab[path] || path.replace('/student/', '').replace(/-/g, '-');
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryString}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
       } else {
         navigate(path);
       }
     } else {
-      const tabName = pathToTab[pathPart] || 'dashboard';
+      const tabName = pathToTab[path] || 'dashboard';
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryString}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
       } else {
         navigate(path);
       }
@@ -258,6 +267,12 @@ function AppContent() {
         return 'Academics';
       case '/finance':
         return 'Finance';
+      case '/hostel':
+        return 'Hostel Management';
+      case '/exam':
+        return 'Examinations';
+      case '/library':
+        return 'Library Management';
       case '/facilities':
         return 'Facilities';
       case '/settings':
@@ -274,16 +289,6 @@ function AppContent() {
         return 'Fee Payment';
       case '/tools':
         return 'Tools';
-      case '/tools':
-        return 'Tools';
-      case '/hostel':
-        return 'Hostel Management';
-      case '/library':
-        return 'Library Management';
-      case '/exam':
-        return 'Examinations';
-      case '/governance/academic':
-        return 'Academic Governance';
       case '/governance/academic':
         return 'Academic Governance';
       case '/governance/mis':
@@ -365,24 +370,6 @@ function AppContent() {
             <Tools />
           </Suspense>
         );
-      case '/hostel':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <HostelDashboard />
-          </Suspense>
-        );
-      case '/library':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <LibraryDashboard />
-          </Suspense>
-        );
-      case '/exam':
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <ExamDashboard />
-          </Suspense>
-        );
 
       case '/governance/academic':
         return (
@@ -400,6 +387,24 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <Finance />
+          </Suspense>
+        );
+      case '/hostel':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <HostelDashboard />
+          </Suspense>
+        );
+      case '/exam':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ExamDashboard />
+          </Suspense>
+        );
+      case '/library':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <LibraryDashboard />
           </Suspense>
         );
       case '/academics':
@@ -436,6 +441,17 @@ function AppContent() {
     }
   }, [currentUser, loading]);
 
+  // Show login page if not authenticated - redirect to /login
+  useEffect(() => {
+    if (!currentUser && !loading && !isInitializing && location.pathname !== '/login') {
+      navigate('/login', { replace: true });
+    }
+  }, [currentUser, loading, isInitializing, location.pathname, navigate]);
+
+  // Show login page if not authenticated
+  if (!currentUser && !loading && !isInitializing) {
+    return null; // Will redirect to /login
+  }
   if (isInitializing && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -457,11 +473,7 @@ function AppContent() {
 }
 
 const Index = () => {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  return <AppContent />;
 };
 
 export default Index;

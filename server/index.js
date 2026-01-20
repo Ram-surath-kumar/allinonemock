@@ -23,6 +23,8 @@ import profilesRouter from './routes/SIM/profiles.js';
 import admissionsRouter from './routes/SIM/admissions.js';
 import simAcademicRouter from './routes/SIM/academic.js';
 import communicationsRouter from './routes/SIM/communications.js';
+import schedulesRouter from './routes/schedules.js';
+import tasksRouter from './routes/tasks.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -95,6 +97,8 @@ app.use('/api/sim/profiles', profilesRouter);
 app.use('/api/sim/admissions', admissionsRouter);
 app.use('/api/sim/academic', simAcademicRouter);
 app.use('/api/sim/communications', communicationsRouter);
+app.use('/api/schedules', schedulesRouter);
+app.use('/api/tasks', tasksRouter);
 
 // TODO: Register these routes once created
 // app.use('/api/growth', growthRouter);

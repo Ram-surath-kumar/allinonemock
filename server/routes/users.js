@@ -255,8 +255,12 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
   try {
     const { college_email, loop_email, loopid, user_name, user_id } = req.body;
 
-    if (!college_email || !loop_email) {
-      return sendValidationError(res, 'College email and loop email are required');
+    if (!college_email) {
+      return sendValidationError(res, 'College email is required');
+    }
+
+    if (!loop_email) {
+      return sendValidationError(res, 'Loop email is required');
     }
 
     const { sendWelcomeEmail, generatePassword } = await import('../services/email.js');

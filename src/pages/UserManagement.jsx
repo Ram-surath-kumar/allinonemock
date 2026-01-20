@@ -70,6 +70,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           user_id: row.user_id,
           name: row.name,
           email: row.email,
+          college_email: row.college_email,
           role: row.role,
           permissions: row.permissions || [],
           department: row.department_id ? deptMap.get(row.department_id) || null : row.department || null,
@@ -458,6 +459,32 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
     }
   };
 
+  const handleResendEmail = async (user) => {
+    try {
+      if (!user.college_email) {
+        toast.error('College email not found for this user');
+        return;
+      }
+
+      const emailResponse = await api.sendWelcomeEmail({
+        college_email: user.college_email,
+        loop_email: user.email || '',
+        loopid: user.loopid || '',
+        user_name: user.name,
+        user_id: user.user_id,
+      });
+
+      if (emailResponse.error) {
+        throw new Error(emailResponse.error);
+      }
+
+      toast.success('Welcome email sent successfully');
+    } catch (error) {
+      console.error('Error resending welcome email:', error);
+      toast.error(error.message || 'Failed to resend welcome email');
+    }
+  };
+
   const handleDeleteUser = async (user) => {
     try {
       const { error } = await supabase
@@ -550,6 +577,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         users={filteredUsers}
         onEdit={handleEditUser}
         onDelete={handleDeleteUser}
+        onResendEmail={handleResendEmail}
       />
       )}
 
