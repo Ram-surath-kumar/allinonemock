@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-export function RoomBookingManager({ roomId }) {
+export function RoomBookingManager({ roomId, onUpdate }) {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -24,7 +24,7 @@ export function RoomBookingManager({ roomId }) {
         date: new Date(),
         start_time: '09:00',
         end_time: '10:00',
-        status: 'Pending'
+        status: 'Approved'
     });
 
     useEffect(() => {
@@ -82,6 +82,7 @@ export function RoomBookingManager({ roomId }) {
             toast.success("Booking created");
             setIsAddOpen(false);
             fetchBookings();
+            if (onUpdate) onUpdate();
 
         } catch (error) {
             console.error(error);
@@ -101,6 +102,7 @@ export function RoomBookingManager({ roomId }) {
             if (response.ok) {
                 toast.success("Booking cancelled");
                 setBookings(bookings.filter(b => b.id !== id));
+                if (onUpdate) onUpdate();
             }
         } catch (e) {
             toast.error("Failed to cancel");
@@ -213,21 +215,8 @@ export function RoomBookingManager({ roomId }) {
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <Select
-                                value={newBooking.status}
-                                onValueChange={v => setNewBooking({ ...newBooking, status: v })}
-                            >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Pending">Pending</SelectItem>
-                                    <SelectItem value="Approved">Approved</SelectItem>
-                                    <SelectItem value="Blocked">Blocked</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
+
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
                         <Button onClick={handleAddBooking} disabled={loading}>
@@ -237,6 +226,6 @@ export function RoomBookingManager({ roomId }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

@@ -96,16 +96,7 @@ export function FacilitiesDashboard({ hierarchy }) {
                         <p className="text-xs text-muted-foreground">Total Capacity: {stats.totalCapacity}</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Maintenance Alerts</CardTitle>
-                        <Wrench className={stats.pendingRepairs > 0 ? "h-4 w-4 text-destructive" : "h-4 w-4 text-muted-foreground"} />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.pendingRepairs}</div>
-                        <p className="text-xs text-muted-foreground">Rooms needing repairs</p>
-                    </CardContent>
-                </Card>
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Operational Status</CardTitle>
@@ -175,27 +166,7 @@ export function FacilitiesDashboard({ hierarchy }) {
                 </Card>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
-                    <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
-                        <CardDescription>Latest updates to facilities.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="flex items-center">
-                                    <div className="ml-4 space-y-1">
-                                        <p className="text-sm font-medium leading-none">Maintenance Logged</p>
-                                        <p className="text-sm text-muted-foreground">Room 101 - AC Repair</p>
-                                    </div>
-                                    <div className="ml-auto font-medium text-xs text-muted-foreground">Today</div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+
         </div>
     );
 }

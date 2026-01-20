@@ -28,6 +28,7 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
     const [activeTab, setActiveTab] = useState("identification");
     const [isViewMode, setIsViewMode] = useState(false); // Toggle between Edit Form and View Details
     const [isBookingOpen, setIsBookingOpen] = useState(false);
+    const [upcomingBookings, setUpcomingBookings] = useState([]);
 
     const { register, handleSubmit, reset, setValue, watch, control } = useForm({
         defaultValues: {
@@ -107,7 +108,8 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
     useEffect(() => {
         if (roomId) {
             fetchRoomDetails();
-            setIsViewMode(false); // Reset to edit mode when switching rooms
+            fetchBookingInfo(); // Fetch booking info initially
+            setIsViewMode(true); // Default to View Mode when loading a room
         } else {
             // Reset to defaults
             reset({
@@ -150,6 +152,32 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
             toast.error("Failed to load room details");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchBookingInfo = async () => {
+        if (!roomId) return;
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${baseUrl}/facilities/bookings/${roomId}`);
+            const result = await response.json();
+
+            if (result.data && result.data.length > 0) {
+                // Find all upcoming bookings
+                const now = new Date();
+                const upcoming = result.data
+                    .filter(b => {
+                        const end = new Date(b.end_time);
+                        return end > now;
+                    })
+                    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time)); // Sort by nearest first
+
+                setUpcomingBookings(upcoming);
+            } else {
+                setUpcomingBookings([]);
+            }
+        } catch (error) {
+            console.error("Failed to load booking info", error);
         }
     };
 
@@ -224,13 +252,13 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
                 <div className="flex justify-between items-center shrink-0">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight text-green-700">
-                            Room {savedRoom.room_number || 'Details'} Saved
+                            Room {savedRoom.room_number || 'Details'}
                         </h2>
-                        <p className="text-muted-foreground">Successfully updated room configuration.</p>
+
                     </div>
                     <Button onClick={() => setIsViewMode(false)} variant="outline">
                         <Loader2 className="mr-2 h-4 w-4 opacity-0" /> {/* Spacer */}
-                        Edit Room Again
+                        Edit Room
                     </Button>
                 </div>
 
@@ -266,6 +294,26 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${savedRoom.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                                         {savedRoom.status}
                                     </span>
+                                </div>
+
+                                <div className="col-span-2 border-t pt-2 mt-2">
+                                    <span className="text-muted-foreground block text-xs uppercase font-semibold mb-1">Next Booking</span>
+                                    {upcomingBookings.length > 0 ? (
+                                        <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                            {upcomingBookings.map((booking, idx) => (
+                                                <div key={idx} className="bg-blue-50 p-2 rounded border border-blue-100 animate-in fade-in zoom-in duration-300">
+                                                    <span className="font-medium block text-blue-900">{booking.event_name}</span>
+                                                    <span className="text-xs text-blue-700">
+                                                        {new Date(booking.start_time).toLocaleDateString()} • {new Date(booking.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-muted-foreground italic pl-2">
+                                            No upcoming bookings scheduled.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
@@ -391,7 +439,7 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
                                                 <DialogTitle>Manage Bookings for {savedRoom.room_number}</DialogTitle>
                                             </DialogHeader>
                                             <div className="py-2">
-                                                <RoomBookingManager roomId={roomId} />
+                                                <RoomBookingManager roomId={roomId} onUpdate={fetchBookingInfo} />
                                             </div>
                                         </DialogContent>
                                     </Dialog>
