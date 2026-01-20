@@ -65,127 +65,95 @@ export function TeacherDashboard() {
   const [users, setUsers] = useState([]);
   const [openCombobox, setOpenCombobox] = useState(false);
 
-  useEffect(() => {
-    loadSchedules();
-    loadUsers();
-  }, [currentUser]);
+  // Events state
+  const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    loadTasks();
-  }, [currentUser, taskViewMode]);
-
-  const loadUsers = async () => {
-    try {
-      const response = await api.getUsers();
-      if (response.data) setUsers(response.data);
-    } catch (error) {
-      console.error("Failed to load users", error);
-    }
-  };
-
-  const loadTasks = async () => {
-    try {
-      // Logic:
-      // 'to_me' -> assigned_to = current user id
-      // 'by_me' -> assigned_by = current user id
-      const params = taskViewMode === 'by_me'
-        ? { assigned_by: currentUser?.id }
-        : { assigned_to: currentUser?.id };
-
-      const response = await api.getTasks(params);
-      if (response.data) {
-        setTasks(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load tasks', error);
-    }
-  };
-
-  const handleOpenTaskDialog = () => {
-    setTaskFormData({
-      title: '',
-      description: '',
-      assigned_to: 'student_1', // default for demo
-      assigned_to_name: '',
-      due_date: new Date().toISOString().split('T')[0],
-      status: 'pending'
-    });
-    setIsTaskDialogOpen(true);
-  };
-
-  const handleSaveTask = async () => {
-    try {
-      if (!taskFormData.title || !taskFormData.assigned_to_name) {
-        toast.error("Please fill required fields");
-        return;
-      }
-
-      await api.createTask({
-        ...taskFormData,
-        assigned_by: currentUser?.id,
-        assigned_by_name: currentUser?.name || 'Teacher'
-      });
-
-      toast.success("Task assigned successfully");
-      setIsTaskDialogOpen(false);
+    if (currentUser) {
+      loadSchedules();
+      loadUsers();
+      loadEvents();
       loadTasks();
-    } catch (error) {
-      console.error("Error creating task", error);
-      toast.error("Failed to assign task");
     }
-  };
-
-  const handleToggleStatus = async (task) => {
-    try {
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      // Optimistic update
-      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
-
-      await api.updateTask(task.id, { status: newStatus });
-    } catch (error) {
-      console.error("Failed to update status", error);
-      // Revert
-      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: task.status } : t));
-    }
-  };
+  }, [currentUser]);
 
   const loadSchedules = async () => {
     try {
-      setLoading(true);
-      // Fetch all schedules for now, or filter by teacher if backend supports
-      // If backend uses generic 'readData', we might get all. 
-      // We can filter locally if needed or pass params if API logic updated.
-      // For this implementation, we assume the API handles it or returns relevant ones.
-      // Ideally: api.getSchedules({ teacher_id: currentUser?.id })
-      const response = await api.getSchedules({ teacher_id: currentUser?.id });
+      if (!currentUser?.id) return;
+      const response = await api.getSchedules({ teacher_id: currentUser.id });
       if (response.data) {
         setSchedules(response.data);
       }
     } catch (error) {
-      console.error('Failed to load schedules:', error);
-      toast.error('Failed to load schedule');
+      console.error("Failed to load schedules", error);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const response = await api.getUsers({ role: 'student' });
+      if (response.data) {
+        setUsers(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load students", error);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      if (!currentUser?.id) return;
+
+      // Fetch tasks assigned BY me and TO me (if any)
+      const [byMe, toMe] = await Promise.all([
+        api.getTasks({ assigned_by: currentUser.id }),
+        api.getTasks({ assigned_to: currentUser.id })
+      ]);
+
+      let allTasks = [];
+      if (byMe.data) allTasks = [...allTasks, ...byMe.data.map(t => ({ ...t, type: 'by_me' }))];
+      if (toMe.data) allTasks = [...allTasks, ...toMe.data.map(t => ({ ...t, type: 'to_me' }))];
+
+      // Remove duplicates if any
+      const uniqueTasks = Array.from(new Map(allTasks.map(item => [item.id, item])).values());
+
+      setTasks(uniqueTasks);
+
+    } catch (error) {
+      console.error("Failed to load tasks", error);
+    }
+  };
+
+  const loadEvents = async () => {
+    try {
+      const response = await api.getEvents();
+      if (response.data) {
+        setEvents(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load events", error);
+    }
+  };
+
   const handleOpenDialog = (schedule = null) => {
     if (schedule) {
-      setCurrentSchedule(schedule);
       setFormData({
         subject: schedule.subject,
         class_name: schedule.class_name,
         time: schedule.time,
         room: schedule.room
       });
+      setCurrentSchedule(schedule);
     } else {
-      setCurrentSchedule(null);
       setFormData({
         subject: '',
         class_name: '',
         time: '',
         room: ''
       });
+      setCurrentSchedule(null);
     }
     setIsDialogOpen(true);
   };
@@ -193,48 +161,94 @@ export function TeacherDashboard() {
   const handleSave = async () => {
     try {
       if (!formData.subject || !formData.class_name || !formData.time) {
-        toast.error('Please fill in all required fields');
+        toast.error("Please fill in required fields");
         return;
       }
 
       const scheduleData = {
         ...formData,
-        teacher_id: currentUser?.id,
-        teacher_name: currentUser?.name || 'Teacher',
-        // In a real app, department_id would be selected or mapped.
-        // For matching with students, we'll try to generate a department_id from class_name
-        // e.g., "Grade 10-A" -> "grade_10_a" (simplified)
-        department_id: formData.class_name.toLowerCase().replace(/\s+/g, '_')
+        teacher_id: currentUser.id,
+        teacher_name: currentUser.name,
+        day: new Date().toLocaleDateString('en-US', { weekday: 'long' }) // Simple default
       };
 
+      let response;
       if (currentSchedule) {
-        const response = await api.updateSchedule(currentSchedule.id, scheduleData);
-        if (response.error) throw new Error(response.error);
-        toast.success('Schedule updated');
+        response = await api.updateSchedule(currentSchedule.id, scheduleData);
       } else {
-        const response = await api.createSchedule(scheduleData);
-        if (response.error) throw new Error(response.error);
-        toast.success('Class added to schedule');
+        response = await api.createSchedule(scheduleData);
       }
 
+      if (response.error) throw new Error(response.error);
+
+      toast.success(currentSchedule ? "Class updated" : "Class added");
       setIsDialogOpen(false);
       loadSchedules();
     } catch (error) {
-      console.error('Error saving schedule:', error);
-      toast.error('Failed to save schedule');
+      toast.error(error.message || "Failed to save class");
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this class?')) {
-      try {
-        await api.deleteSchedule(id);
-        toast.success('Class removed');
-        loadSchedules();
-      } catch (error) {
-        console.error('Error deleting:', error);
-        toast.error('Failed to delete class');
+    if (!window.confirm("Delete this class?")) return;
+    try {
+      const response = await api.deleteSchedule(id);
+      if (response.error) throw new Error(response.error);
+      toast.success("Class deleted");
+      loadSchedules();
+    } catch (error) {
+      toast.error("Failed to delete class");
+    }
+  };
+
+  const handleOpenTaskDialog = () => {
+    setTaskFormData({
+      title: '',
+      description: '',
+      assigned_to: '',
+      assigned_to_name: '',
+      due_date: '',
+      status: 'pending'
+    });
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleSaveTask = async () => {
+    try {
+      if (!taskFormData.title || !taskFormData.assigned_to || !taskFormData.due_date) {
+        toast.error("Please fill in required fields");
+        return;
       }
+
+      const newTask = {
+        ...taskFormData,
+        assigned_by: currentUser.id,
+        assigned_by_name: currentUser.name,
+        created_at: new Date().toISOString()
+      };
+
+      const response = await api.createTask(newTask);
+      if (response.error) throw new Error(response.error);
+
+      toast.success("Task assigned successfully");
+      setIsTaskDialogOpen(false);
+      loadTasks();
+
+    } catch (error) {
+      toast.error(error.message || "Failed to assign task");
+    }
+  };
+
+  const handleToggleStatus = async (task) => {
+    try {
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const response = await api.updateTask(task.id, { status: newStatus });
+      if (response.error) throw new Error(response.error);
+
+      toast.success(`Task marked as ${newStatus}`);
+      loadTasks();
+    } catch (error) {
+      toast.error("Failed to update task status");
     }
   };
 
@@ -242,6 +256,7 @@ export function TeacherDashboard() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* ... existing stats ... */}
         <StatsCard
           title="My Students"
           value="127"
@@ -268,9 +283,9 @@ export function TeacherDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Today's Schedule */}
-        <Card>
+        <Card className="xl:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
@@ -312,7 +327,7 @@ export function TeacherDashboard() {
         </Card>
 
         {/* Pending Tasks */}
-        <Card>
+        <Card className="xl:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
@@ -381,9 +396,38 @@ export function TeacherDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Upcoming Events */}
+        <Card className="xl:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Upcoming Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>
+            ) : (
+              events.map((event, index) => (
+                <div
+                  key={event.id}
+                  className="rounded-lg border border-border p-3 animate-slide-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{event.title}</p>
+                    <Badge variant="secondary" className="text-xs">{event.date}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {event.time} @ {event.location}
+                  </p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-
 
       {/* Task Assignment Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>

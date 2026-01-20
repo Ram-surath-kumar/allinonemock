@@ -18,11 +18,11 @@ router.get('/', async (req, res) => {
   // 1. Self-Service Check: Allow if user is fetching their own profile by email
   const isSelfService = email && (req.user.email === email || req.userProfile.email === email);
 
-  // 2. Admin/Registrar Check
-  const isAdminOrRegistrar = ['admin', 'registrar'].includes(req.userProfile.role);
+  // 2. Admin/Registrar/Faculty Check
+  const isAdminOrRegistrar = ['admin', 'registrar', 'teacher', 'faculty'].includes(req.userProfile.role);
 
   if (!isSelfService && !isAdminOrRegistrar) {
-    return res.status(403).json({ error: 'Access Denied: Requires admin or registrar privileges' });
+    return res.status(403).json({ error: 'Access Denied: Requires admin, registrar or faculty privileges' });
   }
 
   try {
@@ -170,6 +170,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     await supabaseAdmin.from('marks_entries').delete().eq('evaluated_by', userId);
     await supabaseAdmin.from('student_results').delete().eq('student_id', userId);
     await supabaseAdmin.from('student_fees').delete().eq('student_id', userId);
+    await supabaseAdmin.from('student_fee_assignments').delete().eq('student_id', userId);
     await supabaseAdmin.from('payments').delete().eq('student_id', userId);
     await supabaseAdmin.from('payments').delete().eq('created_by', userId);
     await supabaseAdmin.from('refund_requests').delete().eq('student_id', userId);

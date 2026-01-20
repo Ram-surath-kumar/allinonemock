@@ -556,6 +556,16 @@ class ApiClient {
   async deleteTask(id) {
     return this.request(`/tasks/${id}`, { method: 'DELETE' });
   }
+
+  // Events
+  async getEvents(params) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/events${query ? `?${query}` : ''}`, {}, false);
+  }
+
+  async createEvent(data) {
+    return this.request('/events', { method: 'POST', body: JSON.stringify(data) });
+  }
 }
 
 
