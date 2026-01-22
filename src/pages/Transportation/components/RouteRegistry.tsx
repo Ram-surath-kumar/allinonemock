@@ -7,16 +7,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MapPin, Plus, Clock, AlertTriangle, ShieldCheck, Banknote } from 'lucide-react';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 export function RouteRegistry() {
     const { toast } = useToast();
     const [routes, setRoutes] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
+    const [selectedRouteId, setSelectedRouteId] = useState<string>('');
+
+    const handleRouteSelect = (routeId: string) => {
+        setSelectedRouteId(routeId);
+    };
 
     // Detailed Form State
     const [newRoute, setNewRoute] = useState({
@@ -227,20 +234,40 @@ export function RouteRegistry() {
             </div>
 
             {/* ROUTES GRID */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {routes.map((route) => (
-                    <Card key={route.id} className="hover:shadow-lg transition-all cursor-pointer group">
-                        <CardHeader className="pb-3 bg-muted/20">
-                            <div className="flex justify-between">
-                                <Badge variant="outline">{route.route_id}</Badge>
-                                <Badge className={route.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>{route.status}</Badge>
-                            </div>
-                            <CardTitle className="mt-2">{route.route_name}</CardTitle>
-                            <CardDescription className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> {route.operating_days} ({route.departure_time_start} - {route.arrival_time_campus})
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-3">
+            <RadioGroup value={selectedRouteId} onValueChange={handleRouteSelect}>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {routes.map((route) => (
+                        <label
+                            key={route.id}
+                            htmlFor={`route-${route.id}`}
+                            className={cn(
+                                "block cursor-pointer",
+                                selectedRouteId === String(route.id) && "ring-2 ring-primary ring-offset-2 rounded-lg"
+                            )}
+                        >
+                            <Card className={cn(
+                                "hover:shadow-lg transition-all group relative h-full",
+                                selectedRouteId === String(route.id) && "border-primary"
+                            )}>
+                                <CardHeader className="pb-3 bg-muted/20">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2">
+                                        <RadioGroupItem
+                                            value={String(route.id)}
+                                            id={`route-${route.id}`}
+                                            className="mt-1"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                            <Badge variant="outline">{route.route_id}</Badge>
+                                        </div>
+                                        <Badge className={route.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>{route.status}</Badge>
+                                    </div>
+                                <CardTitle className="mt-2">{route.route_name}</CardTitle>
+                                <CardDescription className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" /> {route.operating_days} ({route.departure_time_start} - {route.arrival_time_campus})
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4" /> Start</span>
                                 <span>{route.start_point}</span>
@@ -267,8 +294,10 @@ export function RouteRegistry() {
                             </div>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
+                        </label>
+                    ))}
+                </div>
+            </RadioGroup>
         </div>
     );
 }

@@ -58,6 +58,7 @@ export function AIAssistantChat({ onNavigate }) {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
+  const [expandedImage, setExpandedImage] = useState<{ url: string; name: string } | null>(null);
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -243,8 +244,6 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
-        addMessage('assistant', `🔄 Processing... Marking ${action.student_name} as ${action.status}...`);
-
         const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
         const response = await api.markAttendance([{
           student_id: action.student_id,
@@ -275,7 +274,6 @@ export function AIAssistantChat({ onNavigate }) {
         addMessage('assistant', `❌ Error: ${error.message || 'Failed to mark attendance'}`);
       }
     } else if (action.action === 'edit_student') {
-      addMessage('assistant', '🔄 Processing... Opening students page for editing...');
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -285,7 +283,6 @@ export function AIAssistantChat({ onNavigate }) {
         setIsOpen(false);
       }, 500);
     } else if (action.action === 'view_student') {
-      addMessage('assistant', `🔄 Processing... Opening students page to view ${action.student_name || 'student'}...`);
       if (onNavigate) {
         onNavigate('/students');
       } else {
@@ -306,8 +303,6 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
-        addMessage('assistant', `🔄 Processing... Creating department "${action.department_name}"...`);
-
         const response = await api.createDepartment({
           name: action.department_name,
           created_by: currentUser?.id || '',
@@ -351,11 +346,8 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       try {
-        // Show processing status
-        const totalStudents = students.length;
-        addMessage('assistant', `🔄 Processing... Starting deletion of ${totalStudents} student${totalStudents !== 1 ? 's' : ''}...`);
-
         // Delete all students
+        const totalStudents = students.length;
         const studentIds = students.map(s => s.id);
         let deletedCount = 0;
         let errorCount = 0;
@@ -363,11 +355,6 @@ export function AIAssistantChat({ onNavigate }) {
         for (let i = 0; i < studentIds.length; i++) {
           const studentId = studentIds[i];
           const currentIndex = i + 1;
-
-          // Show progress every 5 students or for the last one
-          if (currentIndex % 5 === 0 || currentIndex === studentIds.length) {
-            addMessage('assistant', `🔄 Processing... Deleting student ${currentIndex} of ${totalStudents}...`);
-          }
 
           try {
             const response = await api.deleteUser(studentId);
@@ -484,7 +471,7 @@ export function AIAssistantChat({ onNavigate }) {
 
   const handleDataQuery = async (query) => {
     try {
-      addMessage('assistant', '🔄 Processing... Analyzing your question...');
+      // Loading state is managed by parent component, no need to add processing message
 
       const currentDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -667,9 +654,7 @@ export function AIAssistantChat({ onNavigate }) {
         // Handle data query
         await handleDataQuery(userPrompt);
       } else {
-        // Handle action
-        addMessage('assistant', '🔄 Processing... Understanding your command...');
-
+        // Handle action - loading state is already set, no need to add processing message
         const context = {
           students,
           currentDate: format(new Date(), 'yyyy-MM-dd'),
@@ -822,32 +807,61 @@ export function AIAssistantChat({ onNavigate }) {
 
               {/* Attachments Preview */}
               {attachments.length > 0 && (
-                <div className="px-4 py-2 border-t border-border bg-muted/20 flex gap-2 overflow-x-auto">
-                  {attachments.map((file, index) => (
-                    <div key={index} className="relative flex items-center gap-2 bg-background border border-border p-2 rounded-lg pr-8 shrink-0">
-                      {file.type.startsWith('image/') ? (
-                        <div className="h-10 w-10 rounded overflow-hidden">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                      )}
-                      <div className="flex flex-col max-w-[120px]">
-                        <span className="text-xs font-medium truncate">{file.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
-                      </div>
-                      <button
-                        onClick={() => removeAttachment(index)}
-                        className="absolute top-1 right-1 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                <div className="px-4 py-2 border-t border-border bg-muted/20">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {attachments.map((file, index) => (
+                      <div 
+                        key={index} 
+                        className="group relative"
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                        {file.type.startsWith('image/') ? (
+                          <div className="relative h-10 w-10 rounded-[6px] overflow-hidden bg-muted border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow aspect-square">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="h-full w-full object-cover aspect-square"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedImage({
+                                  url: URL.createObjectURL(file),
+                                  name: file.name
+                                });
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeAttachment(index);
+                              }}
+                              className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
+                              title="Remove attachment"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="relative h-10 w-10 rounded-[6px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow flex items-center justify-center aspect-square">
+                            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            <button
+                              onClick={() => removeAttachment(index)}
+                              className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                              title="Remove attachment"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Hover Tooltip with Details */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-popover border border-border rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] whitespace-nowrap max-w-[200px]">
+                          <div className="text-xs font-medium text-foreground truncate">{file.name}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB</div>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+                            <div className="h-1.5 w-1.5 bg-popover border-r border-b border-border rotate-45"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -969,6 +983,40 @@ export function AIAssistantChat({ onNavigate }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Expanded Image Modal */}
+      {expandedImage && (
+        <div 
+          className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <div className="relative w-full h-full max-w-7xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 px-4">
+              <div className="text-white text-sm font-medium truncate max-w-[80%]">
+                {expandedImage.name}
+              </div>
+              <button
+                type="button"
+                onClick={() => setExpandedImage(null)}
+                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur transition-all flex items-center justify-center"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Image Container */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg">
+              <img
+                src={expandedImage.url}
+                alt={expandedImage.name}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Camera Modal */}
       {
         isCameraOpen && (

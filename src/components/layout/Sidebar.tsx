@@ -80,9 +80,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [collapsed] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,27 +89,6 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usersDropdownOpen]);
-
-  // Handle hover with 500ms delay
-  useEffect(() => {
-    if (isHovered) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setCollapsed(false);
-      }, 500);
-    } else {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-      // Immediately collapse to hide text first, then width will follow
-      setCollapsed(true);
-    }
-
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, [isHovered]);
 
   const fetchAllUsers = async () => {
     try {
@@ -228,8 +205,6 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   return (
     <aside
       ref={sidebarRef}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "flex h-screen flex-col shadow-depth-2 border-r border-sidebar-border",
         "bg-sidebar backdrop-blur-xl transition-[width] duration-300 ease-out",
