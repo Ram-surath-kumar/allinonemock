@@ -182,6 +182,38 @@ class ApiClient {
         return requestPromise;
     }
 
+    // Generic methods for flexibility
+    public async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+        }
+        const query = queryParams.toString();
+        return this.request<T>(`${endpoint}${query ? `?${query}` : ''}`);
+    }
+
+    public async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+        return this.request<T>(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    public async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+        return this.request<T>(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    public async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+        return this.request<T>(endpoint, {
+            method: 'DELETE',
+        });
+    }
+
     // Users
     async getUsers(params?: {
         role?: string;

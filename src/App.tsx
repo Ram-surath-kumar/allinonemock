@@ -41,6 +41,7 @@ const AppContent = () => {
       <Route path="/facilities" element={<Index />} />
       <Route path="/hostel" element={<Index />} />
       <Route path="/library" element={<Index />} />
+      <Route path="/transport" element={<Index />} />
       <Route path="/exam" element={<Index />} />
       <Route path="/tools" element={<Index />} />
       <Route path="/settings" element={<Index />} />
