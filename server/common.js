@@ -19,10 +19,10 @@ const hasValidServiceKey = supabaseServiceKey &&
   supabaseServiceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE' &&
   supabaseServiceKey.trim() !== '';
 
-console.log('[common.js] Init Supabase Client');
-console.log('[common.js] URL:', supabaseUrl);
-console.log('[common.js] Has Service Key:', hasValidServiceKey);
-console.log('[common.js] Service Key Length:', supabaseServiceKey ? supabaseServiceKey.length : 0);
+// console.log('[common.js] Init Supabase Client');
+// console.log('[common.js] URL:', supabaseUrl);
+// console.log('[common.js] Has Service Key:', hasValidServiceKey);
+// console.log('[common.js] Service Key Length:', supabaseServiceKey ? supabaseServiceKey.length : 0);
 
 if (!hasValidServiceKey) {
   console.warn('⚠️  WARNING: SUPABASE_SERVICE_ROLE_KEY not found or is a placeholder.');

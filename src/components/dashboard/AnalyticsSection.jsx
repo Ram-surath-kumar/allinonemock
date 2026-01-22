@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -25,47 +25,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Sample data generators
-const generateAttendanceData = () => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return days.map(day => ({
-    day,
-    attendance: Math.floor(Math.random() * 20) + 80,
-  }));
-};
 
-const generateFeeData = () => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  return months.map(month => ({
-    month,
-    collected: Math.floor(Math.random() * 50000) + 200000,
-    pending: Math.floor(Math.random() * 30000) + 50000,
-  }));
-};
-
-const generateStudentGrowthData = () => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  return months.map(month => ({
-    month,
-    students: Math.floor(Math.random() * 100) + 2800,
-  }));
-};
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
 
-export function AnalyticsSection() {
+export function AnalyticsSection({ data }) {
   const [attendanceView, setAttendanceView] = useState('area');
   const [feeView, setFeeView] = useState('bar');
   const [studentGrowthView, setStudentGrowthView] = useState('line');
   const [todaySummaryView, setTodaySummaryView] = useState('pie');
-  
-  const attendanceData = generateAttendanceData();
-  const feeData = generateFeeData();
-  const studentGrowthData = generateStudentGrowthData();
-  
-  const todaySummary = [
-    { name: 'Present', value: 2680, color: COLORS[1] },
-    { name: 'Absent', value: 167, color: COLORS[3] },
+
+  // Use passed data or fallbacks to empty arrays to prevent crashes
+  const attendanceData = data?.attendance || [];
+  const feeData = data?.fees || [];
+  const studentGrowthData = data?.students || [];
+
+  const todaySummary = data?.todaySummary || [
+    { name: 'Present', value: 0, color: COLORS[1] },
+    { name: 'Absent', value: 0, color: COLORS[3] },
   ];
 
   const renderChartView = (
@@ -115,18 +92,18 @@ export function AnalyticsSection() {
       return (
         <LineChart {...commonProps}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-          <XAxis 
-            dataKey={xAxisKey} 
+          <XAxis
+            dataKey={xAxisKey}
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <YAxis 
+          <YAxis
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -135,10 +112,10 @@ export function AnalyticsSection() {
             }}
             animationDuration={200}
           />
-          <Line 
-            type="monotone" 
-            dataKey={dataKey} 
-            stroke={colors?.primary || "hsl(var(--primary))"} 
+          <Line
+            type="monotone"
+            dataKey={dataKey}
+            stroke={colors?.primary || "hsl(var(--primary))"}
             strokeWidth={3}
             dot={{ fill: colors?.primary || "hsl(var(--primary))", r: 4 }}
             animationDuration={2000}
@@ -153,18 +130,18 @@ export function AnalyticsSection() {
       return (
         <BarChart {...commonProps}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-          <XAxis 
-            dataKey={xAxisKey} 
+          <XAxis
+            dataKey={xAxisKey}
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <YAxis 
+          <YAxis
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -173,9 +150,9 @@ export function AnalyticsSection() {
             }}
             animationDuration={200}
           />
-          <Bar 
-            dataKey={dataKey} 
-            fill={colors?.primary || "hsl(var(--primary))"} 
+          <Bar
+            dataKey={dataKey}
+            fill={colors?.primary || "hsl(var(--primary))"}
             radius={[10, 10, 0, 0]}
             animationDuration={2000}
             animationBegin={200}
@@ -190,23 +167,23 @@ export function AnalyticsSection() {
         <AreaChart {...commonProps}>
           <defs>
             <linearGradient id={`color${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={colors?.primary || "hsl(var(--primary))"} stopOpacity={0.4}/>
-              <stop offset="95%" stopColor={colors?.primary || "hsl(var(--primary))"} stopOpacity={0}/>
+              <stop offset="5%" stopColor={colors?.primary || "hsl(var(--primary))"} stopOpacity={0.4} />
+              <stop offset="95%" stopColor={colors?.primary || "hsl(var(--primary))"} stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-          <XAxis 
-            dataKey={xAxisKey} 
+          <XAxis
+            dataKey={xAxisKey}
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <YAxis 
+          <YAxis
             stroke="hsl(var(--muted-foreground))"
             fontSize={11}
             tickLine={false}
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -215,10 +192,10 @@ export function AnalyticsSection() {
             }}
             animationDuration={200}
           />
-          <Area 
-            type="monotone" 
-            dataKey={dataKey} 
-            stroke={colors?.primary || "hsl(var(--primary))"} 
+          <Area
+            type="monotone"
+            dataKey={dataKey}
+            stroke={colors?.primary || "hsl(var(--primary))"}
             strokeWidth={3}
             fillOpacity={1}
             fill={`url(#color${dataKey})`}
@@ -332,18 +309,18 @@ export function AnalyticsSection() {
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={feeData} aria-label="Fee collection over last 6 months">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
                 tickLine={false}
               />
-              <YAxis 
+              <YAxis
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={11}
                 tickLine={false}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
@@ -352,17 +329,17 @@ export function AnalyticsSection() {
                 }}
                 animationDuration={200}
               />
-              <Bar 
-                dataKey="collected" 
-                fill="hsl(var(--success))" 
+              <Bar
+                dataKey="collected"
+                fill="hsl(var(--success))"
                 radius={[10, 10, 0, 0]}
                 animationDuration={2000}
                 animationBegin={200}
                 isAnimationActive={true}
               />
-              <Bar 
-                dataKey="pending" 
-                fill="hsl(var(--warning))" 
+              <Bar
+                dataKey="pending"
+                fill="hsl(var(--warning))"
                 radius={[10, 10, 0, 0]}
                 animationDuration={2000}
                 animationBegin={400}
@@ -463,8 +440,8 @@ export function AnalyticsSection() {
             {todaySummary.map((item, index) => (
               <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
+                  <div
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-sm font-medium">{item.name}</span>
@@ -495,7 +472,7 @@ export function AnalyticsSection() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -510,8 +487,8 @@ export function AnalyticsSection() {
             <div className="flex items-center justify-center gap-6 mt-4">
               {todaySummary.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
+                  <div
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>

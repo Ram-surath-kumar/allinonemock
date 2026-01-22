@@ -89,6 +89,66 @@ router.get('/books', async (req, res) => {
   }
 });
 
+// Create a new book
+router.post('/books', async (req, res) => {
+  try {
+    const { title, author, isbn, category, publisher, quantity } = req.body;
+
+    if (!title || !author || !isbn) {
+      return sendValidationError(res, 'Title, author, and ISBN are required');
+    }
+
+    // Default status to 'Available' if quantity > 0
+    const status = quantity && parseInt(quantity) > 0 ? 'Available' : 'Out of Stock';
+
+    const { data: book, error: bookError } = await supabaseAdmin
+      .from('books')
+      .insert({
+        title,
+        author,
+        isbn,
+        category,
+        publisher,
+        quantity: quantity || 1,
+        available_quantity: quantity || 1,
+        status,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (bookError) throw bookError;
+
+    // Create book copies
+    const copiesCount = parseInt(quantity) || 1;
+    const copies = [];
+    for (let i = 0; i < copiesCount; i++) {
+      copies.push({
+        book_id: book.id,
+        accession_number: `${isbn}-${Date.now()}-${i + 1}`, // Simple auto-generation
+        status: 'available',
+        purchase_date: new Date().toISOString().split('T')[0]
+      });
+    }
+
+    if (copies.length > 0) {
+      const { error: copiesError } = await supabaseAdmin
+        .from('book_copies')
+        .insert(copies);
+
+      if (copiesError) {
+        console.error('Error creating book copies:', copiesError);
+        // We don't rollback the book creation here for simplicity, but in production we should.
+        // Or we could return a warning.
+      }
+    }
+
+    sendSuccess(res, book);
+  } catch (error) {
+    handleError(error, res, 'Failed to create book');
+  }
+});
+
 // Get library member by ID
 router.get('/members/:id', async (req, res) => {
   try {

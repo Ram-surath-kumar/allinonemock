@@ -336,7 +336,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
       <QuickActions onAddUser={onAddUser} onAssignTask={handleOpenTaskDialog} />
 
       {/* Analytics Section */}
-      <AnalyticsSection />
+      <AnalyticsSection data={dashboardData?.charts} />
 
       {/* Recent Activity - Timeline */}
       <RecentActivity />

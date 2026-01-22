@@ -601,6 +601,9 @@ class ApiClient {
         });
     }
 
+
+
+
     async getFeeStructures(params?: { batch_year?: number; category_id?: string }): Promise<ApiResponse<any[]>> {
         const queryParams = new URLSearchParams();
         if (params?.batch_year) queryParams.append('batch_year', String(params.batch_year));
@@ -683,8 +686,29 @@ class ApiClient {
         return this.request<any[]>(`/library/books${query ? `?${query}` : ''}`);
     }
 
+    async addLibraryBook(data: any): Promise<ApiResponse<any>> {
+        return this.request('/library/books', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
     async getLibraryMember(id: string): Promise<ApiResponse<any>> {
         return this.request<any>(`/library/members/${id}`);
+    }
+
+    async issueLibraryBook(data: any): Promise<ApiResponse<any>> {
+        return this.request('/library/issue', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async returnLibraryBook(data: any): Promise<ApiResponse<any>> {
+        return this.request('/library/return', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     }
 
     async getExamDashboard(): Promise<ApiResponse<any>> {
@@ -725,6 +749,17 @@ class ApiClient {
         if (params?.end_date) queryParams.append('end_date', params.end_date);
         const query = queryParams.toString();
         return this.request(`/finance/reports/collection${query ? `?${query}` : ''}`);
+    }
+    // AI Chat History
+    async getChatHistory(userId: string): Promise<ApiResponse<any[]>> {
+        return this.request<any[]>(`/ai/history?userId=${userId}`);
+    }
+
+    async saveChatMessage(data: { userId: string; role: string; content: string; metadata?: any }): Promise<ApiResponse<any>> {
+        return this.request('/ai/history', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     }
 }
 

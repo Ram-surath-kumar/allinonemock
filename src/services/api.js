@@ -1,4 +1,4 @@
-import { apiCache, getCacheKey } from './cache';
+﻿import { apiCache, getCacheKey } from './cache';
 import { supabase } from '@/lib/supabase';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -69,16 +69,6 @@ class ApiClient {
           apiCache.set(cacheKey, result.data);
         }
 
-        // Invalidate cache on successful write operations (POST, PUT, DELETE)
-        if (!isGet && response.ok && result.error === null) {
-          const parts = endpoint.split('?')[0].split('/');
-          const resource = parts[0] || parts[1]; // Handle both 'exam/create' and '/exam/create'
-          if (resource) {
-            console.log(`[API] Invalidating cache for resource: ${resource}`);
-            apiCache.invalidate(resource);
-          }
-        }
-
         return result;
       } catch (error) {
         console.error(`API Error [${endpoint}]:`, error);
@@ -136,13 +126,6 @@ class ApiClient {
     return this.request(`/sim/profiles/${userId}`, {
       method: 'POST',
       body: JSON.stringify(profileData),
-    });
-  }
-
-  async sendBulkMessage(data) {
-    return this.request('/sim/communications/send-bulk', {
-      method: 'POST',
-      body: JSON.stringify(data),
     });
   }
 
@@ -230,10 +213,6 @@ class ApiClient {
     });
   }
 
-  async getFacilities() {
-    return this.request('/facilities', {}, false);
-  }
-
   // Teacher Departments
   async getTeacherDepartments(teacherId) {
     return this.request(`/teacher-departments/${teacherId}`);
@@ -310,37 +289,7 @@ class ApiClient {
     });
   }
 
-  // Schedules
-  async getSchedules(params) {
-    const queryParams = new URLSearchParams();
-    if (params?.teacher_id) queryParams.append('teacher_id', params.teacher_id);
-    if (params?.department_id) queryParams.append('department_id', params.department_id);
-    if (params?.day) queryParams.append('day', params.day);
-    const query = queryParams.toString();
-    return this.request(`/schedules${query ? `?${query}` : ''}`, {}, false); // Disable cache for schedules
-  }
-
-  async createSchedule(scheduleData) {
-    return this.request('/schedules', {
-      method: 'POST',
-      body: JSON.stringify(scheduleData),
-    });
-  }
-
-  async updateSchedule(id, scheduleData) {
-    return this.request(`/schedules/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(scheduleData),
-    });
-  }
-
-  async deleteSchedule(id) {
-    return this.request(`/schedules/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ====== CONSOLIDATED ENDPOINTS ======
+  // ==================== CONSOLIDATED ENDPOINTS ====================
   // Use these endpoints to reduce API calls from frontend
 
   /**
@@ -363,14 +312,12 @@ class ApiClient {
   async getAttendancePageData(
     userId,
     role,
-    date,
-    category = 'student'
+    date
   ) {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
     if (role) params.append('role', role);
     if (date) params.append('date', date);
-    if (category) params.append('category', category);
     const query = params.toString();
     return this.request(`/attendance/page-data${query ? `?${query}` : ''}`);
   }
@@ -560,167 +507,25 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
-
-  }
-  // --- Tasks ---
-  async getTasks(params) {
-    const query = new URLSearchParams(params).toString();
-    return this.request(`/tasks${query ? `?${query}` : ''}`, {}, false);
   }
 
-  async createTask(data) {
-    return this.request('/tasks', { method: 'POST', body: JSON.stringify(data) });
-  }
-
-  async updateTask(id, data) {
-    return this.request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-  }
-
-  async deleteTask(id) {
-    return this.request(`/tasks/${id}`, { method: 'DELETE' });
-  }
-
-  // Events
-  async getEvents(params) {
-    const query = new URLSearchParams(params).toString();
-    return this.request(`/events${query ? `?${query}` : ''}`, {}, false);
-  }
-
-  async createEvent(data) {
-    return this.request('/events', { method: 'POST', body: JSON.stringify(data) });
-  }
-
-  // ==================== SIM (Student Information Management) ====================
-
-  // Profile
-  async getProfile(userId) {
-    return this.request(`/sim/profiles/${userId}`);
-  }
-
-  async updateProfile(userId, data) {
-    return this.request(`/sim/profiles/${userId}`, {
+  async addLibraryBook(data) {
+    return this.request('/library/books', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
   }
-
-  // Admissions
-  async getAdmissions(filters) {
-    const queryParams = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
-      });
-    }
-    const query = queryParams.toString();
-    return this.request(`/sim/admissions${query ? `?${query}` : ''}`);
+  // AI Chat History
+  async getChatHistory(userId) {
+    return this.request(`/ai/history?userId=${userId}`);
   }
 
-  async getAdmissionById(id) {
-    return this.request(`/sim/admissions/${id}`);
-  }
-
-  async submitAdmissionApplication(data) {
-    return this.request('/sim/admissions/apply', {
+  async saveChatMessage(data) {
+    return this.request('/ai/history', {
       method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async updateAdmissionStatus(id, status, remarks) {
-    return this.request(`/sim/admissions/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status, remarks })
-    });
-  }
-
-  // Exams
-  async getEntranceExams() {
-    return this.request('/sim/exams');
-  }
-
-  async createEntranceExam(data) {
-    return this.request('/sim/exams', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async submitEntranceScore(data) {
-    return this.request('/sim/exams/scores', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  // Merit Lists
-  async getMeritLists() {
-    return this.request('/sim/merit');
-  }
-
-  async generateMeritList(data) {
-    return this.request('/sim/merit/generate', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  // Course Registration
-  async getCourseOfferings(semesterId) {
-    return this.request(`/sim/registration/offerings/${semesterId}`);
-  }
-
-  async getAvailableCourses(semesterId, deptId) { // Fallback/Legacy
-    const query = new URLSearchParams({ semester_id: semesterId });
-    if (deptId) query.append('department_id', deptId);
-    return this.request(`/sim/registration/courses/available?${query}`);
-  }
-
-  async registerCourses(data) {
-    /* data structure: { student_id, semester_id, registrations: [...] } */
-    return this.request('/sim/registration/enroll', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async dropCourse(registrationId, reason) {
-    return this.request('/sim/registration/drop', {
-      method: 'POST',
-      body: JSON.stringify({ registration_id: registrationId, reason })
-    });
-  }
-
-  async getMyRegistrations(studentId) {
-    return this.request(`/sim/registration/my-courses/${studentId}`);
-  }
-
-  // Academic Records
-  async getAcademicHistory(studentId) {
-    return this.request(`/sim/academic/history/${studentId}`);
-  }
-
-  // Graduation Audit
-  async getGraduationAudit(studentId) {
-    return this.request(`/sim/graduation/audit/${studentId}`);
-  }
-
-  // Leave Management
-  async getLeaves(studentId) {
-    return this.request(`/sim/leaves/${studentId}`);
-  }
-
-  async getCourseAttendance(studentId) {
-    return this.request(`/sim/attendance/summary/${studentId}`);
-  }
-
-  async applyLeave(data) {
-    return this.request('/sim/leaves/apply', {
-      method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
   }
 }
-
 
 export const api = new ApiClient(API_BASE_URL);

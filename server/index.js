@@ -35,6 +35,7 @@ import courseAttendanceRouter from './routes/SIM/course_attendance.js';
 import schedulesRouter from './routes/schedules.js';
 import tasksRouter from './routes/tasks.js';
 import eventsRouter from './routes/events.js';
+import aiRouter from './routes/ai.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -128,6 +129,7 @@ app.use('/api/sim/attendance', courseAttendanceRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/ai', aiRouter);
 
 // Future Routes
 // app.use('/api/growth', growthRouter);

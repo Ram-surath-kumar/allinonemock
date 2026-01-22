@@ -136,6 +136,9 @@ export function StudentAttendanceCalendar({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Attendance - {student.name}</DialogTitle>
+          <div className="text-sm text-muted-foreground">
+            {student.loopid || student.id} • {student.department || 'No Department'}
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
