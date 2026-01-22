@@ -92,10 +92,40 @@ router.get('/books', async (req, res) => {
 // Create a new book
 router.post('/books', async (req, res) => {
   try {
-    const { title, author, isbn, category, publisher, quantity } = req.body;
+    let { title, author, isbn, category, publisher, quantity } = req.body;
 
-    if (!title || !author || !isbn) {
-      return sendValidationError(res, 'Title, author, and ISBN are required');
+    if (!title || !author) {
+      return sendValidationError(res, 'Title and author are required');
+    }
+
+    // Auto-generate ISBN if not provided
+    if (!isbn || isbn.trim() === '') {
+      try {
+        // Get the last custom ISBN to determine next sequence number
+        const { data: lastBook, error: lastBookError } = await supabaseAdmin
+          .from('books')
+          .select('isbn')
+          .like('isbn', 'CUSTOM-%')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        let nextSeq = 1;
+        if (lastBook && lastBook.length > 0 && lastBook[0].isbn) {
+          // Extract sequence number from last ISBN (format: CUSTOM-ORG-000001)
+          const match = lastBook[0].isbn.match(/CUSTOM-\w+-(\d+)$/);
+          if (match) {
+            nextSeq = parseInt(match[1]) + 1;
+          }
+        }
+
+        // Generate new ISBN with format: CUSTOM-ORG-{6-digit-sequence}
+        isbn = `CUSTOM-ORG-${String(nextSeq).padStart(6, '0')}`;
+        console.log('Auto-generated ISBN:', isbn);
+      } catch (error) {
+        console.error('Error generating ISBN:', error);
+        // Fallback to timestamp-based ISBN if sequence generation fails
+        isbn = `CUSTOM-ORG-${Date.now()}`;
+      }
     }
 
     // Default status to 'Available' if quantity > 0

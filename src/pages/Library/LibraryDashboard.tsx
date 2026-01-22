@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { Book, LibraryMember, fetchBooks, issueBook, returnBook, getMember, addBook } from '@/services/library';
-import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle } from 'lucide-react';
+import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle, Upload, Sparkles } from 'lucide-react';
+import { analyzeBookCover } from '@/services/gemini';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -102,6 +103,10 @@ export default function LibraryDashboard() {
     );
 
     const [isAddBookOpen, setIsAddBookOpen] = useState(false);
+    const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
+    const [coverImage, setCoverImage] = useState<File | null>(null);
+    const [aiProcessing, setAiProcessing] = useState(false);
+    const [extractedData, setExtractedData] = useState<any>(null);
     const [newBook, setNewBook] = useState({
         title: '',
         author: '',
@@ -111,9 +116,58 @@ export default function LibraryDashboard() {
         quantity: '1'
     });
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setCoverImage(file);
+        setAiProcessing(true);
+
+        try {
+            const metadata = await analyzeBookCover(file);
+            setExtractedData(metadata);
+
+            // Auto-fill form with extracted data
+            setNewBook({
+                title: metadata.title || '',
+                author: metadata.author || '',
+                isbn: '', // ISBN will be auto-generated
+                category: metadata.category || '',
+                publisher: metadata.publisher || '',
+                quantity: '1'
+            });
+
+            toast({
+                title: "AI Analysis Complete",
+                description: `Extracted: ${metadata.title} by ${metadata.author}`,
+            });
+        } catch (error: any) {
+            toast({
+                title: "AI Analysis Failed",
+                description: error.message || "Failed to analyze book cover. Please enter manually.",
+                variant: "destructive"
+            });
+        } finally {
+            setAiProcessing(false);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setCoverImage(null);
+        setExtractedData(null);
+        setNewBook({
+            title: '',
+            author: '',
+            isbn: '',
+            category: '',
+            publisher: '',
+            quantity: '1'
+        });
+    };
+
     const handleAddBook = async () => {
-        if (!newBook.title || !newBook.author || !newBook.isbn) {
-            toast({ title: "Validation Error", description: "Title, Author, and ISBN are required.", variant: "destructive" });
+        if (!newBook.title || !newBook.author) {
+            toast({ title: "Validation Error", description: "Title and Author are required.", variant: "destructive" });
             return;
         }
 
@@ -122,9 +176,12 @@ export default function LibraryDashboard() {
                 ...newBook,
                 is_reference_only: false // Default
             });
-            toast({ title: "Success", description: "Book added successfully" });
+            toast({ title: "Success", description: "Book added successfully. ISBN auto-generated if not provided." });
             setIsAddBookOpen(false);
             setNewBook({ title: '', author: '', isbn: '', category: '', publisher: '', quantity: '1' });
+            setCoverImage(null);
+            setExtractedData(null);
+            setEntryMode('manual');
             loadBooks();
         } catch (error: any) {
             toast({ title: "Error", description: error.message || "Failed to add book", variant: "destructive" });
@@ -144,13 +201,85 @@ export default function LibraryDashboard() {
                             <BookOpen className="mr-2 h-4 w-4" /> Add Book
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Add New Book</DialogTitle>
                             <DialogDescription>
-                                Enter the details of the new book to add to the library.
+                                Choose manual entry or use AI to extract details from book cover.
                             </DialogDescription>
                         </DialogHeader>
+
+                        {/* Entry Mode Toggle */}
+                        <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                            <Button
+                                variant={entryMode === 'manual' ? 'default' : 'ghost'}
+                                className="flex-1"
+                                onClick={() => setEntryMode('manual')}
+                            >
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                Manual Entry
+                            </Button>
+                            <Button
+                                variant={entryMode === 'ai' ? 'default' : 'ghost'}
+                                className="flex-1"
+                                onClick={() => setEntryMode('ai')}
+                            >
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                AI-Assisted
+                            </Button>
+                        </div>
+
+                        {/* AI Mode - Image Upload */}
+                        {entryMode === 'ai' && (
+                            <div className="space-y-4">
+                                <div className="border-2 border-dashed rounded-lg p-6 text-center relative">
+                                    {coverImage && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute top-2 right-2 h-8 w-8"
+                                            onClick={handleRemoveImage}
+                                        >
+                                            <span className="text-lg">×</span>
+                                        </Button>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        id="cover-upload"
+                                        disabled={aiProcessing}
+                                    />
+                                    <label htmlFor="cover-upload" className="cursor-pointer">
+                                        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+                                        <p className="text-sm font-medium">
+                                            {coverImage ? coverImage.name : 'Upload Book Cover'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            AI will extract title, author, and other details
+                                        </p>
+                                    </label>
+                                </div>
+                                {aiProcessing && (
+                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        Analyzing book cover with AI...
+                                    </div>
+                                )}
+                                {extractedData && (
+                                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
+                                            ✓ AI Extraction Complete (Confidence: {Math.round(extractedData.confidence * 100)}%)
+                                        </p>
+                                        <p className="text-xs text-green-700 dark:text-green-300">
+                                            You can review and edit the extracted information below
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="title">Title *</Label>
@@ -170,11 +299,12 @@ export default function LibraryDashboard() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="isbn">ISBN *</Label>
+                                    <Label htmlFor="isbn">ISBN (Auto-generated if empty)</Label>
                                     <Input
                                         id="isbn"
                                         value={newBook.isbn}
                                         onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                                        placeholder="Leave empty for auto-generation"
                                     />
                                 </div>
                                 <div className="grid gap-2">

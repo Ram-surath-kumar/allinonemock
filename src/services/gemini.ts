@@ -250,6 +250,187 @@ Now extract the student data and return ONLY the JSON array:`;
   }
 }
 
+/**
+ * Analyze book cover image and extract metadata using Gemini Vision API
+ * @param file - The book cover image file
+ * @returns Book metadata including title, author, publisher, category
+ */
+export async function analyzeBookCover(file: File): Promise<{
+  title: string;
+  author: string;
+  publisher?: string;
+  category?: string;
+  edition?: string;
+  confidence: number;
+}> {
+  try {
+    // Convert file to base64
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix
+        const base64String = result.split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Determine MIME type
+    const mimeType = file.type || 'image/jpeg';
+
+    // System prompt for extracting book metadata
+    const systemPrompt = `You are an expert at analyzing book covers and extracting bibliographic information.
+
+CRITICAL: You MUST return ONLY a valid JSON object. No markdown, no code blocks, no explanations, no additional text. Just the raw JSON object.
+
+Analyze the book cover image and extract the following information:
+{
+  "title": "Full title of the book (REQUIRED)",
+  "author": "Author name(s) (REQUIRED)",
+  "publisher": "Publisher name (optional)",
+  "category": "Book category/genre (optional - e.g., Fiction, Science, History, Technology)",
+  "edition": "Edition information if visible (optional - e.g., 2nd Edition, Revised)",
+  "confidence": 0.95
+}
+
+STRICT REQUIREMENTS:
+1. "title" field is REQUIRED - extract the complete book title from the cover
+2. "author" field is REQUIRED - extract the author's name. If multiple authors, separate with commas
+3. "publisher" field - extract if visible on the cover
+4. "category" field - infer the category/genre based on the title, cover design, and any visible text
+5. "edition" field - extract edition information if visible
+6. "confidence" field - your confidence level (0.0 to 1.0) in the extracted data
+7. Return ONLY the JSON object, nothing else. No markdown code blocks, no explanations.
+
+VALID EXAMPLE (copy this format exactly):
+{
+  "title": "The Great Gatsby",
+  "author": "F. Scott Fitzgerald",
+  "publisher": "Scribner",
+  "category": "Fiction",
+  "edition": "Centennial Edition",
+  "confidence": 0.95
+}
+
+INVALID (DO NOT DO THIS):
+- Wrapping in markdown code blocks
+- Adding explanations before or after
+- Using null values (omit optional fields if not found)
+- Missing title or author fields
+
+Now analyze the book cover and return ONLY the JSON object:`;
+
+    // Try different models
+    for (const model of MODEL_OPTIONS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: systemPrompt,
+                  },
+                  {
+                    inline_data: {
+                      mime_type: mimeType,
+                      data: base64,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.error?.message?.includes('not supported') || errorData.error?.message?.includes('not found')) {
+            continue; // Try next model
+          }
+          throw new Error(errorData.error?.message || response.statusText);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+          console.error('AI returned empty response');
+          throw new Error('No response from AI');
+        }
+
+        console.log('AI Book Cover Analysis Response:', text.substring(0, 500));
+
+        // Extract JSON from response
+        let jsonText = text.trim();
+
+        // Remove markdown code blocks if present
+        if (jsonText.includes('```')) {
+          const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[1].trim();
+          } else {
+            jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          }
+        }
+
+        // Try to find JSON object in the text
+        if (!jsonText.startsWith('{')) {
+          const objectMatch = jsonText.match(/(\{[\s\S]*\})/);
+          if (objectMatch) {
+            jsonText = objectMatch[1];
+          }
+        }
+
+        let extractedData;
+        try {
+          extractedData = JSON.parse(jsonText);
+        } catch (parseError) {
+          console.error('JSON Parse Error:', parseError);
+          console.error('Attempted to parse:', jsonText.substring(0, 200));
+          throw new Error('Failed to parse AI response. AI may have returned invalid format.');
+        }
+
+        // Validate required fields
+        if (!extractedData.title || !extractedData.author) {
+          throw new Error('AI failed to extract required fields (title and author)');
+        }
+
+        // Return validated data
+        return {
+          title: extractedData.title.trim(),
+          author: extractedData.author.trim(),
+          publisher: extractedData.publisher?.trim(),
+          category: extractedData.category?.trim(),
+          edition: extractedData.edition?.trim(),
+          confidence: extractedData.confidence || 0.8,
+        };
+      } catch (error) {
+        // If it's a JSON parse error or model-specific error, try next model
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('JSON') || errorMessage.includes('not supported')) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to analyze book cover. Please try a different image or enter manually.');
+  } catch (error) {
+    console.error('Error analyzing book cover:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to analyze book cover';
+    throw new Error(errorMessage);
+  }
+}
+
 async function tryGeminiModel(
   model,
   systemPrompt,
