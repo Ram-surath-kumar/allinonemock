@@ -8,7 +8,7 @@ const router = express.Router();
 // Combines: students, departments, attendance records, teacher departments, user info
 router.get('/page-data', async (req, res) => {
   try {
-    const { userId, role, date } = req.query;
+    const { userId, role, date, category = 'student' } = req.query;
 
     const students = [];
     const departments = [];
@@ -51,29 +51,72 @@ router.get('/page-data', async (req, res) => {
       }
     }
 
-    // Get students based on role
-    if (role === 'teacher' && teacherDepartmentIds.length > 0) {
-      // Get students for teacher's departments
-      const { data: studentsData, error: studentsError } = await supabaseAdmin
+    // Get users based on category
+    if (category === 'staff') {
+      // Fetch staff (non-student, non-admin, non-parent)
+      const { data: staffData, error: staffError } = await supabaseAdmin
         .from('users')
         .select('*')
-        .eq('role', 'student')
-        .eq('status', 'active')
-        .in('department_id', teacherDepartmentIds);
-
-      if (!studentsError && studentsData) {
-        students.push(...studentsData);
-      }
-    } else {
-      // For admin/vice_head, get all active students
-      const { data: studentsData, error: studentsError } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('role', 'student')
+        .neq('role', 'student')
+        .neq('role', 'parent')
+        .neq('role', 'admin') // Exclude top-level admins
         .eq('status', 'active');
 
-      if (!studentsError && studentsData) {
-        students.push(...studentsData);
+      if (!staffError && staffData) {
+        // Enrich teachers with their departments
+        const teacherIds = staffData.filter(u => u.role === 'teacher').map(u => u.id);
+
+        if (teacherIds.length > 0) {
+          const { data: tdData, error: tdError } = await supabaseAdmin
+            .from('teacher_departments')
+            .select('teacher_id, department_id')
+            .in('teacher_id', teacherIds);
+
+          if (!tdError && tdData) {
+            // Create a map of teacher_id -> department_id (taking the first one found)
+            const teacherDeptMap = new Map();
+            tdData.forEach(td => {
+              if (!teacherDeptMap.has(td.teacher_id)) {
+                teacherDeptMap.set(td.teacher_id, td.department_id);
+              }
+            });
+
+            // Assign department_id to staff objects
+            staffData.forEach(staff => {
+              if (staff.role === 'teacher' && teacherDeptMap.has(staff.id)) {
+                staff.department_id = teacherDeptMap.get(staff.id);
+              }
+            });
+          }
+        }
+
+        students.push(...staffData);
+      }
+    } else {
+      // Fetch students (default)
+      if (role === 'teacher' && teacherDepartmentIds.length > 0) {
+        // Get students for teacher's departments
+        const { data: studentsData, error: studentsError } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('role', 'student')
+          .eq('status', 'active')
+          .in('department_id', teacherDepartmentIds);
+
+        if (!studentsError && studentsData) {
+          students.push(...studentsData);
+        }
+      } else {
+        // For admin/vice_head/others, get all active students
+        const { data: studentsData, error: studentsError } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('role', 'student')
+          .eq('status', 'active');
+
+        if (!studentsError && studentsData) {
+          students.push(...studentsData);
+        }
       }
     }
 

@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createEventScheduledActivity } from '@/services/activities';
 import { toast } from 'sonner';
 import { SendNoticeDialog } from '@/components/notices/SendNoticeDialog';
+import { ScheduleEventDialog } from '@/components/dashboard/ScheduleEventDialog';
 import { cn } from '@/lib/utils';
 import { callGeminiAnalytics } from '@/services/gemini';
 import {
@@ -71,6 +72,7 @@ const aiActions = [
 export function QuickActions({ onAddUser, onAssignTask }) {
   const { hasPermission } = useAuth();
   const [sendNoticeDialogOpen, setSendNoticeDialogOpen] = useState(false);
+  const [scheduleEventDialogOpen, setScheduleEventDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiActionType, setAiActionType] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -80,18 +82,8 @@ export function QuickActions({ onAddUser, onAssignTask }) {
     action => !action.permission || hasPermission(action.permission)
   );
 
-  const handleScheduleEvent = async () => {
-    const eventName = 'School Meeting';
-    const eventDate = new Date();
-    eventDate.setDate(eventDate.getDate() + 7);
-    const formattedDate = eventDate.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-
-    await createEventScheduledActivity(eventName, formattedDate);
-    toast.success('Event scheduled successfully');
+  const handleScheduleEvent = () => {
+    setScheduleEventDialogOpen(true);
   };
 
   const handleSendNotice = () => {
@@ -286,6 +278,11 @@ export function QuickActions({ onAddUser, onAssignTask }) {
       <SendNoticeDialog
         open={sendNoticeDialogOpen}
         onOpenChange={setSendNoticeDialogOpen}
+      />
+
+      <ScheduleEventDialog
+        open={scheduleEventDialogOpen}
+        onOpenChange={setScheduleEventDialogOpen}
       />
     </div>
   );

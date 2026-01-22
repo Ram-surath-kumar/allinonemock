@@ -24,6 +24,7 @@ export function StudentDashboard() {
   const { currentUser } = useAuth();
   const [schedules, setSchedules] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,13 @@ export function StudentDashboard() {
         if (tasksResponse.data) {
           setTasks(tasksResponse.data);
         }
+
+        // Load Events
+        const eventsResponse = await api.getEvents({ department_id: currentUser?.department });
+        if (eventsResponse.data) {
+          setEvents(eventsResponse.data);
+        }
+
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
@@ -58,10 +66,8 @@ export function StudentDashboard() {
       setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
 
       await api.updateTask(task.id, { status: newStatus });
-      // Keep optimistic, or reload if needed. Optimistic is better UX.
     } catch (error) {
       console.error("Failed to update status", error);
-      // Revert
       setTasks(tasks.map(t => t.id === task.id ? { ...t, status: task.status } : t));
     }
   };
@@ -70,7 +76,6 @@ export function StudentDashboard() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {/* ... existing stats ... */}
         <StatsCard
           title="Current GPA"
           value="3.75"
@@ -99,9 +104,9 @@ export function StudentDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Today's Schedule */}
-        <Card className="lg:col-span-1">
+        <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
@@ -132,7 +137,7 @@ export function StudentDashboard() {
         </Card>
 
         {/* My Grades */}
-        <Card className="lg:col-span-1">
+        <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-5 w-5 text-primary" />
@@ -160,7 +165,7 @@ export function StudentDashboard() {
         </Card>
 
         {/* My Assignments */}
-        <Card className="lg:col-span-1">
+        <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
@@ -195,6 +200,38 @@ export function StudentDashboard() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Due: {task.due_date} • By: {task.assigned_by_name || 'Teacher'}</p>
                   </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Events */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Upcoming Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>
+            ) : (
+              events.map((event, index) => (
+                <div
+                  key={event.id}
+                  className="rounded-lg border border-border p-3 animate-slide-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{event.title}</p>
+                    <Badge variant="secondary" className="text-xs">{event.date}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {event.time} @ {event.location}
+                  </p>
+                  {/* <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{event.description}</p> */}
                 </div>
               ))
             )}

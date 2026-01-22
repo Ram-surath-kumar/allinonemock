@@ -20,6 +20,17 @@ import { api } from '@/services/api';
 import { createUserAddedActivity, createBulkUserAddedActivities } from '@/services/activities';
 import { updateTeacherDepartments } from '@/services/departments';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 export function UserManagement({ dialogOpen, setDialogOpen }) {
   const { currentUser, canManageRole } = useAuth();
   const [users, setUsers] = useState([]);
@@ -28,6 +39,8 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Only fetch users when component is mounted (i.e., when User Management tab is active)
   useEffect(() => {
@@ -49,13 +62,13 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         // Fetch department names separately for users with department_id
         const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id))];
         const deptMap = new Map();
-        
+
         if (departmentIds.length > 0) {
           const { data: deptData, error: deptError } = await supabase
             .from('departments')
             .select('id, name')
             .in('id', departmentIds);
-          
+
           if (!deptError && deptData) {
             deptData.forEach((dept) => {
               deptMap.set(dept.id, dept.name);
@@ -126,15 +139,15 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       // For all users: Generate email as org_id + user_id @loopverse.in
       if (data && currentUser?.organization?.org_id && data.user_id) {
         const generatedEmail = `${currentUser.organization.org_id}${data.user_id}@loopverse.in`;
-        
+
         // For students, also generate loopid
         const updateData = newUser.role === 'student'
           ? {
-              email: generatedEmail,
-              loopid: `${currentUser.organization.org_id}${data.user_id}`,
-            }
+            email: generatedEmail,
+            loopid: `${currentUser.organization.org_id}${data.user_id}`,
+          }
           : { email: generatedEmail };
-        
+
         // Update the user with generated email (and loopid for students)
         const { error: updateError } = await supabase
           .from('users')
@@ -152,7 +165,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           }
         }
       }
-      
+
       // Send welcome email after user is fully created with final email and loopid
       if (college_email && data) {
         try {
@@ -163,7 +176,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
             user_name: data.name,
             user_id: data.user_id,
           });
-          
+
           if (emailResponse.error) {
             console.error('Error sending welcome email:', emailResponse.error);
             // Don't fail user creation if email fails
@@ -218,10 +231,10 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           avatar: data.avatar,
         };
         setUsers(prev => [user, ...prev]);
-        
+
         // Create activity for new user
         await createUserAddedActivity(user.name, user.department || '');
-        
+
         toast.success(`User ${user.name} added successfully`);
       }
     } catch (error) {
@@ -303,7 +316,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
         const updateResults = await Promise.all(updatePromises);
         const updateErrors = updateResults.filter(result => result.error);
-        
+
         if (updateErrors.length > 0) {
           console.error('Some email updates failed:', updateErrors);
           // Update insertedUsers with new values for successful updates
@@ -358,13 +371,13 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       // Fetch department names for display
       const departmentIds = [...new Set(insertedUsers.map(u => u.department_id).filter(Boolean))];
       const deptMap = new Map();
-      
+
       if (departmentIds.length > 0) {
         const { data: deptData } = await supabase
           .from('departments')
           .select('id, name')
           .in('id', departmentIds);
-        
+
         if (deptData) {
           deptData.forEach(dept => {
             deptMap.set(dept.id, dept.name);
@@ -440,7 +453,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           .from('teacher_departments')
           .delete()
           .eq('teacher_id', user.id);
-        
+
         if (deleteError) {
           console.error('Error removing teacher departments:', deleteError);
           // Don't throw - this is cleanup, not critical
@@ -485,21 +498,39 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
     }
   };
 
-  const handleDeleteUser = async (user) => {
+  const handleDeleteUser = (user) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    // Store user reference for API call and potential rollback
+    const user = userToDelete;
+    const previousUsers = [...users];
+
+    // Optimistic Update: Immediately remove from UI and close dialog
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+    toast.info(`Deleting ${user.name}...`);
+
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', user.id);
+      // Use API to delete user, which handles cascading delete of all associated data on the backend
+      const response = await api.deleteUser(user.id);
 
-      if (error) throw error;
+      if (response.error) throw new Error(response.error);
 
-      setUsers(prev => prev.filter(u => u.id !== user.id));
-      toast.success(`User ${user.name} deleted`);
+      toast.success(`User ${user.name} permanently deleted`);
     } catch (error) {
       console.error('Error deleting user:', error);
+
+      // Revert state on error
+      setUsers(previousUsers);
+
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
-      toast.error(errorMessage);
+      toast.error(`Failed to delete user: ${errorMessage}`);
     }
   };
 
@@ -573,12 +604,12 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           </div>
         </div>
       ) : (
-      <UserTable
-        users={filteredUsers}
-        onEdit={handleEditUser}
-        onDelete={handleDeleteUser}
-        onResendEmail={handleResendEmail}
-      />
+        <UserTable
+          users={filteredUsers}
+          onEdit={handleEditUser}
+          onDelete={handleDeleteUser}
+          onResendEmail={handleResendEmail}
+        />
       )}
 
       {/* Add User Dialog */}
@@ -598,13 +629,32 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         }}
       />
 
-      {/* Edit User Dialog */}
       <EditUserDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         user={selectedUser}
         onUpdate={handleUpdateUser}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete <strong>{userToDelete?.name}</strong> and remove all associated data including grades, attendance, and fee records from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

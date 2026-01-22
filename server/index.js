@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Import route modules
+// Import route modules
 import usersRouter from './routes/users.js';
 import organizationsRouter from './routes/organizations.js';
 import departmentsRouter from './routes/departments.js';
@@ -18,13 +19,24 @@ import examRouter from './routes/exam.js';
 import academicRouter from './routes/academic.js';
 import misRouter from './routes/mis.js';
 import financeRouter from './routes/finance.js';
+import facilitiesRouter from './routes/facilities.js';
+import transportRouter from './routes/transport.js';
+import transportationRouter from './routes/transportation.js';
 
 import profilesRouter from './routes/SIM/profiles.js';
 import admissionsRouter from './routes/SIM/admissions.js';
 import simAcademicRouter from './routes/SIM/academic.js';
 import communicationsRouter from './routes/SIM/communications.js';
+import simExamsRouter from './routes/SIM/exams.js';
+import meritRouter from './routes/SIM/merit.js';
+import registrationRouter from './routes/SIM/registration.js';
+import graduationRouter from './routes/SIM/graduation.js';
+import leavesRouter from './routes/SIM/leaves.js';
+import courseAttendanceRouter from './routes/SIM/course_attendance.js';
 import schedulesRouter from './routes/schedules.js';
 import tasksRouter from './routes/tasks.js';
+import eventsRouter from './routes/events.js';
+import aiRouter from './routes/ai.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -51,7 +63,10 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Also allow any localhost origin (for dynamic ports like 5174, 5175, etc.)
+    const isLocalhost = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+    if (!origin || allowedOrigins.includes(origin) || isLocalhost) {
       callback(null, true);
     } else {
       // In production, allow Vercel preview and production domains
@@ -68,6 +83,12 @@ app.use(express.json());
 
 // Apply Audit Logger
 app.use(auditLogger);
+
+// Debug Logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} | ${req.method} ${req.path}`);
+  next();
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -88,19 +109,33 @@ app.use('/api/library', libraryRouter);
 app.use('/api/hostel', hostelRouter);
 app.use('/api/exam', examRouter);
 
+// Generic Routes
 app.use('/api/academic', academicRouter);
 app.use('/api/mis', misRouter);
 app.use('/api/finance', financeRouter);
+app.use('/api/facilities', facilitiesRouter);
+app.use('/api/transport', transportationRouter);
+app.use('/api/transport/v1', transportRouter);
 
+// SIM Routes
 app.use('/api/sim/profiles', profilesRouter);
 app.use('/api/sim/admissions', admissionsRouter);
-app.use('/api/sim/academic', simAcademicRouter);
 app.use('/api/sim/communications', communicationsRouter);
+app.use('/api/sim/exams', simExamsRouter);
+app.use('/api/sim/merit', meritRouter);
+app.use('/api/sim/registration', registrationRouter);
+app.use('/api/sim/academic', academicRouter);
+app.use('/api/sim/graduation', graduationRouter);
+app.use('/api/sim/leaves', leavesRouter);
+app.use('/api/sim/attendance', courseAttendanceRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/events', eventsRouter);
+app.use('/api/ai', aiRouter);
 
-// TODO: Register these routes once created
+// Future Routes
 // app.use('/api/growth', growthRouter);
+
 
 // Temporary: Keep growth and finance endpoints in index.js until route files are created
 // This will be moved to route files in the next step

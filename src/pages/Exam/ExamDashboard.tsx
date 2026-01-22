@@ -24,7 +24,7 @@ export default function ExamDashboard() {
         try {
             const response = await api.getExamDashboard();
             if (response.error) throw new Error(response.error);
-            setStats(response.data || {});
+            setStats(response.data.stats || {});
 
             const examsResponse = await api.getExams();
             if (examsResponse.data) setExams(examsResponse.data);
@@ -137,10 +137,10 @@ export default function ExamDashboard() {
                                         const endDate = new Date(exam.end_date);
                                         const isSameDay = startDate.toDateString() === endDate.toDateString();
                                         const isPlanned = exam.status === 'PLANNED';
-                                        
+
                                         return (
-                                            <div 
-                                                key={exam.id} 
+                                            <div
+                                                key={exam.id}
                                                 className="group relative rounded-lg border border-border/50 bg-card/50 hover:bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 p-4 animate-in fade-in slide-in-from-bottom-2"
                                                 style={{ animationDelay: `${index * 50}ms` }}
                                             >
@@ -158,7 +158,7 @@ export default function ExamDashboard() {
                                                                     <div className="flex items-center gap-1.5">
                                                                         <Calendar className="h-3.5 w-3.5" />
                                                                         <span>
-                                                                            {isSameDay 
+                                                                            {isSameDay
                                                                                 ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                                                                                 : `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                                                                             }
@@ -177,18 +177,17 @@ export default function ExamDashboard() {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2.5 shrink-0">
-                                                        <Badge 
+                                                        <Badge
                                                             variant={isPlanned ? "default" : "secondary"}
-                                                            className={`text-xs font-medium px-2.5 py-1 ${
-                                                                isPlanned 
-                                                                    ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15' 
+                                                            className={`text-xs font-medium px-2.5 py-1 ${isPlanned
+                                                                    ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/15'
                                                                     : 'bg-muted text-muted-foreground'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {exam.status}
                                                         </Badge>
-                                                        <Button 
-                                                            variant="outline" 
+                                                        <Button
+                                                            variant="outline"
                                                             size="sm"
                                                             className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
                                                         >

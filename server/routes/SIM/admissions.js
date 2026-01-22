@@ -79,7 +79,11 @@ router.post('/apply', async (req, res) => {
                 is_bpl: bpl_status,
                 is_pwd: pwd_status,
                 is_minority: minority_status,
-                minority_type
+                minority_type,
+                address_info: req.body.address_info || {},
+                guardian_info: req.body.guardian_info || {},
+                medical_history: req.body.medical_history || {},
+                documents: req.body.documents || {}
             })
             .select()
             .single();

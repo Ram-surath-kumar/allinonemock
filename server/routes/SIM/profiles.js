@@ -47,7 +47,7 @@ router.post('/:userId', async (req, res) => {
 
         // Generate Student ID (YYYY_DEPT_SECTION_SEQUENTIAL)
         if (!profileData.student_id_no && userData.department) {
-          const deptCode = userData.department.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'GEN');
+          const deptCode = (userData.department || 'GEN').substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'GEN');
           const section = profileData.section || 'A';
           const yearPrefix = `${admissionYear}_${deptCode}_${section}`;
 
@@ -73,9 +73,63 @@ router.post('/:userId', async (req, res) => {
     }
     // -----------------------------------------------------------
 
+    // Flatten the profile data to match DB columns
+    const dbPayload = {
+      user_id: userId,
+      // Personal Info
+      // first_name/last_name are in users table, ignoring for now or mapping if columns exist
+      dob: profileData.personal_info?.dob || profileData.dob,
+      gender: profileData.personal_info?.gender || profileData.gender,
+      blood_group: profileData.personal_info?.blood_group || profileData.blood_group,
+      religion: profileData.personal_info?.religion || profileData.religion,
+      aadhar_no: profileData.personal_info?.aadhar_no || profileData.aadhar_no,
+      nationality: profileData.personal_info?.nationality || profileData.nationality,
+      nationality_type: profileData.personal_info?.nationality_type || profileData.nationality_type, // from migration
+      study_mode: profileData.personal_info?.enrollment_status || profileData.study_mode,
+      bpl_status: profileData.personal_info?.is_bpl || profileData.bpl_status,
+      minority_status: profileData.personal_info?.is_minority || profileData.minority_status,
+      minority_type: profileData.personal_info?.minority_type || profileData.minority_type,
+      pwd_status: profileData.personal_info?.is_pwd || profileData.pwd_status,
+      pwd_details: profileData.personal_info?.disability_type || profileData.pwd_details,
+      first_gen_learner: profileData.personal_info?.is_first_generation || profileData.first_gen_learner,
+
+      // Address - Mapping to detected columns (assuming permanent_* exist)
+      address_current: profileData.address_info?.current?.street,
+      // We lack precise current_city etc cols in output, maybe stored as text object or single string? 
+      // Debug output showed 'address_current', 'address_permanent'. Suggests composite text.
+      // But also 'permanent_city', 'permanent_street'.
+      permanent_street: profileData.address_info?.permanent?.street,
+      permanent_city: profileData.address_info?.permanent?.city,
+      permanent_state: profileData.address_info?.permanent?.state,
+      permanent_pincode: profileData.address_info?.permanent?.zip,
+
+      // Guardian
+      father_name: profileData.guardian_info?.father?.name,
+      father_occupation: profileData.guardian_info?.father?.occupation,
+      mother_name: profileData.guardian_info?.mother?.name,
+      mother_occupation: profileData.guardian_info?.mother?.occupation,
+      guardian_name: profileData.guardian_info?.guardian?.name,
+      // guardian_occupation?
+      guardian_relation: profileData.guardian_info?.guardian?.relation, // if exists
+      guardian_contact: profileData.guardian_info?.guardian?.phone, // inferred
+
+      // Medical
+      allergies: profileData.medical_history?.allergies,
+      medical_conditions: profileData.medical_history?.chronic_illness,
+      // doctor_contact?
+
+      // Preserve generated fields
+      student_id_no: profileData.student_id_no,
+      college_email: profileData.college_email,
+      updated_at: new Date()
+    };
+
+    // Remove undefined
+    Object.keys(dbPayload).forEach(key => dbPayload[key] === undefined && delete dbPayload[key]);
+
     const { data, error } = await supabaseAdmin
       .from('student_profiles')
-      .upsert(profileData, { onConflict: 'user_id' })
+      .upsert(dbPayload, { onConflict: 'user_id' })
       .select()
       .single();
 
@@ -83,6 +137,8 @@ router.post('/:userId', async (req, res) => {
 
     res.json({ status: 'success', data, error: null });
   } catch (error) {
+    console.error('[Profile Update Error]:', error);
+    console.error('[Profile Data Payload]:', JSON.stringify(req.body, null, 2));
     handleError(error, res, 'Failed to update student profile');
   }
 });

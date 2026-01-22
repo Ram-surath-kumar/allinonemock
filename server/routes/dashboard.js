@@ -246,6 +246,132 @@ router.get('/', async (req, res) => {
     stats.systemVersion = systemVersion;
     stats.feeCollection = totalFeeCollection;
 
+    // --- Charts Data Calculation ---
+
+    const charts = {
+      attendance: [],
+      fees: [],
+      students: [],
+      todaySummary: []
+    };
+
+    // 1. Attendance Chart (Last 7 days)
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      last7Days.push(d);
+    }
+
+    charts.attendance = last7Days.map(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      const dayName = days[date.getDay()];
+
+      // Filter attendance records for this date
+      const dayRecords = allAttendanceData?.filter(record => {
+        let recordDate = record.date;
+        if (recordDate && typeof recordDate === 'string') {
+          if (recordDate.includes('T')) recordDate = recordDate.split('T')[0];
+          if (recordDate.includes(' ')) recordDate = recordDate.split(' ')[0];
+          return recordDate === dateStr;
+        }
+        return false;
+      }) || [];
+
+      // Calculate attendance percentage (Mock calculation if no data, or real calculation)
+      // If no records, default to 0 to show real lack of data, or keep mock logic if user prefers "demo" feel?
+      // User asked for "Real Data", so we show 0 if no data.
+      const total = dayRecords.length;
+      const present = dayRecords.filter(r => r.status === 'present').length;
+
+      return {
+        day: dayName,
+        attendance: total > 0 ? Math.round((present / total) * 100) : 0,
+        fullDate: dateStr
+      };
+    });
+
+    // 2. Fees Chart (Last 6 months)
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(today.getMonth() - i);
+      last6Months.push(d);
+    }
+
+    // Process fees data
+    const { data: allFees } = await supabaseAdmin
+      .from('fees')
+      .select('amount, status, due_date, paid_date, created_at');
+
+    charts.fees = last6Months.map(date => {
+      const monthName = date.toLocaleString('default', { month: 'short' });
+      const monthIdx = date.getMonth();
+      const year = date.getFullYear();
+
+      // Find fees relevant to this month
+      // Collected: paid_date is in this month
+      // Pending: due_date is in this month AND status is pending/overdue
+
+      const monthFees = allFees?.filter(fee => {
+        const feeDate = fee.paid_date ? new Date(fee.paid_date) : (fee.due_date ? new Date(fee.due_date) : new Date(fee.created_at));
+        return feeDate.getMonth() === monthIdx && feeDate.getFullYear() === year;
+      }) || [];
+
+      const collected = monthFees
+        .filter(f => ['paid', 'completed'].includes(f.status))
+        .reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
+
+      const pending = monthFees
+        .filter(f => !['paid', 'completed'].includes(f.status))
+        .reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
+
+      return {
+        month: monthName,
+        collected,
+        pending
+      };
+    });
+
+    // 3. Student Growth (Last 6 months)
+    // We calculate cumulative total up to each month
+    charts.students = last6Months.map(date => {
+      const monthName = date.toLocaleString('default', { month: 'short' });
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0); // Last day of month
+
+      const totalUpToMonth = allUsers?.filter(u => {
+        if (u.role !== 'student') return false;
+        const joinDate = new Date(u.created_at || u.joined_date || new Date());
+        return joinDate <= endOfMonth;
+      }).length || 0;
+
+      return {
+        month: monthName,
+        students: totalUpToMonth
+      };
+    });
+
+    // 4. Today's Summary
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaysAttendance = allAttendanceData?.filter(r => {
+      let rDate = r.date;
+      if (typeof rDate === 'string') {
+        if (rDate.includes('T')) rDate = rDate.split('T')[0];
+        return rDate === todayStr;
+      }
+      return false;
+    }) || [];
+
+    const presentToday = todaysAttendance.filter(r => r.status === 'present').length;
+    const absentToday = todaysAttendance.filter(r => r.status === 'absent').length;
+
+    charts.todaySummary = [
+      { name: 'Present', value: presentToday, color: '#22c55e' }, // green-500
+      { name: 'Absent', value: absentToday, color: '#ef4444' }    // red-500
+    ];
+
     const dashboardData = {
       stats,
       recentActivities,
@@ -254,7 +380,8 @@ router.get('/', async (req, res) => {
       notifications,
       userInfo,
       organizationInfo,
-      allUsers
+      allUsers,
+      charts // Add charts to response
     };
 
     sendSuccess(res, dashboardData);

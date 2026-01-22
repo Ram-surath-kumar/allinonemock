@@ -1,4 +1,3 @@
-
 import { supabase, supabaseAdmin } from '../common.js';
 
 // Authentication Middleware
@@ -41,13 +40,6 @@ export const authenticateUser = async (req, res, next) => {
             req.userProfile = userProfile;
         }
 
-        // Session Management Check
-        // "Session timeout: 30 minutes inactivity" is hard to enforce on stateless JWT without DB tracking of 'last_active'.
-        // We can assume the JWT exp handles hard expiry, but 'inactivity' requires a DB update.
-        // Let's update 'last_seen' in a session table if we want to be strict, or just rely on short-lived tokens.
-        // Requirement says "Force logout on ... inactivity".
-        // We will update a 'sessions' table.
-
         const now = new Date();
         // Check/Update active session
         // Note: This adds latency. For now, we'll skip DB write on EVERY request for performance unless critical.
@@ -57,7 +49,7 @@ export const authenticateUser = async (req, res, next) => {
         next();
     } catch (err) {
         console.error('Auth Middleware Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Authentication Error' });
     }
 };
 
@@ -71,7 +63,6 @@ export const authorizeRole = (allowedRoles) => {
         const userRole = req.userProfile.role;
 
         // Admin has access to everything
-        // "No shared roles or permissions" - Admin is explicitly listed.
         if (userRole === 'admin') {
             return next();
         }

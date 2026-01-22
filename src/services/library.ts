@@ -79,3 +79,15 @@ export async function returnBook(copyId: string): Promise<BookIssue> {
         throw error;
     }
 }
+
+export async function addBook(bookData: Partial<Book>): Promise<Book> {
+    try {
+        const response = await api.addLibraryBook(bookData);
+        if (response.error) throw new Error(response.error);
+        if (!response.data) throw new Error('No data returned upon creating book');
+        return response.data;
+    } catch (error) {
+        console.error('Error adding book:', error);
+        throw error;
+    }
+}

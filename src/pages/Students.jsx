@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Pencil, LayoutGrid, List, User, Users, GraduationCap, MessageSquare } from 'lucide-react';
+import { Search, Pencil, LayoutGrid, List, User, Users, GraduationCap, MessageSquare, Filter, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,30 @@ import { toast } from 'sonner';
 import { StudentTable } from '@/components/students/StudentTable';
 import { EditStudentDialog } from '@/components/students/EditStudentDialog';
 import { StudentAttendanceCalendar } from '@/components/students/StudentAttendanceCalendar';
-import { AdmissionPortal } from '@/components/students/Admission/AdmissionPortal';
+
 import { StudentProfileView } from '@/components/students/StudentProfileView';
 import { CommunicationCenter } from '@/components/students/Communication/CommunicationCenter';
-import { fetchTeacherDepartments } from '@/services/departments';
+import { AdmissionPortal } from '@/components/students/Admission/AdmissionPortal';
+import { AddStudentDialog } from '@/components/students/AddStudentDialog';
+
+import { fetchTeacherDepartments, fetchDepartments } from '@/services/departments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Check, ChevronsUpDown, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function Students() {
   const { hasPermission, currentUser } = useAuth();
@@ -20,12 +39,15 @@ export function Students() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [teacherDepartmentIds, setTeacherDepartmentIds] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [activeTab, setActiveTab] = useState('directory');
+  const [departments, setDepartments] = useState([]);
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   const canEdit = hasPermission('edit_students');
   const canViewAttendance = hasPermission('view_students') || hasPermission('manage_attendance');
@@ -46,12 +68,24 @@ export function Students() {
         setTeacherDepartmentIds(teacherDeptIds);
       }
 
-      await fetchStudents(teacherDeptIds);
+      await Promise.all([
+        fetchStudents(teacherDeptIds),
+        loadDepartments()
+      ]);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDepartments = async () => {
+    try {
+      const depts = await fetchDepartments();
+      setDepartments(depts);
+    } catch (error) {
+      console.error('Failed to load departments');
     }
   };
 
@@ -152,7 +186,11 @@ export function Students() {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (student.department && student.department.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesSearch;
+
+    const matchesDept = departmentFilter === 'all' ||
+      (student.department && student.department === departments.find(d => d.id === departmentFilter)?.name);
+
+    return matchesSearch && matchesDept;
   });
 
   const handleViewAttendance = (student) => {
@@ -196,41 +234,121 @@ export function Students() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 lg:p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
+          <p className="text-muted-foreground">Manage student directory, admissions, and communications.</p>
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px] mb-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[800px] mb-6">
           <TabsTrigger value="directory" className="flex gap-2"><Users className="h-4 w-4" /> Directory</TabsTrigger>
           <TabsTrigger value="admissions" className="flex gap-2"><GraduationCap className="h-4 w-4" /> Admissions</TabsTrigger>
+
+
           <TabsTrigger value="communication" className="flex gap-2"><MessageSquare className="h-4 w-4" /> Message Center</TabsTrigger>
         </TabsList>
 
         <TabsContent value="directory" className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
-            <div className="relative flex-1 min-w-0 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card/50 p-1 rounded-lg">
+            <div className="relative flex-1 w-full sm:max-w-xs">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search students..."
+                placeholder="Search by name, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-8 bg-background"
               />
             </div>
-            <div className="hidden md:flex items-center gap-2 border border-border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="h-8 w-8 p-0"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-                className="h-8 w-8 p-0"
-              >
-                <List className="h-4 w-4" />
+
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              {/* View Mode */}
+              <div className="hidden md:flex items-center gap-1 bg-background border rounded-md p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8 w-8"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  onClick={() => setViewMode('table')}
+                  className="h-8 w-8"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="h-6 w-px bg-border hidden sm:block mx-1" />
+
+              {/* Department Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-[200px] justify-between bg-background"
+                  >
+                    <Filter className="mr-2 h-4 w-4 opacity-50" />
+                    {departmentFilter === 'all'
+                      ? "All Departments"
+                      : departments.find((dept) => dept.id === departmentFilter)?.name || "Select Department"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search department..." />
+                    <CommandList>
+                      <CommandEmpty>No department found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => setDepartmentFilter('all')}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              departmentFilter === 'all' ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          All Departments
+                        </CommandItem>
+                        {departments.map((dept) => (
+                          <CommandItem
+                            key={dept.id}
+                            value={dept.name}
+                            onSelect={() => setDepartmentFilter(dept.id)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                departmentFilter === dept.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {dept.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {departmentFilter !== 'all' && (
+                <Button variant="ghost" size="icon" onClick={() => setDepartmentFilter('all')} title="Clear Filter">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+
+              <Button onClick={() => setAddDialogOpen(true)} className="gap-2 shadow-sm">
+                <Plus className="h-4 w-4" /> Add Student
               </Button>
             </div>
           </div>
@@ -280,6 +398,10 @@ export function Students() {
           )}
         </TabsContent>
 
+
+
+
+
         <TabsContent value="admissions">
           <AdmissionPortal />
         </TabsContent>
@@ -305,6 +427,12 @@ export function Students() {
           student={selectedStudent}
         />
       )}
+
+      <AddStudentDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSuccess={() => fetchStudents(teacherDepartmentIds)}
+      />
     </div>
   );
 }

@@ -1,3 +1,20 @@
+// server/config/securityConfig.js
+
+export const ROLES = {
+    ADMIN: 'admin',
+    REGISTRAR: 'registrar',
+    FINANCE: 'finance',
+    FACULTY: 'faculty',
+    STUDENT: 'student'
+};
+
+export const RBAC_ROLES = {
+    ADMIN: 'admin',
+    REGISTRAR: 'registrar',
+    FINANCE: 'finance',
+    FACULTY: 'faculty',
+    STUDENT: 'student'
+};
 
 export const SENSITIVE_FIELDS = [
     'aadhaar_number',
@@ -27,12 +44,11 @@ export const MASK_FIELDS = [
     'bank_account_number'
 ];
 
-export const RBAC_ROLES = {
-    ADMIN: 'admin',
-    REGISTRAR: 'registrar',
-    FINANCE: 'finance',
-    FACULTY: 'faculty',
-    STUDENT: 'student'
+export const AUDIT_EVENTS = {
+    CREATE: 'CREATE',
+    UPDATE: 'UPDATE',
+    DELETE: 'DELETE',
+    READ_SENSITIVE: 'READ_SENSITIVE'
 };
 
 export const MFA_REQUIRED_MODULES = [
