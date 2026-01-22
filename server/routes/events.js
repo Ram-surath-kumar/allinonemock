@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
                 start_time: startDateTime.toISOString(),
                 end_time: endDateTime.toISOString(),
                 event_name: req.body.title || 'Scheduled Event',
-                status: 'confirmed',
+                status: 'Approved',
                 organizer: req.body.userId || 'system'
             };
 
