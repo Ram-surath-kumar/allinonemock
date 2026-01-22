@@ -1,0 +1,2271 @@
+﻿commit 1323bce3fb23f0dd4ed7881a314c40c4d2307ed5
+Author: subanesh <nskumar@subanesh.local>
+Date:   Thu Jan 15 13:31:07 2026 +0530
+
+    feat: Implement SIS Student Data & UGC Categorization
+    
+    - Added Student Categorization fields (Gender, Category, Social Status, Nationality).
+    - Updated Admission Portal, Profile View, and Personal Details.
+    - Added DB migrations and updated API routes.
+
+diff --git a/server/create_admission_table.sql b/server/create_admission_table.sql
+new file mode 100644
+index 0000000..526ff20
+--- /dev/null
++++ b/server/create_admission_table.sql
+@@ -0,0 +1,34 @@
++-- Create table for Admission Applications
++CREATE TABLE IF NOT EXISTS admission_applications (
++    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++    application_no TEXT UNIQUE NOT NULL,
++    user_id UUID REFERENCES auth.users(id), -- Optional link if they have an account
++    applicant_name TEXT NOT NULL,
++    email TEXT NOT NULL,
++    phone TEXT,
++    course_applied TEXT NOT NULL,
++    dob DATE,
++    
++    -- Phase 1: Application Submission
++    entrance_exam_details JSONB DEFAULT '{}', -- { exam_name, date, marks, ... }
++    academic_qualifications JSONB DEFAULT '{}', -- { 10th: {...}, 12th: {...} }
++    merit_details JSONB DEFAULT '{}', -- { rank, category_rank, status, ... }
++    
++    -- Phase 2: Offer & Admission
++    offer_details JSONB DEFAULT '{}', -- { offer_date, accepted, ... }
++    fee_payment_details JSONB DEFAULT '{}', -- { amount, status, ... }
++    document_verification_status JSONB DEFAULT '{}', -- { 10th: 'Verified', ... }
++    
++    -- Phase 3: Enrollment
++    enrollment_details JSONB DEFAULT '{}', -- { program, batch, roll_no ... }
++    
++    status TEXT DEFAULT 'applied', -- applied, shortlisted, offered, admitted, rejected
++    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
++    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
++);
++
++-- Enable RLS
++ALTER TABLE admission_applications ENABLE ROW LEVEL SECURITY;
++
++-- Policies (simplified for development)
++CREATE POLICY "Enable all access for authenticated users" ON admission_applications FOR ALL USING (auth.role() = 'authenticated');
+diff --git a/server/db/migrations/add_ugc_categories.sql b/server/db/migrations/add_ugc_categories.sql
+new file mode 100644
+index 0000000..3799e95
+--- /dev/null
++++ b/server/db/migrations/add_ugc_categories.sql
+@@ -0,0 +1,12 @@
++-- Add UGC/AICTE Compliance Columns to student_profiles
++ALTER TABLE student_profiles
++  -- Study Mode / Status
++  ADD COLUMN IF NOT EXISTS study_mode text DEFAULT 'Regular', -- Regular, Distance, Part-Time, Sponsored, Research
++  
++  -- Social Status (Extended)
++  ADD COLUMN IF NOT EXISTS bpl_status boolean DEFAULT false, -- Below Poverty Line
++  ADD COLUMN IF NOT EXISTS minority_status boolean DEFAULT false,
++  ADD COLUMN IF NOT EXISTS minority_type text, -- Muslim, Christian, Sikh, Buddhist, Parsi, Jain
++  
++  -- Nationality Details
++  ADD COLUMN IF NOT EXISTS nationality_type text DEFAULT 'Indian'; -- Indian, NRI, OCI, Foreign
+diff --git a/server/db/migrations/update_admission_applications.sql b/server/db/migrations/update_admission_applications.sql
+new file mode 100644
+index 0000000..cf80a40
+--- /dev/null
++++ b/server/db/migrations/update_admission_applications.sql
+@@ -0,0 +1,12 @@
++-- Add UGC Fields to admission_applications
++ALTER TABLE admission_applications
++    ADD COLUMN IF NOT EXISTS gender TEXT,
++    ADD COLUMN IF NOT EXISTS category TEXT, -- General, OBC, SC, ST, EWS
++    ADD COLUMN IF NOT EXISTS study_mode TEXT DEFAULT 'Regular',
++    ADD COLUMN IF NOT EXISTS nationality_type TEXT DEFAULT 'Indian',
++    
++    -- Social Status flags
++    ADD COLUMN IF NOT EXISTS is_bpl BOOLEAN DEFAULT FALSE,
++    ADD COLUMN IF NOT EXISTS is_pwd BOOLEAN DEFAULT FALSE,
++    ADD COLUMN IF NOT EXISTS is_minority BOOLEAN DEFAULT FALSE,
++    ADD COLUMN IF NOT EXISTS minority_type TEXT;
+diff --git a/server/routes/SIM/admissions.js b/server/routes/SIM/admissions.js
+index 68bd3eb..1a909b2 100644
+--- a/server/routes/SIM/admissions.js
++++ b/server/routes/SIM/admissions.js
+@@ -1,77 +1,133 @@
+ import express from 'express';
+-import { supabase, supabaseAdmin } from '../../common.js';
+-import { handleError, sendSuccess, sendValidationError } from '../../common.js';
++import { supabaseAdmin } from '../../common.js';
+ 
+ const router = express.Router();
+ 
+-// Get all admissions (with filters)
++// Helper to generate App ID
++const generateAppId = () => `APP${new Date().getFullYear()}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
++
++// GET all applications
+ router.get('/', async (req, res) => {
+     try {
+-        const { status, academic_year } = req.query;
+-
+-        let query = supabase.from('admissions').select('*');
++        const { data, error } = await supabaseAdmin
++            .from('admission_applications')
++            .select('*')
++            .order('created_at', { ascending: false });
+ 
+-        if (status) query = query.eq('status', status);
+-        if (academic_year) query = query.eq('academic_year', academic_year);
++        if (error) throw error;
++        res.json({ status: 'success', data });
++    } catch (error) {
++        res.status(500).json({ status: 'error', error: error.message });
++    }
++});
+ 
+-        const { data, error } = await query.order('created_at', { ascending: false });
++// GET statistics
++router.get('/stats', async (req, res) => {
++    try {
++        const { data, error } = await supabaseAdmin
++            .from('admission_applications')
++            .select('status, course_applied');
+ 
+         if (error) throw error;
+-        sendSuccess(res, data);
++
++        const stats = {
++            total: data.length,
++            status: {},
++            courses: {}
++        };
++
++        data.forEach(app => {
++            stats.status[app.status] = (stats.status[app.status] || 0) + 1;
++            stats.courses[app.course_applied] = (stats.courses[app.course_applied] || 0) + 1;
++        });
++
++        res.json({ status: 'success', data: stats });
+     } catch (error) {
+-        handleError(error, res, 'Failed to fetch admissions');
++        res.status(500).json({ status: 'error', error: error.message });
+     }
+ });
+ 
+-// Submit Application
++// POST new application
+ router.post('/apply', async (req, res) => {
+     try {
+-        const applicationData = req.body;
+-
+-        // Generate simple application number if not provided
+-        if (!applicationData.application_no) {
+-            applicationData.application_no = 'APP-' + Date.now();
+-        }
++        const {
++            applicant_name, email, phone, course_applied, dob,
++            entrance_exam_details, academic_qualifications,
++            // UGC Fields
++            gender, category, study_mode, nationality_type,
++            bpl_status, pwd_status, minority_status, minority_type
++        } = req.body;
+ 
+-        applicationData.status = 'applied';
++        const application_no = generateAppId();
+ 
+         const { data, error } = await supabaseAdmin
+-            .from('admissions')
+-            .insert(applicationData)
++            .from('admission_applications')
++            .insert({
++                application_no,
++                applicant_name,
++                email,
++                phone,
++                course_applied,
++                dob,
++                entrance_exam_details: entrance_exam_details || {},
++                academic_qualifications: academic_qualifications || {},
++                // UGC Fields
++                gender,
++                category,
++                study_mode,
++                nationality_type,
++                is_bpl: bpl_status,
++                is_pwd: pwd_status,
++                is_minority: minority_status,
++                minority_type
++            })
+             .select()
+             .single();
+ 
+         if (error) throw error;
+-        sendSuccess(res, data);
++        res.json({ status: 'success', data });
+     } catch (error) {
+-        handleError(error, res, 'Failed to submit application');
++        console.error('Apply error:', error);
++        res.status(500).json({ status: 'error', error: error.message });
+     }
+ });
+ 
+-// Update Application Status (Merit List, Admit, Reject)
++// PATCH Update Status
+ router.patch('/:id/status', async (req, res) => {
+     try {
+         const { id } = req.params;
+-        const { status, entrance_exam_score } = req.body;
+-
+-        const updateData = { status };
+-        if (entrance_exam_score !== undefined) updateData.entrance_exam_score = entrance_exam_score;
++        const { status } = req.body;
+ 
+         const { data, error } = await supabaseAdmin
+-            .from('admissions')
+-            .update(updateData)
++            .from('admission_applications')
++            .update({ status })
+             .eq('id', id)
+-            .select()
+-            .single();
++            .select();
+ 
+         if (error) throw error;
++        res.json({ status: 'success', data });
++    } catch (error) {
++        res.status(500).json({ status: 'error', error: error.message });
++    }
++});
+ 
+-        // If status is 'admitted', we might want to auto-create a user record effectively
+-        // But for now, we leave that as a separate manual step or next implementation phase
++// PATCH Update Details (Generic)
++// Use this to update exam scores, verification status, fee details, etc.
++router.patch('/:id/details', async (req, res) => {
++    try {
++        const { id } = req.params;
++        const updates = req.body; // Expects object with keys like notification_details, fee_payment_details etc.
++
++        const { data, error } = await supabaseAdmin
++            .from('admission_applications')
++            .update(updates)
++            .eq('id', id)
++            .select();
+ 
+-        sendSuccess(res, data);
++        if (error) throw error;
++        res.json({ status: 'success', data });
+     } catch (error) {
+-        handleError(error, res, 'Failed to update admission status');
++        res.status(500).json({ status: 'error', error: error.message });
+     }
+ });
+ 
+diff --git a/server/routes/SIM/profiles.js b/server/routes/SIM/profiles.js
+index eabf059..4a2a848 100644
+--- a/server/routes/SIM/profiles.js
++++ b/server/routes/SIM/profiles.js
+@@ -32,6 +32,47 @@ router.post('/:userId', async (req, res) => {
+     // Ensure user_id is set
+     profileData.user_id = userId;
+ 
++    // --- SIS Logic: Auto-generate Student ID & College Email ---
++    if (!profileData.student_id_no || !profileData.college_email) {
++      // 1. Fetch User Details for Name & Department
++      // We need to query the 'users' table. Note: 'users' table access might require admin privileges if RLS is on.
++      const { data: userData, error: userError } = await supabaseAdmin
++        .from('users')
++        .select('name, department')
++        .eq('id', userId)
++        .single();
++
++      if (userData && !userError) {
++        const admissionYear = new Date().getFullYear(); // Or usage enrollment_date if available
++
++        // Generate Student ID (YYYY_DEPT_SECTION_SEQUENTIAL)
++        if (!profileData.student_id_no && userData.department) {
++          const deptCode = userData.department.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'GEN');
++          const section = profileData.section || 'A';
++          const yearPrefix = `${admissionYear}_${deptCode}_${section}`;
++
++          // Count existing students with this prefix to determine sequence
++          // Note: This is a simple implementation. For high concurrency, use a DB sequence or atomic increment.
++          const { count, error: countError } = await supabaseAdmin
++            .from('student_profiles')
++            .select('student_id_no', { count: 'exact', head: true })
++            .ilike('student_id_no', `${yearPrefix}_%`);
++
++          if (!countError) {
++            const sequenceWithPadding = String((count || 0) + 1).padStart(3, '0');
++            profileData.student_id_no = `${yearPrefix}_${sequenceWithPadding}`;
++          }
++        }
++
++        // Generate College Email (firstname.year@college.ac.in)
++        if (!profileData.college_email && userData.name) {
++          const firstName = userData.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
++          profileData.college_email = `${firstName}.${admissionYear}@college.ac.in`;
++        }
++      }
++    }
++    // -----------------------------------------------------------
++
+     const { data, error } = await supabaseAdmin
+       .from('student_profiles')
+       .upsert(profileData, { onConflict: 'user_id' })
+diff --git a/server/update_student_profiles_sis.sql b/server/update_student_profiles_sis.sql
+new file mode 100644
+index 0000000..076dd40
+--- /dev/null
++++ b/server/update_student_profiles_sis.sql
+@@ -0,0 +1,57 @@
++-- Add SIS Master Data columns to student_profiles table
++
++ALTER TABLE student_profiles
++  -- IDs & Academic
++  ADD COLUMN IF NOT EXISTS student_id_no text UNIQUE, -- YYYY_DEPT_SECTION_SEQUENTIAL
++  ADD COLUMN IF NOT EXISTS section text,
++  ADD COLUMN IF NOT EXISTS enrollment_date date DEFAULT CURRENT_DATE,
++  
++  -- Personal Details
++  ADD COLUMN IF NOT EXISTS category text, -- General, OBC, SC, ST, EWS
++  ADD COLUMN IF NOT EXISTS religion text,
++  ADD COLUMN IF NOT EXISTS nationality text,
++  ADD COLUMN IF NOT EXISTS mother_tongue text,
++  ADD COLUMN IF NOT EXISTS pwd_status boolean DEFAULT false,
++  ADD COLUMN IF NOT EXISTS pwd_details text,
++  
++  -- Contact Information
++  ADD COLUMN IF NOT EXISTS personal_email text,
++  ADD COLUMN IF NOT EXISTS college_email text UNIQUE,
++  ADD COLUMN IF NOT EXISTS personal_mobile text,
++  ADD COLUMN IF NOT EXISTS alt_mobile text,
++  ADD COLUMN IF NOT EXISTS landline_phone text,
++  
++  -- Address Details (Current)
++  ADD COLUMN IF NOT EXISTS current_street text,
++  ADD COLUMN IF NOT EXISTS current_city text,
++  ADD COLUMN IF NOT EXISTS current_state text,
++  ADD COLUMN IF NOT EXISTS current_pincode text,
++  ADD COLUMN IF NOT EXISTS current_country text,
++  
++  -- Address Details (Permanent)
++  ADD COLUMN IF NOT EXISTS permanent_street text,
++  ADD COLUMN IF NOT EXISTS permanent_city text,
++  ADD COLUMN IF NOT EXISTS permanent_state text,
++  ADD COLUMN IF NOT EXISTS permanent_pincode text,
++  ADD COLUMN IF NOT EXISTS permanent_country text,
++  ADD COLUMN IF NOT EXISTS comm_address_type text, -- Current / Permanent / Other
++
++  -- Family Information
++  ADD COLUMN IF NOT EXISTS father_name text,
++  ADD COLUMN IF NOT EXISTS father_occupation text,
++  ADD COLUMN IF NOT EXISTS mother_name text,
++  ADD COLUMN IF NOT EXISTS mother_occupation text,
++  ADD COLUMN IF NOT EXISTS family_annual_income text,
++  ADD COLUMN IF NOT EXISTS siblings_count integer DEFAULT 0,
++  ADD COLUMN IF NOT EXISTS first_gen_learner boolean DEFAULT false,
++  
++  -- Emergency Contact (Updating existing if needed, adding missing)
++  ADD COLUMN IF NOT EXISTS emergency_contact_relation text,
++  ADD COLUMN IF NOT EXISTS emergency_contact_address text,
++
++  -- Identification Documents
++  ADD COLUMN IF NOT EXISTS voter_id text,
++  ADD COLUMN IF NOT EXISTS driving_license text,
++  ADD COLUMN IF NOT EXISTS passport_no text,
++  ADD COLUMN IF NOT EXISTS document_uploads jsonb DEFAULT '{}', -- URLs for Scanned files
++  ADD COLUMN IF NOT EXISTS verification_status text DEFAULT 'Pending'; -- Verified/Pending/Rejected
+diff --git a/src/components/students/Admission/AdmissionPortal.jsx b/src/components/students/Admission/AdmissionPortal.jsx
+index 17cf815..1ddedf0 100644
+--- a/src/components/students/Admission/AdmissionPortal.jsx
++++ b/src/components/students/Admission/AdmissionPortal.jsx
+@@ -1,29 +1,58 @@
+ import { useState, useEffect } from 'react';
+ import { Button } from '@/components/ui/button';
+ import { Input } from '@/components/ui/input';
+-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
++import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+ import { Badge } from '@/components/ui/badge';
+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { ScrollArea } from "@/components/ui/scroll-area";
++import { DatePicker } from "@/components/ui/date-picker";
+ import { toast } from 'sonner';
++import { CheckCircle2, Clock, XCircle, FileText, IndianRupee, GraduationCap, Award, Building2, UserCheck } from 'lucide-react';
++import { format } from 'date-fns';
+ 
+ export function AdmissionPortal() {
+     const [admissions, setAdmissions] = useState([]);
++    const [stats, setStats] = useState({ total: 0, status: {}, courses: {} });
+     const [loading, setLoading] = useState(false);
+     const [isApplyOpen, setIsApplyOpen] = useState(false);
++    const [selectedApp, setSelectedApp] = useState(null);
+ 
+-    // New application form state
++    // Initial Form State
+     const [formData, setFormData] = useState({
+         applicant_name: '',
+         email: '',
+         phone: '',
+         course_applied: '',
+-        dob: ''
++        dob: '',
++        entrance_exam_details: {
++            exam_name: '',
++            marks: '',
++            total_marks: '',
++            rank: ''
++        },
++        academic_qualifications: {
++            tenth_marks: '',
++            tenth_board: '',
++            twelfth_marks: '',
++            twelfth_board: ''
++        },
++        // UGC/AICTE Fields
++        study_mode: 'Regular',
++        gender: '',
++        category: 'General',
++        bpl_status: false,
++        minority_status: false,
++        minority_type: '',
++        pwd_status: false,
++        nationality_type: 'Indian'
+     });
+ 
+     useEffect(() => {
+         fetchAdmissions();
++        fetchStats();
+     }, []);
+ 
+     const fetchAdmissions = async () => {
+@@ -41,6 +70,16 @@ export function AdmissionPortal() {
+         }
+     };
+ 
++    const fetchStats = async () => {
++        try {
++            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/admissions/stats`);
++            const result = await response.json();
++            if (result.status === 'success') setStats(result.data);
++        } catch (error) {
++            console.error('Failed to load stats');
++        }
++    };
++
+     const handleApply = async (e) => {
+         e.preventDefault();
+         try {
+@@ -54,6 +93,7 @@ export function AdmissionPortal() {
+                 toast.success(`Application submitted! ID: ${result.data.application_no}`);
+                 setIsApplyOpen(false);
+                 fetchAdmissions();
++                fetchStats();
+             } else {
+                 throw new Error(result.error);
+             }
+@@ -69,122 +109,693 @@ export function AdmissionPortal() {
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ status: newStatus })
+             });
++
++            if (response.ok) {
++                toast.success(`Status updated to ${newStatus}`);
++                fetchAdmissions();
++                fetchStats();
++                if (selectedApp?.id === id) {
++                    setSelectedApp(prev => ({ ...prev, status: newStatus }));
++                }
++            } else {
++                throw new Error('Update failed');
++            }
++        } catch (error) {
++            toast.error('Update failed');
++        }
++    };
++
++    // Generic update for nested details
++    const updateDetails = async (id, details) => {
++        try {
++            const response = await fetch(`${import.meta.env.VITE_API_URL}/sim/admissions/${id}/details`, {
++                method: 'PATCH',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify(details)
++            });
++
+             if (response.ok) {
+-                toast.success('Status updated');
++                toast.success(`Details updated`);
+                 fetchAdmissions();
++                // Update local state if selected
++                if (selectedApp?.id === id) {
++                    setSelectedApp(prev => ({ ...prev, ...details }));
++                }
++            } else {
++                throw new Error('Update failed');
+             }
+         } catch (error) {
+             toast.error('Update failed');
+         }
+     };
+ 
++
++    const getStatusColor = (status) => {
++        switch (status) {
++            case 'admitted': return 'bg-green-100 text-green-800 border-green-200';
++            case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
++            case 'offered': return 'bg-purple-100 text-purple-800 border-purple-200';
++            case 'shortlisted': return 'bg-blue-100 text-blue-800 border-blue-200';
++            default: return 'bg-gray-100 text-gray-800 border-gray-200';
++        }
++    };
++
++    const REQUIRED_DOCS = [
++        '10th Certificate', '12th Certificate', 'Caste Certificate',
++        'Income Certificate', 'EWS Certificate', 'PWD Certificate',
++        'Character Certificate'
++    ];
++
+     return (
+-        <div className="space-y-6">
+-            <div className="flex justify-between items-center">
++        <div className="space-y-6 pb-20">
++            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                 <div>
+                     <h2 className="text-2xl font-bold">Admission Management</h2>
+-                    <p className="text-muted-foreground">Manage applications, merit lists, and enrollments</p>
++                    <p className="text-muted-foreground">Manage entire admission lifecycle from application to enrollment.</p>
+                 </div>
+ 
+                 <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
+                     <DialogTrigger asChild>
+-                        <Button>New Application</Button>
++                        <Button className="gap-2"><FileText className="h-4 w-4" /> New Application</Button>
+                     </DialogTrigger>
+-                    <DialogContent>
++                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                         <DialogHeader><DialogTitle>New Student Application</DialogTitle></DialogHeader>
+-                        <form onSubmit={handleApply} className="space-y-4">
+-                            <div>
+-                                <label className="text-sm font-medium">Full Name</label>
+-                                <Input value={formData.applicant_name} onChange={e => setFormData({ ...formData, applicant_name: e.target.value })} required />
++                        <form onSubmit={handleApply} className="space-y-6 mt-4">
++                            {/* Personal Details */}
++                            <div className="space-y-4">
++                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Personal Details</h3>
++                                <div className="grid grid-cols-2 gap-4">
++                                    <div>
++                                        <label className="text-sm font-medium">Full Name</label>
++                                        <Input value={formData.applicant_name} onChange={e => setFormData({ ...formData, applicant_name: e.target.value })} required />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">DOB</label>
++                                        <DatePicker
++                                            date={formData.dob}
++                                            setDate={(date) => setFormData({ ...formData, dob: date })}
++                                        />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Email</label>
++                                        <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Phone</label>
++                                        <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} required />
++                                    </div>
++                                </div>
+                             </div>
+-                            <div className="grid grid-cols-2 gap-4">
+-                                <div>
+-                                    <label className="text-sm font-medium">Email</label>
+-                                    <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
++
++                            {/* UGC / AICTE Categories */}
++                            <div className="space-y-4">
++                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Category & Social Status</h3>
++                                <div className="grid grid-cols-2 gap-4">
++                                    <div>
++                                        <label className="text-sm font-medium">Gender</label>
++                                        <Select value={formData.gender} onValueChange={v => setFormData({ ...formData, gender: v })}>
++                                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="Male">Male</SelectItem>
++                                                <SelectItem value="Female">Female</SelectItem>
++                                                <SelectItem value="Other">Other</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Category</label>
++                                        <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
++                                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="General">General</SelectItem>
++                                                <SelectItem value="OBC">OBC</SelectItem>
++                                                <SelectItem value="SC">SC</SelectItem>
++                                                <SelectItem value="ST">ST</SelectItem>
++                                                <SelectItem value="EWS">EWS</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Study Mode</label>
++                                        <Select value={formData.study_mode} onValueChange={v => setFormData({ ...formData, study_mode: v })}>
++                                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="Regular">Regular (Full-time)</SelectItem>
++                                                <SelectItem value="Part-Time">Part-Time</SelectItem>
++                                                <SelectItem value="Distance">Distance Learning</SelectItem>
++                                                <SelectItem value="Sponsored">Sponsored</SelectItem>
++                                                <SelectItem value="Research">Research Scholar</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Nationality Type</label>
++                                        <Select value={formData.nationality_type} onValueChange={v => setFormData({ ...formData, nationality_type: v })}>
++                                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="Indian">Indian National</SelectItem>
++                                                <SelectItem value="NRI">NRI</SelectItem>
++                                                <SelectItem value="OCI">OCI</SelectItem>
++                                                <SelectItem value="Foreign">Foreign National</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                    </div>
+                                 </div>
+-                                <div>
+-                                    <label className="text-sm font-medium">Phone</label>
+-                                    <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
++                                <div className="grid grid-cols-2 gap-4 pt-2">
++                                    <div className="flex items-center gap-2">
++                                        <input type="checkbox" className="h-4 w-4" checked={formData.bpl_status} onChange={e => setFormData({ ...formData, bpl_status: e.target.checked })} />
++                                        <label className="text-sm">Below Poverty Line (BPL)</label>
++                                    </div>
++                                    <div className="flex items-center gap-2">
++                                        <input type="checkbox" className="h-4 w-4" checked={formData.pwd_status} onChange={e => setFormData({ ...formData, pwd_status: e.target.checked })} />
++                                        <label className="text-sm">Person w/ Disability (PWD)</label>
++                                    </div>
++                                    <div className="flex items-center gap-2">
++                                        <input type="checkbox" className="h-4 w-4" checked={formData.minority_status} onChange={e => setFormData({ ...formData, minority_status: e.target.checked })} />
++                                        <label className="text-sm">Minority Comunity</label>
++                                    </div>
++                                    {formData.minority_status && (
++                                        <div>
++                                            <Select value={formData.minority_type} onValueChange={v => setFormData({ ...formData, minority_type: v })}>
++                                                <SelectTrigger className="h-8"><SelectValue placeholder="Select Religion" /></SelectTrigger>
++                                                <SelectContent>
++                                                    <SelectItem value="Muslim">Muslim</SelectItem>
++                                                    <SelectItem value="Christian">Christian</SelectItem>
++                                                    <SelectItem value="Sikh">Sikh</SelectItem>
++                                                    <SelectItem value="Buddhist">Buddhist</SelectItem>
++                                                    <SelectItem value="Jain">Jain</SelectItem>
++                                                    <SelectItem value="Parsi">Parsi</SelectItem>
++                                                </SelectContent>
++                                            </Select>
++                                        </div>
++                                    )}
+                                 </div>
+                             </div>
+-                            <div className="grid grid-cols-2 gap-4">
++
++                            {/* Course Selection */}
++                            <div className="space-y-4">
++                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Program Selection</h3>
+                                 <div>
+-                                    <label className="text-sm font-medium">Course</label>
++                                    <label className="text-sm font-medium">Course Applying For</label>
+                                     <Select onValueChange={v => setFormData({ ...formData, course_applied: v })}>
+                                         <SelectTrigger>
+                                             <SelectValue placeholder="Select Course" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+-                                            <SelectItem value="B.Tech CS">B.Tech CS</SelectItem>
+-                                            <SelectItem value="B.Tech EC">B.Tech EC</SelectItem>
++                                            <SelectItem value="B.Tech Computer Science">B.Tech Computer Science</SelectItem>
++                                            <SelectItem value="B.Tech Electronics">B.Tech Electronics</SelectItem>
++                                            <SelectItem value="B.Tech Mechanical">B.Tech Mechanical</SelectItem>
+                                             <SelectItem value="BBA">BBA</SelectItem>
+                                             <SelectItem value="MBA">MBA</SelectItem>
+                                         </SelectContent>
+                                     </Select>
+                                 </div>
+-                                <div>
+-                                    <label className="text-sm font-medium">DOB</label>
+-                                    <Input type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
++                            </div>
++
++                            {/* Entrance Exam */}
++                            <div className="space-y-4">
++                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Entrance Exam</h3>
++                                <div className="grid grid-cols-2 gap-4">
++                                    <div>
++                                        <label className="text-sm font-medium">Exam Name</label>
++                                        <Input placeholder="JEE / CAT / GATE" value={formData.entrance_exam_details.exam_name} onChange={e => setFormData({ ...formData, entrance_exam_details: { ...formData.entrance_exam_details, exam_name: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Rank / Percentile</label>
++                                        <Input placeholder="AIR 1234" value={formData.entrance_exam_details.rank} onChange={e => setFormData({ ...formData, entrance_exam_details: { ...formData.entrance_exam_details, rank: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Marks Obtained</label>
++                                        <Input type="number" value={formData.entrance_exam_details.marks} onChange={e => setFormData({ ...formData, entrance_exam_details: { ...formData.entrance_exam_details, marks: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">Total Marks</label>
++                                        <Input type="number" value={formData.entrance_exam_details.total_marks} onChange={e => setFormData({ ...formData, entrance_exam_details: { ...formData.entrance_exam_details, total_marks: e.target.value } })} />
++                                    </div>
++                                </div>
++                            </div>
++
++                            {/* Academic Qualifications */}
++                            <div className="space-y-4">
++                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-1">Qualifications</h3>
++                                <div className="grid grid-cols-2 gap-4">
++                                    <div>
++                                        <label className="text-sm font-medium">12th Marks (%)</label>
++                                        <Input type="number" value={formData.academic_qualifications.twelfth_marks} onChange={e => setFormData({ ...formData, academic_qualifications: { ...formData.academic_qualifications, twelfth_marks: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">12th Board</label>
++                                        <Input value={formData.academic_qualifications.twelfth_board} onChange={e => setFormData({ ...formData, academic_qualifications: { ...formData.academic_qualifications, twelfth_board: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">10th Marks (%)</label>
++                                        <Input type="number" value={formData.academic_qualifications.tenth_marks} onChange={e => setFormData({ ...formData, academic_qualifications: { ...formData.academic_qualifications, tenth_marks: e.target.value } })} />
++                                    </div>
++                                    <div>
++                                        <label className="text-sm font-medium">10th Board</label>
++                                        <Input value={formData.academic_qualifications.tenth_board} onChange={e => setFormData({ ...formData, academic_qualifications: { ...formData.academic_qualifications, tenth_board: e.target.value } })} />
++                                    </div>
+                                 </div>
+                             </div>
+-                            <Button type="submit" className="w-full">Submit Application</Button>
++
++                            <Button type="submit" className="w-full" size="lg">Submit Application</Button>
+                         </form>
+                     </DialogContent>
+                 </Dialog>
+             </div>
+ 
+-            <Card>
+-                <CardHeader><CardTitle>Applications</CardTitle></CardHeader>
+-                <CardContent>
+-                    <Table>
+-                        <TableHeader>
+-                            <TableRow>
+-                                <TableHead>App ID</TableHead>
+-                                <TableHead>Name</TableHead>
+-                                <TableHead>Course</TableHead>
+-                                <TableHead>Score</TableHead>
+-                                <TableHead>Status</TableHead>
+-                                <TableHead className="text-right">Actions</TableHead>
+-                            </TableRow>
+-                        </TableHeader>
+-                        <TableBody>
+-                            {admissions.map(app => (
+-                                <TableRow key={app.id}>
+-                                    <TableCell className="font-mono text-xs">{app.application_no}</TableCell>
+-                                    <TableCell>
+-                                        <div className="font-medium">{app.applicant_name}</div>
+-                                        <div className="text-xs text-muted-foreground">{app.email}</div>
+-                                    </TableCell>
+-                                    <TableCell>{app.course_applied}</TableCell>
+-                                    <TableCell>{app.entrance_exam_score || '-'}</TableCell>
+-                                    <TableCell>
+-                                        <Badge variant="outline" className={
+-                                            app.status === 'admitted' ? 'bg-green-100 text-green-800 border-green-200' :
+-                                                app.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
+-                                                    app.status === 'merit_listed' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''
+-                                        }>
+-                                            {app.status.replace('_', ' ')}
+-                                        </Badge>
+-                                    </TableCell>
+-                                    <TableCell className="text-right space-x-2">
+-                                        {app.status === 'applied' && (
+-                                            <Button size="sm" variant="outline" onClick={() => updateStatus(app.id, 'merit_listed')}>Shortlist</Button>
+-                                        )}
+-                                        {app.status === 'merit_listed' && (
+-                                            <Button size="sm" onClick={() => updateStatus(app.id, 'admitted')}>Admit</Button>
+-                                        )}
+-                                    </TableCell>
+-                                </TableRow>
+-                            ))}
+-                            {admissions.length === 0 && (
+-                                <TableRow>
+-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No applications found</TableCell>
+-                                </TableRow>
+-                            )}
+-                        </TableBody>
+-                    </Table>
+-                </CardContent>
+-            </Card>
+-        </div>
++            {/* Stats Cards */}
++            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
++                <Card>
++                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Applications</CardTitle></CardHeader>
++                    <CardContent><div className="text-2xl font-bold">{stats.total}</div></CardContent>
++                </Card>
++                <Card>
++                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle></CardHeader>
++                    <CardContent><div className="text-2xl font-bold">{stats.status['applied'] || 0}</div></CardContent>
++                </Card>
++                <Card>
++                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Shortlisted/Offered</CardTitle></CardHeader>
++                    <CardContent><div className="text-2xl font-bold">{(stats.status['offered'] || 0) + (stats.status['shortlisted'] || 0)}</div></CardContent>
++                </Card>
++                <Card>
++                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Admitted (Pending)</CardTitle></CardHeader>
++                    <CardContent><div className="text-2xl font-bold">{stats.status['admitted'] || 0}</div></CardContent>
++                </Card>
++            </div>
++
++            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
++                {/* Left: Application List */}
++                <Card className="lg:col-span-1 border-muted">
++                    <CardHeader><CardTitle>Applications</CardTitle></CardHeader>
++                    <CardContent className="p-0">
++                        <ScrollArea className="h-[600px]">
++                            <Table>
++                                <TableHeader>
++                                    <TableRow>
++                                        <TableHead>Applicant</TableHead>
++                                        <TableHead className="text-right">Status</TableHead>
++                                    </TableRow>
++                                </TableHeader>
++                                <TableBody>
++                                    {admissions.map(app => (
++                                        <TableRow key={app.id}
++                                            className={`cursor-pointer ${selectedApp?.id === app.id ? 'bg-muted' : ''}`}
++                                            onClick={() => setSelectedApp(app)}
++                                        >
++                                            <TableCell>
++                                                <div className="font-medium">{app.applicant_name}</div>
++                                                <div className="text-xs text-muted-foreground flex items-center gap-1">
++                                                    <span className="font-mono">{app.application_no}</span>
++                                                    <span>ΓÇó</span>
++                                                    <span>{app.course_applied}</span>
++                                                </div>
++                                            </TableCell>
++                                            <TableCell className="text-right">
++                                                <Badge variant="outline" className={`${getStatusColor(app.status)} text-[10px]`}>
++                                                    {app.status.toUpperCase()}
++                                                </Badge>
++                                            </TableCell>
++                                        </TableRow>
++                                    ))}
++                                    {admissions.length === 0 && (
++                                        <TableRow>
++                                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">No applications found</TableCell>
++                                        </TableRow>
++                                    )}
++                                </TableBody>
++                            </Table>
++                        </ScrollArea>
++                    </CardContent>
++                </Card>
++
++                {/* Right: Detail View */}
++                <div className="lg:col-span-2">
++                    {selectedApp ? (
++                        <Card className="h-fit sticky top-6">
++                            <CardHeader className="border-b bg-muted/20 pb-4">
++                                <div className="flex justify-between items-start">
++                                    <div>
++                                        <div className="flex items-center gap-2">
++                                            <CardTitle className="text-xl">{selectedApp.applicant_name}</CardTitle>
++                                            <Badge className={getStatusColor(selectedApp.status)}>{selectedApp.status.toUpperCase()}</Badge>
++                                        </div>
++                                        <CardDescription>{selectedApp.application_no} ΓÇó applied on {new Date(selectedApp.created_at).toLocaleDateString()}</CardDescription>
++                                    </div>
++                                    <div className="flex gap-2">
++                                        <Button size="sm" variant={selectedApp.status === 'applied' ? 'secondary' : 'outline'} onClick={() => updateStatus(selectedApp.id, 'applied')}>Applied</Button>
++                                        <Button size="sm" variant={selectedApp.status === 'shortlisted' ? 'secondary' : 'outline'} onClick={() => updateStatus(selectedApp.id, 'shortlisted')}>Shortlist</Button>
++                                        <Button size="sm" variant={selectedApp.status === 'offered' ? 'secondary' : 'outline'} onClick={() => updateStatus(selectedApp.id, 'offered')}>Offer</Button>
++                                        <Button size="sm" variant={selectedApp.status === 'admitted' ? 'default' : 'outline'} onClick={() => updateStatus(selectedApp.id, 'admitted')}>Admit</Button>
++                                    </div>
++                                </div>
++                            </CardHeader>
++                            <CardContent className="p-0">
++                                <Tabs defaultValue="overview" className="w-full">
++                                    <TabsList className="w-full justify-start rounded-none border-b h-12">
++                                        <TabsTrigger value="overview">Overview</TabsTrigger>
++                                        <TabsTrigger value="merit_offer">Merit & Offer</TabsTrigger>
++                                        <TabsTrigger value="verification">Verification & Fees</TabsTrigger>
++                                        <TabsTrigger value="enrollment" disabled={selectedApp.status !== 'admitted'}>Enrollment</TabsTrigger>
++                                    </TabsList>
++
++                                    {/* 1. Overview Tab */}
++                                    <TabsContent value="overview" className="p-4 space-y-6">
++                                        <div className="space-y-4">
++                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted/10 p-4 rounded-lg">
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Email</span> <span className="font-medium">{selectedApp.email}</span></div>
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Phone</span> <span className="font-medium">{selectedApp.phone || '-'}</span></div>
++                                                <div><span className="text-muted-foreground block text-xs uppercase">DOB</span> <span className="font-medium">{selectedApp.dob || '-'}</span></div>
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Course</span> <span className="font-medium text-primary">{selectedApp.course_applied}</span></div>
++                                            </div>
++
++                                            {/* UGC details */}
++                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm p-4 border rounded-lg">
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Category</span> <span className="font-medium">{selectedApp.category || 'General'}</span></div>
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Gender</span> <span className="font-medium">{selectedApp.gender || '-'}</span></div>
++                                                <div><span className="text-muted-foreground block text-xs uppercase">Mode</span> <span className="font-medium">{selectedApp.study_mode || 'Regular'}</span></div>
++                                                <div>
++                                                    <span className="text-muted-foreground block text-xs uppercase">Status</span>
++                                                    <div className="flex gap-1 mt-1">
++                                                        {selectedApp.is_bpl && <Badge variant="outline" className="text-[10px] px-1 h-5 text-orange-600 border-orange-200">BPL</Badge>}
++                                                        {selectedApp.is_pwd && <Badge variant="outline" className="text-[10px] px-1 h-5 text-blue-600 border-blue-200">PWD</Badge>}
++                                                        {selectedApp.is_minority && <Badge variant="outline" className="text-[10px] px-1 h-5 text-green-600 border-green-200">{selectedApp.minority_type || 'Minority'}</Badge>}
++                                                        {!selectedApp.is_bpl && !selectedApp.is_pwd && !selectedApp.is_minority && <span className="font-medium">-</span>}
++                                                    </div>
++                                                </div>
++                                            </div>
++
++                                            <div className="grid md:grid-cols-2 gap-4">
++                                                <div className="border rounded-lg p-3 space-y-2">
++                                                    <h4 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground"><FileText className="h-4 w-4" /> Entrance Exam</h4>
++                                                    <div className="text-sm grid grid-cols-2 gap-y-1">
++                                                        <span className="text-muted-foreground">Exam Name</span> <span className="font-medium text-right">{selectedApp.entrance_exam_details?.exam_name || '-'}</span>
++                                                        <span className="text-muted-foreground">Rank</span> <span className="font-medium text-right">{selectedApp.entrance_exam_details?.rank || '-'}</span>
++                                                        <span className="text-muted-foreground">Score</span> <span className="font-medium text-right">{selectedApp.entrance_exam_details?.marks} / {selectedApp.entrance_exam_details?.total_marks}</span>
++                                                    </div>
++                                                </div>
++
++                                                <div className="border rounded-lg p-3 space-y-2">
++                                                    <h4 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground"><GraduationCap className="h-4 w-4" /> Academics</h4>
++                                                    <div className="text-sm grid grid-cols-2 gap-y-1">
++                                                        <span className="text-muted-foreground">12th Grade</span> <span className="font-medium text-right">{selectedApp.academic_qualifications?.twelfth_marks}%</span>
++                                                        <span className="text-muted-foreground">12th Board</span> <span className="font-medium text-right">{selectedApp.academic_qualifications?.twelfth_board}</span>
++                                                        <span className="text-muted-foreground">10th Grade</span> <span className="font-medium text-right">{selectedApp.academic_qualifications?.tenth_marks}%</span>
++                                                    </div>
++                                                </div>
++                                            </div>
++                                        </div>
++                                    </TabsContent>
++
++                                    {/* 2. Merit & Offer Tab */}
++                                    <TabsContent value="merit_offer" className="p-4 space-y-6">
++                                        <div className="grid md:grid-cols-2 gap-6">
++                                            {/* Phase 1: Merit List */}
++                                            <div className="space-y-4">
++                                                <div><h4 className="font-semibold flex items-center gap-2"><Award className="h-4 w-4 text-purple-600" /> Merit & Placement</h4></div>
++                                                <div className="space-y-3">
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Merit Rank (All India)</label>
++                                                        <Input
++                                                            value={selectedApp.merit_details?.merit_rank || ''}
++                                                            onChange={(e) => updateDetails(selectedApp.id, { merit_details: { ...selectedApp.merit_details, merit_rank: e.target.value } })}
++                                                            placeholder="e.g. 1024"
++                                                        />
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Category Rank</label>
++                                                        <Input
++                                                            value={selectedApp.merit_details?.category_rank || ''}
++                                                            onChange={(e) => updateDetails(selectedApp.id, { merit_details: { ...selectedApp.merit_details, category_rank: e.target.value } })}
++                                                            placeholder="e.g. OBC-120"
++                                                        />
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Placement Status</label>
++                                                        <Select
++                                                            value={selectedApp.merit_details?.placement_status || 'Waitlist'}
++                                                            onValueChange={(v) => updateDetails(selectedApp.id, { merit_details: { ...selectedApp.merit_details, placement_status: v } })}
++                                                        >
++                                                            <SelectTrigger><SelectValue /></SelectTrigger>
++                                                            <SelectContent>
++                                                                <SelectItem value="Selected">Selected</SelectItem>
++                                                                <SelectItem value="Waitlist">Waitlist</SelectItem>
++                                                                <SelectItem value="Rejected">Rejected</SelectItem>
++                                                            </SelectContent>
++                                                        </Select>
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Merit List Document (Link)</label>
++                                                        <Input
++                                                            value={selectedApp.merit_details?.document_link || ''}
++                                                            onChange={(e) => updateDetails(selectedApp.id, { merit_details: { ...selectedApp.merit_details, document_link: e.target.value } })}
++                                                            placeholder="https://..."
++                                                        />
++                                                    </div>
++                                                </div>
++                                            </div>
++
++                                            {/* Phase 2: Offer Letter */}
++                                            <div className="space-y-4">
++                                                <div><h4 className="font-semibold flex items-center gap-2"><FileText className="h-4 w-4 text-blue-600" /> Offer Details</h4></div>
++                                                <div className="space-y-3">
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Offer Date</label>
++                                                        <DatePicker
++                                                            date={selectedApp.offer_details?.offer_date}
++                                                            setDate={(d) => updateDetails(selectedApp.id, { offer_details: { ...selectedApp.offer_details, offer_date: d } })}
++                                                        />
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Offer Validity (Expiry)</label>
++                                                        <DatePicker
++                                                            date={selectedApp.offer_details?.expiry_date}
++                                                            setDate={(d) => updateDetails(selectedApp.id, { offer_details: { ...selectedApp.offer_details, expiry_date: d } })}
++                                                        />
++                                                    </div>
++                                                    <div className="pt-2">
++                                                        <div className="flex items-center justify-between border p-3 rounded-md bg-muted/20">
++                                                            <span className="text-sm font-medium">Offer Accepted?</span>
++                                                            <Button
++                                                                size="sm"
++                                                                variant={selectedApp.offer_details?.accepted ? "default" : "outline"}
++                                                                onClick={() => updateDetails(selectedApp.id, { offer_details: { ...selectedApp.offer_details, accepted: !selectedApp.offer_details?.accepted, acceptance_date: new Date().toISOString() } })}
++                                                            >
++                                                                {selectedApp.offer_details?.accepted ? "Yes, Accepted" : "No, Pending"}
++                                                            </Button>
++                                                        </div>
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Offer Letter (Link)</label>
++                                                        <Input
++                                                            value={selectedApp.offer_details?.document_link || ''}
++                                                            onChange={(e) => updateDetails(selectedApp.id, { offer_details: { ...selectedApp.offer_details, document_link: e.target.value } })}
++                                                            placeholder="https://..."
++                                                        />
++                                                    </div>
++                                                </div>
++                                            </div>
++                                        </div>
++                                    </TabsContent>
++
++                                    {/* 3. Verification & Fees Tab */}
++                                    <TabsContent value="verification" className="p-4 space-y-6">
++                                        <div className="grid md:grid-cols-2 gap-6">
++                                            {/* Document Verification */}
++                                            <div>
++                                                <h4 className="font-semibold mb-3 flex items-center gap-2"><UserCheck className="h-4 w-4 text-orange-600" /> Document Verification</h4>
++                                                <ScrollArea className="h-[300px] border rounded-md p-2">
++                                                    <div className="space-y-2">
++                                                        {REQUIRED_DOCS.map(doc => {
++                                                            const status = selectedApp.document_verification_status?.[doc] || 'Pending';
++                                                            return (
++                                                                <div key={doc} className="flex items-center justify-between p-2 border-b last:border-0">
++                                                                    <span className="text-sm">{doc}</span>
++                                                                    <div className="flex gap-1">
++                                                                        <Button size="icon" variant={status === 'Verified' ? 'default' : 'ghost'} className={`h-6 w-6 ${status === 'Verified' ? 'bg-green-600 hover:bg-green-700' : ''}`} onClick={() => updateDetails(selectedApp.id, { document_verification_status: { ...selectedApp.document_verification_status, [doc]: 'Verified' } })}>
++                                                                            <CheckCircle2 className="h-3 w-3" />
++                                                                        </Button>
++                                                                        <Button size="icon" variant={status === 'Rejected' ? 'destructive' : 'ghost'} className="h-6 w-6" onClick={() => updateDetails(selectedApp.id, { document_verification_status: { ...selectedApp.document_verification_status, [doc]: 'Rejected' } })}>
++                                                                            <XCircle className="h-3 w-3" />
++                                                                        </Button>
++                                                                    </div>
++                                                                </div>
++                                                            )
++                                                        })}
++                                                    </div>
++                                                </ScrollArea>
++                                            </div>
++
++                                            {/* Fee Payment */}
++                                            <div className="space-y-4">
++                                                <h4 className="font-semibold flex items-center gap-2"><IndianRupee className="h-4 w-4 text-green-600" /> Fee Payment</h4>
++                                                <Card className="bg-muted/10">
++                                                    <CardContent className="p-4 space-y-4">
++                                                        <div className="grid grid-cols-2 gap-4">
++                                                            <div>
++                                                                <label className="text-xs font-medium text-muted-foreground">Amount Due</label>
++                                                                <Input
++                                                                    type="number"
++                                                                    value={selectedApp.fee_payment_details?.amount_due || ''}
++                                                                    onChange={(e) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, amount_due: e.target.value } })}
++                                                                />
++                                                            </div>
++                                                            <div>
++                                                                <label className="text-xs font-medium text-muted-foreground">Due Date</label>
++                                                                <DatePicker
++                                                                    date={selectedApp.fee_payment_details?.due_date}
++                                                                    setDate={(d) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, due_date: d } })}
++                                                                />
++                                                            </div>
++                                                        </div>
++
++                                                        <div className="grid grid-cols-2 gap-4">
++                                                            <div>
++                                                                <label className="text-xs font-medium text-muted-foreground">Amount Paid</label>
++                                                                <Input
++                                                                    type="number"
++                                                                    value={selectedApp.fee_payment_details?.amount_paid || ''}
++                                                                    onChange={(e) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, amount_paid: e.target.value } })}
++                                                                />
++                                                            </div>
++                                                            <div>
++                                                                <label className="text-xs font-medium text-muted-foreground">Payment Date</label>
++                                                                <DatePicker
++                                                                    date={selectedApp.fee_payment_details?.payment_date}
++                                                                    setDate={(d) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, payment_date: d } })}
++                                                                />
++                                                            </div>
++                                                        </div>
++
++                                                        <div className="flex items-center justify-between pt-2">
++                                                            <span className="text-sm font-medium">Status</span>
++                                                            <Select
++                                                                value={selectedApp.fee_payment_details?.status || 'Pending'}
++                                                                onValueChange={(v) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, status: v } })}
++                                                            >
++                                                                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
++                                                                <SelectContent>
++                                                                    <SelectItem value="Pending">Pending</SelectItem>
++                                                                    <SelectItem value="Partially Paid">Partially Paid</SelectItem>
++                                                                    <SelectItem value="Paid">Fully Paid</SelectItem>
++                                                                </SelectContent>
++                                                            </Select>
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Payment Receipt (Link)</label>
++                                                            <Input
++                                                                value={selectedApp.fee_payment_details?.receipt_url || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { fee_payment_details: { ...selectedApp.fee_payment_details, receipt_url: e.target.value } })}
++                                                                placeholder="https://..."
++                                                            />
++                                                        </div>
++                                                    </CardContent>
++                                                </Card>
++                                            </div>
++                                        </div>
++                                    </TabsContent>
++
++                                    {/* 4. Enrollment Tab */}
++                                    <TabsContent value="enrollment" className="p-4 space-y-6">
++                                        <div className="space-y-4">
++                                            <div className="flex items-center justify-between">
++                                                <h4 className="font-semibold flex items-center gap-2"><Building2 className="h-4 w-4 text-blue-600" /> Enrollment Details</h4>
++                                                <Badge variant="outline" className="bg-blue-50 text-blue-700">Admitted Student</Badge>
++                                            </div>
++
++                                            <div className="grid md:grid-cols-2 gap-6">
++                                                <div className="space-y-3">
++                                                    <h5 className="text-sm font-medium border-b pb-1">Program Allocation</h5>
++                                                    <div className="grid gap-3">
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Program Name</label>
++                                                            <Input value={selectedApp.course_applied} disabled className="bg-muted" />
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Program Code</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.program_code || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, program_code: e.target.value } })}
++                                                                placeholder="e.g. CSE-2024"
++                                                            />
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Specialization</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.specialization || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, specialization: e.target.value } })}
++                                                                placeholder="e.g. AI & ML"
++                                                            />
++                                                        </div>
++                                                    </div>
++                                                </div>
++
++                                                <div className="space-y-3">
++                                                    <h5 className="text-sm font-medium border-b pb-1">Batch & Entry</h5>
++                                                    <div className="grid grid-cols-2 gap-3">
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Batch Year</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.batch_year || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, batch_year: e.target.value } })}
++                                                            />
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Semester</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.semester || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, semester: e.target.value } })}
++                                                            />
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Section</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.section || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, section: e.target.value } })}
++                                                            />
++                                                        </div>
++                                                        <div>
++                                                            <label className="text-xs font-medium text-muted-foreground">Roll No</label>
++                                                            <Input
++                                                                value={selectedApp.enrollment_details?.roll_number || ''}
++                                                                onChange={(e) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, roll_number: e.target.value } })}
++                                                            />
++                                                        </div>
++                                                    </div>
++                                                    <div>
++                                                        <label className="text-xs font-medium text-muted-foreground">Entry Type</label>
++                                                        <Select
++                                                            value={selectedApp.enrollment_details?.entry_type || 'Regular'}
++                                                            onValueChange={(v) => updateDetails(selectedApp.id, { enrollment_details: { ...selectedApp.enrollment_details, entry_type: v } })}
++                                                        >
++                                                            <SelectTrigger><SelectValue /></SelectTrigger>
++                                                            <SelectContent>
++                                                                <SelectItem value="Regular">Regular / Direct</SelectItem>
++                                                                <SelectItem value="Lateral">Lateral Entry</SelectItem>
++                                                                <SelectItem value="Management">Management Quota</SelectItem>
++                                                                <SelectItem value="NRI">Foreign National</SelectItem>
++                                                            </SelectContent>
++                                                        </Select>
++                                                    </div>
++                                                </div>
++                                            </div>
++                                        </div>
++                                    </TabsContent>
++                                </Tabs>
++                            </CardContent>
++                        </Card>
++                    ) : (
++                        <div className="h-[600px] flex flex-col items-center justify-center p-8 border rounded-xl bg-muted/10 text-muted-foreground text-center animate-in fade-in-50">
++                            <div className="h-16 w-16 bg-muted/30 rounded-full flex items-center justify-center mb-4">
++                                <FileText className="h-8 w-8 opacity-50" />
++                            </div>
++                            <h3 className="text-lg font-semibold">No Application Selected</h3>
++                            <p className="max-w-xs mx-auto">Select an application from the list to view its detailed lifecycle, verify docs, or manage enrollment.</p>
++                        </div>
++                    )}
++                </div>
++            </div>
++        </div >
+     );
+ }
++
+diff --git a/src/components/students/StudentProfileView.jsx b/src/components/students/StudentProfileView.jsx
+index cd1aadd..07c9174 100644
+--- a/src/components/students/StudentProfileView.jsx
++++ b/src/components/students/StudentProfileView.jsx
+@@ -1,5 +1,5 @@
+ import { useState, useEffect } from 'react';
+-import { User, Calendar, MapPin, Phone, Heart, Users, CreditCard } from 'lucide-react';
++import { User, Calendar, MapPin, Phone, Heart, Users, CreditCard, Mail, GraduationCap } from 'lucide-react';
+ import { Button } from '@/components/ui/button';
+ import { Input } from '@/components/ui/input';
+ import { Textarea } from '@/components/ui/textarea';
+@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { Badge } from '@/components/ui/badge';
+ import { toast } from 'sonner';
++import { DatePicker } from '@/components/ui/date-picker';
+ 
+ export function StudentProfileView({ student, onBack }) {
+     const [activeTab, setActiveTab] = useState('personal');
+     const [loading, setLoading] = useState(false);
+-    const [profile, setProfile] = useState(null);
++    const [profile, setProfile] = useState({});
+     const [isEditing, setIsEditing] = useState(false);
+ 
+     useEffect(() => {
+@@ -27,6 +28,8 @@ export function StudentProfileView({ student, onBack }) {
+             const result = await response.json();
+             if (result.data && !result.error) {
+                 setProfile(result.data);
++            } else {
++                setProfile({});
+             }
+         } catch (error) {
+             console.error('Error fetching profile:', error);
+@@ -41,18 +44,15 @@ export function StudentProfileView({ student, onBack }) {
+         try {
+             setLoading(true);
+ 
+-            // Sanitize data before saving
++            // Sanitize data before saving (remove nulls or convert types if needed)
+             const sanitizedProfile = { ...profile };
+-            delete sanitizedProfile.id; // Don't send the internal primary key
+-
+-            if (sanitizedProfile.family_income === '') {
+-                sanitizedProfile.family_income = null;
+-            } else if (sanitizedProfile.family_income !== undefined && sanitizedProfile.family_income !== null) {
+-                sanitizedProfile.family_income = Number(sanitizedProfile.family_income);
+-            }
++            delete sanitizedProfile.id; // Don't send internal PK
++            delete sanitizedProfile.created_at;
++            delete sanitizedProfile.updated_at;
+ 
+-            if (sanitizedProfile.dob === '') {
+-                sanitizedProfile.dob = null;
++            // Ensure numeric
++            if (sanitizedProfile.family_annual_income) {
++                sanitizedProfile.family_annual_income = Number(sanitizedProfile.family_annual_income);
+             }
+ 
+             const dataToSave = {
+@@ -86,24 +86,64 @@ export function StudentProfileView({ student, onBack }) {
+         setProfile(prev => ({ ...prev, [field]: value }));
+     };
+ 
+-    if (!profile && loading) return <div className="p-8 text-center">Loading profile...</div>;
+ 
+-    const displayProfile = profile || {};
++
++    const renderInput = (label, field, type = 'text', placeholder = '') => (
++        <div className="space-y-2">
++            <label className="text-sm font-medium text-muted-foreground">{label}</label>
++            {isEditing ? (
++                type === 'date' ? (
++                    <DatePicker
++                        date={profile[field]}
++                        setDate={(d) => handleChange(field, d)}
++                        placeholder={placeholder || "Select date"}
++                    />
++                ) : (
++                    <Input
++                        type={type}
++                        value={profile[field] || ''}
++                        onChange={e => handleChange(field, e.target.value)}
++                        placeholder={placeholder}
++                    />
++                )
++            ) : (
++                <p className="font-medium text-sm border p-2 rounded-md bg-muted/20 min-h-[40px] flex items-center">
++                    {profile[field] || <span className="text-muted-foreground italic text-xs">Not provided</span>}
++                </p>
++            )}
++        </div>
++    );
++
++    const renderSectionHeader = (icon, title) => (
++        <CardHeader className="pb-3">
++            <CardTitle className="flex items-center gap-2 text-lg">
++                {icon} {title}
++            </CardTitle>
++        </CardHeader>
++    );
++
++    if (!profile && loading) return <div className="p-8 text-center">Loading profile...</div>;
+ 
+     return (
+-        <div className="space-y-6">
+-            <div className="flex items-center gap-4 mb-6">
+-                <Button variant="outline" onClick={onBack}>&larr; Back</Button>
++        <div className="space-y-6 pb-20">
++            {/* Header */}
++            <div className="flex items-center gap-4 mb-6 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 border-b">
++                <Button variant="outline" size="sm" onClick={onBack}>&larr; Back</Button>
+                 <div>
+                     <h2 className="text-2xl font-bold">{student.name}</h2>
+-                    <p className="text-muted-foreground">{student.email} ΓÇó {student.department}</p>
++                    <p className="text-muted-foreground text-sm flex items-center gap-2">
++                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{student.role?.toUpperCase()}</span>
++                        <span>{student.email}</span>
++                        <span>ΓÇó</span>
++                        <span>{student.department}</span>
++                    </p>
+                 </div>
+                 <div className="ml-auto">
+                     {!isEditing ? (
+-                        <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
++                        <Button onClick={() => setIsEditing(true)}>Edit Details</Button>
+                     ) : (
+                         <div className="flex gap-2">
+-                            <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
++                            <Button variant="ghost" onClick={() => { setIsEditing(false); fetchProfile(); }}>Cancel</Button>
+                             <Button onClick={handleSave} disabled={loading}>Save Changes</Button>
+                         </div>
+                     )}
+@@ -111,165 +151,128 @@ export function StudentProfileView({ student, onBack }) {
+             </div>
+ 
+             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+-                <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+-                    <TabsTrigger value="personal">Personal</TabsTrigger>
++                <TabsList className="w-full justify-start overflow-x-auto">
++                    <TabsTrigger value="personal">Personal & Identity</TabsTrigger>
+                     <TabsTrigger value="academic">Academic</TabsTrigger>
++                    <TabsTrigger value="contact">Contact & Address</TabsTrigger>
++                    <TabsTrigger value="family">Family</TabsTrigger>
+                     <TabsTrigger value="health">Health & Emergency</TabsTrigger>
+-                    <TabsTrigger value="documents">Documents</TabsTrigger>
+                 </TabsList>
+ 
+-                <TabsContent value="personal" className="space-y-4 mt-4">
++                {/* 1. PERSONAL & IDENTITY */}
++                <TabsContent value="personal" className="mt-6 space-y-6">
+                     <Card>
+-                        <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Basic Info</CardTitle></CardHeader>
+-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Date of Birth</label>
+-                                <Input
+-                                    type="date"
+-                                    value={displayProfile.dob || ''}
+-                                    onChange={e => handleChange('dob', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Gender</label>
+-                                <Input
+-                                    value={displayProfile.gender || ''}
+-                                    onChange={e => handleChange('gender', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Aadhar No</label>
+-                                <Input
+-                                    value={displayProfile.aadhar_no || ''}
+-                                    onChange={e => handleChange('aadhar_no', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Family Income</label>
+-                                <Input
+-                                    type="number"
+-                                    value={displayProfile.family_income || ''}
+-                                    onChange={e => handleChange('family_income', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
++                        {renderSectionHeader(<User className="h-5 w-5" />, "Personal Information")}
++                        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
++                            {renderInput("Date of Birth", "dob", "date")}
++                            {renderInput("Gender", "gender")}
++                            {renderInput("Blood Group", "blood_group")}
++                            {renderInput("Religion", "religion")}
++                            {renderInput("Community / Category", "category")}
++                            {renderInput("Nationality", "nationality")}
++                            {renderInput("Mother Tongue", "mother_tongue")}
++                            {renderInput("Aadhaar Number", "aadhar_no")}
++                            {renderInput("PAN Number", "pan_no")}
+                         </CardContent>
+                     </Card>
++                </TabsContent>
+ 
++                {/* 2. ACADEMIC */}
++                <TabsContent value="academic" className="mt-6 space-y-6">
+                     <Card>
+-                        <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Address</CardTitle></CardHeader>
+-                        <CardContent className="space-y-4">
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Current Address</label>
+-                                <Textarea
+-                                    value={displayProfile.address_current || ''}
+-                                    onChange={e => handleChange('address_current', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Permanent Address</label>
+-                                <Textarea
+-                                    value={displayProfile.address_permanent || ''}
+-                                    onChange={e => handleChange('address_permanent', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
++                        {renderSectionHeader(<GraduationCap className="h-5 w-5" />, "Academic Record")}
++                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                            {renderInput("Student ID (Auto-Generated)", "student_id_no")}
++                            {renderInput("College Email (Auto-Generated)", "college_email")}
++                            {renderInput("Section", "section")}
++                            {renderInput("Enrollment Date", "enrollment_date", "date")}
+                         </CardContent>
+                     </Card>
++                    <AcademicTab userId={student.id} />
++                </TabsContent>
+ 
++                {/* 3. CONTACT & ADDRESS */}
++                <TabsContent value="contact" className="mt-6 space-y-6">
+                     <Card>
+-                        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Guardian Info</CardTitle></CardHeader>
+-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Guardian Name</label>
+-                                <Input
+-                                    value={displayProfile.guardian_name || ''}
+-                                    onChange={e => handleChange('guardian_name', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Relationship</label>
+-                                <Input
+-                                    value={displayProfile.guardian_relation || ''}
+-                                    onChange={e => handleChange('guardian_relation', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Contact Number</label>
+-                                <Input
+-                                    value={displayProfile.guardian_contact || ''}
+-                                    onChange={e => handleChange('guardian_contact', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
++                        {renderSectionHeader(<Phone className="h-5 w-5" />, "Contact Details")}
++                        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
++                            {renderInput("Personal Mobile", "personal_mobile")}
++                            {renderInput("Alternative Mobile", "alt_mobile")}
++                            {renderInput("Landline", "landline_phone")}
++                            {renderInput("Personal Email", "personal_email")}
+                         </CardContent>
+                     </Card>
+-                </TabsContent>
+ 
+-                <TabsContent value="academic" className="mt-4 space-y-4">
+-                    <AcademicTab userId={student.id} />
++                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                        <Card>
++                            {renderSectionHeader(<MapPin className="h-5 w-5" />, "Current Address")}
++                            <CardContent className="space-y-4">
++                                {renderInput("Street / Area", "current_street")}
++                                {renderInput("City", "current_city")}
++                                {renderInput("State", "current_state")}
++                                {renderInput("Pincode", "current_pincode")}
++                                {renderInput("Country", "current_country")}
++                            </CardContent>
++                        </Card>
++                        <Card>
++                            {renderSectionHeader(<MapPin className="h-5 w-5" />, "Permanent Address")}
++                            <CardContent className="space-y-4">
++                                {renderInput("Street / Area", "permanent_street")}
++                                {renderInput("City", "permanent_city")}
++                                {renderInput("State", "permanent_state")}
++                                {renderInput("Pincode", "permanent_pincode")}
++                                {renderInput("Country", "permanent_country")}
++                            </CardContent>
++                        </Card>
++                    </div>
+                 </TabsContent>
+ 
+-                <TabsContent value="health" className="mt-4 space-y-4">
++                {/* 4. FAMILY */}
++                <TabsContent value="family" className="mt-6 space-y-6">
+                     <Card>
+-                        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5" /> Medical Info</CardTitle></CardHeader>
+-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Blood Group</label>
+-                                <Input
+-                                    value={displayProfile.blood_group || ''}
+-                                    onChange={e => handleChange('blood_group', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2 md:col-span-2">
+-                                <label className="text-sm font-medium">Medical History / Allergies</label>
+-                                <Textarea
+-                                    value={displayProfile.medical_history || ''}
+-                                    onChange={e => handleChange('medical_history', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
++                        {renderSectionHeader(<Users className="h-5 w-5" />, "Family Information")}
++                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                            {renderInput("Father's Name", "father_name")}
++                            {renderInput("Father's Occupation", "father_occupation")}
++                            {renderInput("Mother's Name", "mother_name")}
++                            {renderInput("Mother's Occupation", "mother_occupation")}
++                            {renderInput("Annual Family Income", "family_annual_income", "number")}
++                            {renderInput("Siblings Count", "siblings_count", "number")}
+                         </CardContent>
+                     </Card>
++                </TabsContent>
+ 
++                {/* 5. HEALTH & EMERGENCY */}
++                <TabsContent value="health" className="mt-6 space-y-6">
+                     <Card>
+-                        <CardHeader><CardTitle className="flex items-center gap-2"><Phone className="h-5 w-5" /> Emergency Contact</CardTitle></CardHeader>
+-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Name</label>
+-                                <Input
+-                                    value={displayProfile.emergency_contact_name || ''}
+-                                    onChange={e => handleChange('emergency_contact_name', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
+-                            <div className="space-y-2">
+-                                <label className="text-sm font-medium">Phone</label>
+-                                <Input
+-                                    value={displayProfile.emergency_contact_number || ''}
+-                                    onChange={e => handleChange('emergency_contact_number', e.target.value)}
+-                                    disabled={!isEditing}
+-                                />
+-                            </div>
++                        {renderSectionHeader(<Phone className="h-5 w-5" />, "Emergency Contact")}
++                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                            {renderInput("Contact Name", "emergency_contact_name")}
++                            {renderInput("Relationship", "emergency_contact_relation")}
++                            {renderInput("Contact Number", "emergency_contact_number")}
++                            {renderInput("Address", "emergency_contact_address")}
+                         </CardContent>
+                     </Card>
+-                </TabsContent>
+ 
+-                <TabsContent value="documents" className="mt-4">
+                     <Card>
+-                        <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
++                        {renderSectionHeader(<Heart className="h-5 w-5" />, "Medical Information")}
+                         <CardContent>
+-                            <p className="text-muted-foreground">Document upload and management (Coming Soon)</p>
++                            <div className="space-y-2">
++                                <label className="text-sm font-medium text-muted-foreground">Medical History</label>
++                                {isEditing ? (
++                                    <Textarea
++                                        value={profile.medical_history || ''}
++                                        onChange={e => handleChange('medical_history', e.target.value)}
++                                        rows={4}
++                                    />
++                                ) : (
++                                    <p className="p-3 bg-muted/20 rounded-md text-sm">{profile.medical_history || 'No medical history recorded.'}</p>
++                                )}
++                            </div>
+                         </CardContent>
+                     </Card>
+                 </TabsContent>
++
+             </Tabs>
+         </div>
+     );
+diff --git a/src/components/ui/calendar.jsx b/src/components/ui/calendar.jsx
+index fea2572..b104100 100644
+--- a/src/components/ui/calendar.jsx
++++ b/src/components/ui/calendar.jsx
+@@ -15,6 +15,10 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }) {
+         month: "space-y-4",
+         caption: "flex justify-center pt-1 relative items-center",
+         caption_label: "text-sm font-medium",
++        caption_dropdowns: "flex justify-center gap-1",
++        dropdown: "bg-background bg-white p-1 border rounded opacity-100 text-sm",
++        dropdown_month: "mr-2",
++        dropdown_year: "ml-2",
+         nav: "space-x-1 flex items-center",
+         nav_button: cn(
+           buttonVariants({ variant: "outline" }),
+diff --git a/src/components/ui/date-picker.jsx b/src/components/ui/date-picker.jsx
+new file mode 100644
+index 0000000..2e5de48
+--- /dev/null
++++ b/src/components/ui/date-picker.jsx
+@@ -0,0 +1,50 @@
++import * as React from "react"
++import { format } from "date-fns"
++import { Calendar as CalendarIcon } from "lucide-react"
++
++import { cn } from "@/lib/utils"
++import { Button } from "@/components/ui/button"
++import { Calendar } from "@/components/ui/calendar"
++import {
++    Popover,
++    PopoverContent,
++    PopoverTrigger,
++} from "@/components/ui/popover"
++
++export function DatePicker({
++    date,
++    setDate,
++    className,
++    placeholder = "Pick a date",
++    fromYear = 1900,
++    toYear = new Date().getFullYear()
++}) {
++    return (
++        <Popover>
++            <PopoverTrigger asChild>
++                <Button
++                    variant={"outline"}
++                    className={cn(
++                        "w-full justify-start text-left font-normal",
++                        !date && "text-muted-foreground",
++                        className
++                    )}
++                >
++                    <CalendarIcon className="mr-2 h-4 w-4" />
++                    {date ? format(new Date(date), "PPP") : <span>{placeholder}</span>}
++                </Button>
++            </PopoverTrigger>
++            <PopoverContent className="w-auto p-0" align="start">
++                <Calendar
++                    mode="single"
++                    selected={date ? new Date(date) : undefined}
++                    onSelect={(d) => setDate(d ? d.toISOString().split('T')[0] : '')}
++                    initialFocus
++                    captionLayout="dropdown-buttons"
++                    fromYear={fromYear}
++                    toYear={toYear}
++                />
++            </PopoverContent>
++        </Popover>
++    )
++}
+diff --git a/src/pages/student/PersonalDetails.jsx b/src/pages/student/PersonalDetails.jsx
+index f6528c1..a82612f 100644
+--- a/src/pages/student/PersonalDetails.jsx
++++ b/src/pages/student/PersonalDetails.jsx
+@@ -1,5 +1,5 @@
+ import { useState, useEffect } from 'react';
+-import { User, Mail, Phone, MapPin, Calendar, GraduationCap, Building2, Edit2, Save, X } from 'lucide-react';
++import { User, Mail, Phone, MapPin, Calendar, GraduationCap, Building2, Edit2, Save, X, Home, Users, CreditCard } from 'lucide-react';
+ import { useAuth } from '@/contexts/AuthContext';
+ import { api } from '@/services/api';
+ import { toast } from 'sonner';
+@@ -8,22 +8,64 @@ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Skeleton } from '@/components/ui/skeleton';
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
++import { Textarea } from "@/components/ui/textarea";
+ 
+ export function PersonalDetails() {
+   const { currentUser } = useAuth();
+   const [loading, setLoading] = useState(true);
+   const [editing, setEditing] = useState(false);
+   const [formData, setFormData] = useState({
++    // Basic
+     name: '',
+     email: '',
++    collegeEmail: '',
+     phone: '',
+-    address: '',
+-    dateOfBirth: '',
+-    admissionDate: '',
++    altMobile: '',
++    landline: '',
++
++    // Academic
+     studentId: '',
+     department: '',
+     year: '',
+     semester: '',
++    section: '',
++    admissionDate: '',
++
++    // Personal
++    dateOfBirth: '',
++    gender: '',
++    category: '',
++    religion: '',
++    nationality: '',
++    bloodGroup: '',
++    motherTongue: '',
++    pwdStatus: false,
++
++    // Address - Current
++    currentStreet: '',
++    currentCity: '',
++    currentState: '',
++    currentPincode: '',
++    currentCountry: '',
++
++    // Address - Permanent
++    permanentStreet: '',
++    permanentCity: '',
++    permanentState: '',
++    permanentPincode: '',
++    permanentCountry: '',
++
++    // Family
++    fatherName: '',
++    fatherOccupation: '',
++    motherName: '',
++    motherOccupation: '',
++    familyIncome: '',
++
++    // Identity
++    aadharNo: '',
++    panNo: '',
+   });
+ 
+   useEffect(() => {
+@@ -35,24 +77,70 @@ export function PersonalDetails() {
+   const loadPersonalDetails = async () => {
+     try {
+       setLoading(true);
+-      // Fetch detailed user information
++      // Fetch detailed user information & SIS Profile
+       if (currentUser?.id) {
+-        const response = await api.getUserById(currentUser.id);
+-        if (response.error) throw new Error(response.error);
++        const [userResponse, profileResponse] = await Promise.all([
++          api.getUserById(currentUser.id),
++          api.getStudentProfile(currentUser.id)
++        ]);
++
++        if (userResponse.error) throw new Error(userResponse.error);
++
++        const data = userResponse.data;
++        const profile = profileResponse.data || {};
+ 
+-        const data = response.data;
+         if (data) {
+           setFormData({
++            // Basic
+             name: data.name || '',
+             email: data.email || '',
++            collegeEmail: profile.college_email || '',
+             phone: data.phone || data.contact_number || '',
+-            address: data.address || '',
+-            dateOfBirth: data.date_of_birth || data.dob || '',
+-            admissionDate: data.admission_date || '',
+-            studentId: data.student_id || data.user_id?.toString() || '',
++            altMobile: profile.alt_mobile || '',
++            landline: profile.landline_phone || '',
++
++            // Academic
++            dateOfBirth: profile.dob || data.date_of_birth || data.dob || '',
++            admissionDate: profile.enrollment_date || data.admission_date || '',
++            studentId: profile.student_id_no || data.student_id || data.user_id?.toString() || '',
+             department: data.department || '',
+             year: data.year || '',
+             semester: data.semester || '',
++            section: profile.section || '',
++
++            // Personal
++            gender: profile.gender || '',
++            category: profile.category || '',
++            religion: profile.religion || '',
++            nationality: profile.nationality || '',
++            bloodGroup: profile.blood_group || '',
++            motherTongue: profile.mother_tongue || '',
++            pwdStatus: profile.pwd_status || false,
++
++            // Current Address
++            currentStreet: profile.current_street || '',
++            currentCity: profile.current_city || '',
++            currentState: profile.current_state || '',
++            currentPincode: profile.current_pincode || '',
++            currentCountry: profile.current_country || '',
++
++            // Permanent Address
++            permanentStreet: profile.permanent_street || '',
++            permanentCity: profile.permanent_city || '',
++            permanentState: profile.permanent_state || '',
++            permanentPincode: profile.permanent_pincode || '',
++            permanentCountry: profile.permanent_country || '',
++
++            // Family
++            fatherName: profile.father_name || '',
++            fatherOccupation: profile.father_occupation || '',
++            motherName: profile.mother_name || '',
++            motherOccupation: profile.mother_occupation || '',
++            familyIncome: profile.family_annual_income || '',
++
++            // Identity
++            aadharNo: profile.aadhar_no || '',
++            panNo: profile.pan_no || '',
+           });
+         }
+       }
+@@ -68,22 +156,64 @@ export function PersonalDetails() {
+     try {
+       if (!currentUser?.id) return;
+ 
+-      const response = await api.updateUser(currentUser.id, {
++      // 1. Update basic user info
++      const userUpdateResponse = await api.updateUser(currentUser.id, {
+         name: formData.name,
+         email: formData.email,
+         phone: formData.phone,
+-        address: formData.address,
+         date_of_birth: formData.dateOfBirth,
++        // user table usually holds summary address
++        address: `${formData.currentCity}, ${formData.currentState}`
+       });
+ 
+-      if (response.error) throw new Error(response.error);
++      if (userUpdateResponse.error) throw new Error(userUpdateResponse.error);
++
++      // 2. Update SIS Profile info
++      const profileData = {
++        alt_mobile: formData.altMobile,
++        landline_phone: formData.landline,
++        dob: formData.dateOfBirth,
++
++        gender: formData.gender,
++        category: formData.category,
++        religion: formData.religion,
++        nationality: formData.nationality,
++        blood_group: formData.bloodGroup,
++        mother_tongue: formData.motherTongue,
++        pwd_status: formData.pwdStatus,
++
++        current_street: formData.currentStreet,
++        current_city: formData.currentCity,
++        current_state: formData.currentState,
++        current_pincode: formData.currentPincode,
++        current_country: formData.currentCountry,
++
++        permanent_street: formData.permanentStreet,
++        permanent_city: formData.permanentCity,
++        permanent_state: formData.permanentState,
++        permanent_pincode: formData.permanentPincode,
++        permanent_country: formData.permanentCountry,
++
++        father_name: formData.fatherName,
++        father_occupation: formData.fatherOccupation,
++        mother_name: formData.motherName,
++        mother_occupation: formData.motherOccupation,
++        family_annual_income: formData.familyIncome,
++
++        aadhar_no: formData.aadharNo,
++        pan_no: formData.panNo,
++      };
++
++      const profileUpdateResponse = await api.updateStudentProfile(currentUser.id, profileData);
++
++      if (profileUpdateResponse.error) throw new Error(profileUpdateResponse.error);
+ 
+-      toast.success('Personal details updated successfully');
++      toast.success('Profile updated successfully');
+       setEditing(false);
+       await loadPersonalDetails();
+     } catch (error) {
+-      console.error('Error updating personal details:', error);
+-      toast.error(error.message || 'Failed to update personal details');
++      console.error('Error updating details:', error);
++      toast.error(error.message || 'Failed to update details');
+     }
+   };
+ 
+@@ -101,153 +231,180 @@ export function PersonalDetails() {
+     );
+   }
+ 
++  const renderField = (label, valueKey, icon, type = "text") => (
++    <div className="space-y-2">
++      <Label className="flex items-center gap-2 text-muted-foreground">
++        {icon && <icon.type {...icon.props} className="h-4 w-4" />}
++        {label}
++      </Label>
++      {editing ? (
++        <Input
++          type={type}
++          value={formData[valueKey]}
++          onChange={(e) => setFormData({ ...formData, [valueKey]: e.target.value })}
++        />
++      ) : (
++        <p className="font-medium">{formData[valueKey] || '-'}</p>
++      )}
++    </div>
++  );
++
+   return (
+-    <div className="space-y-6 p-6">
+-      {/* Header Card */}
+-      <Card>
+-        <CardHeader className="flex flex-row items-center justify-between">
+-          <div>
+-            <CardTitle>Personal Details</CardTitle>
+-            <CardDescription>View and manage your personal information</CardDescription>
+-          </div>
+-          {!editing ? (
+-            <Button onClick={() => setEditing(true)} variant="outline" size="sm" className="gap-2">
+-              <Edit2 className="h-4 w-4" />
+-              Edit
++    <div className="space-y-6 p-6 pb-20">
++      <div className="flex flex-row items-center justify-between">
++        <div>
++          <h2 className="text-2xl font-bold tracking-tight">Student Profile</h2>
++          <p className="text-muted-foreground">View and manage your complete student record</p>
++        </div>
++        {!editing ? (
++          <Button onClick={() => setEditing(true)} variant="outline" className="gap-2">
++            <Edit2 className="h-4 w-4" />
++            Edit Profile
++          </Button>
++        ) : (
++          <div className="flex gap-2">
++            <Button onClick={handleSave} className="gap-2">
++              <Save className="h-4 w-4" />
++              Save Changes
+             </Button>
+-          ) : (
+-            <div className="flex gap-2">
+-              <Button onClick={handleSave} size="sm" className="gap-2">
+-                <Save className="h-4 w-4" />
+-                Save
+-              </Button>
+-              <Button onClick={handleCancel} variant="outline" size="sm" className="gap-2">
+-                <X className="h-4 w-4" />
+-                Cancel
+-              </Button>
++            <Button onClick={handleCancel} variant="ghost" className="gap-2">
++              <X className="h-4 w-4" />
++              Cancel
++            </Button>
++          </div>
++        )}
++      </div>
++
++      <div className="grid gap-6 md:grid-cols-2">
++        {/* 1. Basic & Identity */}
++        <Card className="md:col-span-2">
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <User className="h-5 w-5" />
++              Basic & Identity Details
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="grid gap-6 md:grid-cols-3">
++            <div className="space-y-2">
++              <Label>Full Name</Label>
++              {editing ? (
++                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
++              ) : <p className="font-medium">{formData.name}</p>}
+             </div>
+-          )}
+-        </CardHeader>
+-        <CardContent>
+-          <div className="grid gap-6 md:grid-cols-2">
+-            {/* Basic Information */}
+-            <div className="space-y-4">
+-              <h3 className="font-semibold">Basic Information</h3>
+-              <div className="h-px bg-border" />
+-              <div className="space-y-4">
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <User className="h-4 w-4" />
+-                    Full Name
+-                  </Label>
+-                  {editing ? (
+-                    <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+-                  ) : (
+-                    <p className="text-sm text-muted-foreground">{formData.name || 'Not provided'}</p>
+-                  )}
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <Mail className="h-4 w-4" />
+-                    Email Address
+-                  </Label>
+-                  {editing ? (
+-                    <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+-                  ) : (
+-                    <p className="text-sm text-muted-foreground">{formData.email || 'Not provided'}</p>
+-                  )}
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <Phone className="h-4 w-4" />
+-                    Phone Number
+-                  </Label>
+-                  {editing ? (
+-                    <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+-                  ) : (
+-                    <p className="text-sm text-muted-foreground">{formData.phone || 'Not provided'}</p>
+-                  )}
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <MapPin className="h-4 w-4" />
+-                    Address
+-                  </Label>
+-                  {editing ? (
+-                    <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+-                  ) : (
+-                    <p className="text-sm text-muted-foreground">{formData.address || 'Not provided'}</p>
+-                  )}
+-                </div>
++
++            <div className="space-y-2">
++              <Label>Date of Birth</Label>
++              {editing ? (
++                <Input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
++              ) : <p className="font-medium">{formData.dateOfBirth}</p>}
++            </div>
++
++            {renderField("Gender", "gender", null)}
++            {renderField("Blood Group", "bloodGroup", null)}
++            {renderField("Category", "category", null)}
++            {renderField("Religion", "religion", null)}
++            {renderField("Nationality", "nationality", null)}
++            {renderField("Mother Tongue", "motherTongue", null)}
++            {renderField("Aadhaar Number", "aadharNo", <CreditCard />)}
++          </CardContent>
++        </Card>
++
++        {/* 2. Academic Info */}
++        <Card>
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <GraduationCap className="h-5 w-5" />
++              Academic Information
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="space-y-4">
++            <div className="grid grid-cols-2 gap-4">
++              <div className="space-y-1">
++                <Label className="text-muted-foreground">Student ID</Label>
++                <p className="font-semibold text-lg">{formData.studentId || 'Not Assigned'}</p>
++              </div>
++              <div className="space-y-1">
++                <Label className="text-muted-foreground">Department</Label>
++                <p className="font-medium">{formData.department}</p>
++              </div>
++              <div className="space-y-1">
++                <Label className="text-muted-foreground">Admission Date</Label>
++                <p className="font-medium">{formData.admissionDate}</p>
++              </div>
++              <div className="space-y-1">
++                <Label className="text-muted-foreground">College Email</Label>
++                <p className="font-medium text-blue-600">{formData.collegeEmail || '-'}</p>
++              </div>
++              <div className="space-y-1">
++                <Label className="text-muted-foreground">Current Semester</Label>
++                <p className="font-medium">{formData.semester && `Sem ${formData.semester}`} {formData.section && `(Sec ${formData.section})`}</p>
+               </div>
+             </div>
++          </CardContent>
++        </Card>
++
++        {/* 3. Contact Info */}
++        <Card>
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <Phone className="h-5 w-5" />
++              Contact Information
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="space-y-4">
++            {renderField("Personal Email", "email", <Mail />)}
++            {renderField("Personal Mobile", "phone", <Phone />)}
++            {renderField("Alternative Mobile", "altMobile", <Phone />)}
++            {renderField("Landline", "landline", <Phone />)}
++          </CardContent>
++        </Card>
++
++        {/* 4. Family Details */}
++        <Card className="md:col-span-2">
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <Users className="h-5 w-5" />
++              Family Details
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="grid gap-6 md:grid-cols-2">
++            {renderField("Father's Name", "fatherName", null)}
++            {renderField("Father's Occupation", "fatherOccupation", null)}
++            {renderField("Mother's Name", "motherName", null)}
++            {renderField("Mother's Occupation", "motherOccupation", null)}
++            {renderField("Annual Income", "familyIncome", null)}
++          </CardContent>
++        </Card>
+ 
+-            {/* Academic Information */}
++        {/* 5. Address */}
++        <Card className="md:col-span-2">
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <MapPin className="h-5 w-5" />
++              Address Details
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="grid gap-8 md:grid-cols-2">
+             <div className="space-y-4">
+-              <h3 className="font-semibold">Academic Information</h3>
+-              <div className="h-px bg-border" />
+-              <div className="space-y-4">
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <GraduationCap className="h-4 w-4" />
+-                    Student ID
+-                  </Label>
+-                  <p className="text-sm text-muted-foreground">{formData.studentId || 'Not assigned'}</p>
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <Building2 className="h-4 w-4" />
+-                    Department
+-                  </Label>
+-                  <p className="text-sm text-muted-foreground">{formData.department || currentUser?.department || 'Not assigned'}</p>
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <Calendar className="h-4 w-4" />
+-                    Date of Birth
+-                  </Label>
+-                  {editing ? (
+-                    <Input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
+-                  ) : (
+-                    <p className="text-sm text-muted-foreground">
+-                      {formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString() : 'Not provided'}
+-                    </p>
+-                  )}
+-                </div>
+-
+-                <div className="space-y-2">
+-                  <Label className="flex items-center gap-2">
+-                    <Calendar className="h-4 w-4" />
+-                    Admission Date
+-                  </Label>
+-                  <p className="text-sm text-muted-foreground">
+-                    {formData.admissionDate ? new Date(formData.admissionDate).toLocaleDateString() : 'Not provided'}
+-                  </p>
+-                </div>
+-
+-                {formData.year && (
+-                  <div className="space-y-2">
+-                    <Label>Year</Label>
+-                    <p className="text-sm text-muted-foreground">{formData.year}</p>
+-                  </div>
+-                )}
+-
+-                {formData.semester && (
+-                  <div className="space-y-2">
+-                    <Label>Semester</Label>
+-                    <p className="text-sm text-muted-foreground">{formData.semester}</p>
+-                  </div>
+-                )}
+-              </div>
++              <h4 className="font-semibold text-sm uppercase text-muted-foreground">Current Address</h4>
++              {renderField("Street/Area", "currentStreet", null)}
++              {renderField("City", "currentCity", null)}
++              {renderField("State", "currentState", null)}
++              {renderField("Pincode", "currentPincode", null)}
++              {renderField("Country", "currentCountry", null)}
+             </div>
+-          </div>
+-        </CardContent>
+-      </Card>
++            <div className="space-y-4">
++              <h4 className="font-semibold text-sm uppercase text-muted-foreground">Permanent Address</h4>
++              {renderField("Street/Area", "permanentStreet", null)}
++              {renderField("City", "permanentCity", null)}
++              {renderField("State", "permanentState", null)}
++              {renderField("Pincode", "permanentPincode", null)}
++              {renderField("Country", "permanentCountry", null)}
++            </div>
++          </CardContent>
++        </Card>
++
++      </div>
+     </div>
+   );
+ }
+diff --git a/src/services/api.js b/src/services/api.js
+index 5e732f2..f59de9d 100644
+--- a/src/services/api.js
++++ b/src/services/api.js
+@@ -117,6 +117,18 @@ class ApiClient {
+     return this.request(`/users/${id}`);
+   }
+ 
++  // SIM Profile
++  async getStudentProfile(userId) {
++    return this.request(`/sim/profiles/${userId}`);
++  }
++
++  async updateStudentProfile(userId, profileData) {
++    return this.request(`/sim/profiles/${userId}`, {
++      method: 'POST',
++      body: JSON.stringify(profileData),
++    });
++  }
++
+   async getUsersByDepartments(departmentIds, role, status) {
+     return this.request('/users/by-departments', {
+       method: 'POST',

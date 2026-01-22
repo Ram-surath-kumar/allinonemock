@@ -13,8 +13,10 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Book, LibraryMember, fetchBooks, issueBook, returnBook, getMember } from '@/services/library';
+import { Book, LibraryMember, fetchBooks, issueBook, returnBook, getMember, addBook } from '@/services/library';
 import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function LibraryDashboard() {
     const { toast } = useToast();
@@ -99,6 +101,36 @@ export default function LibraryDashboard() {
         book.isbn.includes(searchTerm)
     );
 
+    const [isAddBookOpen, setIsAddBookOpen] = useState(false);
+    const [newBook, setNewBook] = useState({
+        title: '',
+        author: '',
+        isbn: '',
+        category: '',
+        publisher: '',
+        quantity: '1'
+    });
+
+    const handleAddBook = async () => {
+        if (!newBook.title || !newBook.author || !newBook.isbn) {
+            toast({ title: "Validation Error", description: "Title, Author, and ISBN are required.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            await addBook({
+                ...newBook,
+                is_reference_only: false // Default
+            });
+            toast({ title: "Success", description: "Book added successfully" });
+            setIsAddBookOpen(false);
+            setNewBook({ title: '', author: '', isbn: '', category: '', publisher: '', quantity: '1' });
+            loadBooks();
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message || "Failed to add book", variant: "destructive" });
+        }
+    };
+
     return (
         <div className="p-6 space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
@@ -106,6 +138,82 @@ export default function LibraryDashboard() {
                     <h1 className="text-3xl font-bold tracking-tight">Library Management</h1>
                     <p className="text-muted-foreground">Manage books, circulation, and members.</p>
                 </div>
+                <Dialog open={isAddBookOpen} onOpenChange={setIsAddBookOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <BookOpen className="mr-2 h-4 w-4" /> Add Book
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Book</DialogTitle>
+                            <DialogDescription>
+                                Enter the details of the new book to add to the library.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="title">Title *</Label>
+                                <Input
+                                    id="title"
+                                    value={newBook.title}
+                                    onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="author">Author *</Label>
+                                <Input
+                                    id="author"
+                                    value={newBook.author}
+                                    onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="isbn">ISBN *</Label>
+                                    <Input
+                                        id="isbn"
+                                        value={newBook.isbn}
+                                        onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="quantity">Quantity</Label>
+                                    <Input
+                                        id="quantity"
+                                        type="number"
+                                        min="1"
+                                        value={newBook.quantity}
+                                        onChange={(e) => setNewBook({ ...newBook, quantity: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Input
+                                        id="category"
+                                        value={newBook.category}
+                                        onChange={(e) => setNewBook({ ...newBook, category: e.target.value })}
+                                        placeholder="e.g. Fiction, Science"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="publisher">Publisher</Label>
+                                    <Input
+                                        id="publisher"
+                                        value={newBook.publisher}
+                                        onChange={(e) => setNewBook({ ...newBook, publisher: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddBookOpen(false)}>Cancel</Button>
+                            <Button onClick={handleAddBook}>Add Book</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <Tabs defaultValue="catalog" className="w-full">

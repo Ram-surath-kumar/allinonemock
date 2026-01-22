@@ -164,14 +164,52 @@ export function AIAssistantChat({ onNavigate }) {
     }
   };
 
-  const addMessage = (role, content) => {
+  useEffect(() => {
+    if (currentUser?.id) {
+      loadChatHistory();
+    }
+  }, [currentUser]);
+
+  const loadChatHistory = async () => {
+    try {
+      const response = await api.getChatHistory(currentUser.id);
+      if (response.data && response.data.length > 0) {
+        setMessages(response.data.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp) // Ensure timestamp is a Date object
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    }
+  };
+
+  const addMessage = async (role, content) => {
     const newMessage = {
       id: Date.now().toString(),
       role,
       content,
       timestamp: new Date(),
     };
+
+    // Optimistic update
     setMessages(prev => [...prev, newMessage]);
+
+    // Save to backend
+    if (currentUser?.id) {
+      try {
+        await api.saveChatMessage({
+          userId: currentUser.id,
+          role,
+          content,
+          metadata: { timestamp: new Date() }
+        });
+      } catch (error) {
+        console.error('Failed to save chat message:', error);
+      }
+    }
   };
 
   // Check if action is risky and requires confirmation
