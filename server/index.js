@@ -21,6 +21,7 @@ import misRouter from './routes/mis.js';
 import financeRouter from './routes/finance.js';
 import facilitiesRouter from './routes/facilities.js';
 import transportRouter from './routes/transport.js';
+import transportationRouter from './routes/transportation.js';
 
 import profilesRouter from './routes/SIM/profiles.js';
 import admissionsRouter from './routes/SIM/admissions.js';
@@ -113,7 +114,8 @@ app.use('/api/academic', academicRouter);
 app.use('/api/mis', misRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/facilities', facilitiesRouter);
-app.use('/api/transport', transportRouter);
+app.use('/api/transport', transportationRouter);
+app.use('/api/transport/v1', transportRouter);
 
 // SIM Routes
 app.use('/api/sim/profiles', profilesRouter);

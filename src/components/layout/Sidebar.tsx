@@ -18,6 +18,7 @@ import {
   BedDouble,
   Library,
   Settings as SettingsIcon,
+  Bus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
   { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
   { icon: BedDouble, label: 'Hostel', href: '/hostel' },
   { icon: Library, label: 'Library', href: '/library' },
+  { icon: Bus, label: 'Transportation', href: '/transport' },
   { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
   { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
   { icon: Settings, label: 'Settings', href: '/settings' },

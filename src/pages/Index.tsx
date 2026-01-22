@@ -60,6 +60,9 @@ const LibraryDashboard = lazy(() =>
 const Facilities = lazy(() =>
   import('@/pages/Facilities').then(module => ({ default: module.default }))
 );
+const Transportation = lazy(() =>
+  import('@/pages/Transportation/TransportationDashboard').then(module => ({ default: module.default }))
+);
 
 // Import AcademicGovernance
 const AcademicGovernance = lazy(() =>
@@ -109,6 +112,7 @@ function AppContent() {
     'hostel': '/hostel',
     'exam': '/exam',
     'library': '/library',
+    'transport': '/transport',
     'facilities': '/facilities',
     'settings': '/settings',
     'tools': '/tools',
@@ -131,6 +135,7 @@ function AppContent() {
     '/hostel': 'hostel',
     '/exam': 'exam',
     '/library': 'library',
+    '/transport': 'transport',
     '/facilities': 'facilities',
     '/settings': 'settings',
     '/tools': 'tools',
@@ -281,6 +286,8 @@ function AppContent() {
         return 'Examinations';
       case '/library':
         return 'Library Management';
+      case '/transport':
+        return 'Transportation Management';
       case '/facilities':
         return 'Facilities';
       case '/settings':
@@ -413,6 +420,12 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <LibraryDashboard />
+          </Suspense>
+        );
+      case '/transport':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Transportation />
           </Suspense>
         );
       case '/admissions':
