@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { PERMISSIONS } from '@/types/erp';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { PERMISSIONS } from "@/types/erp";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -21,20 +21,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Trash2, Edit2, Plus, X } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/table";
+import { Trash2, Edit2, Plus, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-
-
-
-
-const categoryLabels= {
-  student: 'Student Management',
-  staff: 'Staff Management',
-  finance: 'Finance',
-  academic: 'Academic',
-  facility: 'Facilities',
+const categoryLabels = {
+  student: "Student Management",
+  staff: "Staff Management",
+  finance: "Finance",
+  academic: "Academic",
+  facility: "Facilities",
 };
 
 const groupedPermissions = PERMISSIONS.reduce((acc, perm) => {
@@ -50,7 +46,7 @@ export function RoleManagementDialog({ open, onOpenChange }) {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [roleName, setRoleName] = useState('');
+  const [roleName, setRoleName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -67,28 +63,34 @@ export function RoleManagementDialog({ open, onOpenChange }) {
       const response = await api.getCustomRoles();
       if (response.error) {
         // Check if it's a table not found error
-        if (response.error.includes('PGRST205') || response.error.includes('custom_roles')) {
-          toast.error('Custom roles table not found. Please run the SQL script to create it. See QUICK_FIX_CUSTOM_ROLES.md', {
-            duration: 5000
-          });
+        if (response.error.includes("PGRST205") || response.error.includes("custom_roles")) {
+          toast.error(
+            "Custom roles table not found. Please run the SQL script to create it. See QUICK_FIX_CUSTOM_ROLES.md",
+            {
+              duration: 5000,
+            }
+          );
         } else {
           throw new Error(response.error);
         }
         return;
       }
-      
+
       if (response.data && Array.isArray(response.data)) {
         setRoles(response.data);
       }
     } catch (error) {
-      console.error('Error loading roles:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load roles';
-      if (errorMessage.includes('PGRST205') || errorMessage.includes('custom_roles')) {
-        toast.error('Custom roles table not found. Please create it in Supabase. See QUICK_FIX_CUSTOM_ROLES.md', {
-          duration: 5000
-        });
+      console.error("Error loading roles:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load roles";
+      if (errorMessage.includes("PGRST205") || errorMessage.includes("custom_roles")) {
+        toast.error(
+          "Custom roles table not found. Please create it in Supabase. See QUICK_FIX_CUSTOM_ROLES.md",
+          {
+            duration: 5000,
+          }
+        );
       } else {
-        toast.error('Failed to load roles');
+        toast.error("Failed to load roles");
       }
     } finally {
       setLoading(false);
@@ -96,7 +98,7 @@ export function RoleManagementDialog({ open, onOpenChange }) {
   };
 
   const resetForm = () => {
-    setRoleName('');
+    setRoleName("");
     setSelectedPermissions([]);
     setEditingRole(null);
     setIsCreating(false);
@@ -119,36 +121,36 @@ export function RoleManagementDialog({ open, onOpenChange }) {
   };
 
   const togglePermission = (permissionId) => {
-    setSelectedPermissions(prev =>
+    setSelectedPermissions((prev) =>
       prev.includes(permissionId)
-        ? prev.filter(id => id !== permissionId)
+        ? prev.filter((id) => id !== permissionId)
         : [...prev, permissionId]
     );
   };
 
   const handleSave = async () => {
     if (!roleName.trim()) {
-      toast.error('Please enter a role name');
+      toast.error("Please enter a role name");
       return;
     }
 
     if (selectedPermissions.length === 0) {
-      toast.error('Please select at least one permission');
+      toast.error("Please select at least one permission");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       if (editingRole) {
         // Update existing role
         const response = await api.updateCustomRole(editingRole.id, {
           name: roleName.trim(),
-          permissions: selectedPermissions
+          permissions: selectedPermissions,
         });
-        
+
         if (response.error) throw new Error(response.error);
-        toast.success('Role updated successfully');
+        toast.success("Role updated successfully");
       } else {
         // Create new role
         const response = await api.createCustomRole({
@@ -156,20 +158,23 @@ export function RoleManagementDialog({ open, onOpenChange }) {
           permissions: selectedPermissions,
           created_by: currentUser?.id,
         });
-        
+
         if (response.error) throw new Error(response.error);
-        toast.success('Role created successfully');
+        toast.success("Role created successfully");
       }
 
       await loadRoles();
       resetForm();
     } catch (error) {
-      console.error('Error saving role:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save role';
-      if (errorMessage.includes('PGRST205') || errorMessage.includes('custom_roles')) {
-        toast.error('Custom roles table not found. Please create it in Supabase. See QUICK_FIX_CUSTOM_ROLES.md', {
-          duration: 5000
-        });
+      console.error("Error saving role:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save role";
+      if (errorMessage.includes("PGRST205") || errorMessage.includes("custom_roles")) {
+        toast.error(
+          "Custom roles table not found. Please create it in Supabase. See QUICK_FIX_CUSTOM_ROLES.md",
+          {
+            duration: 5000,
+          }
+        );
       } else {
         toast.error(errorMessage);
       }
@@ -179,20 +184,24 @@ export function RoleManagementDialog({ open, onOpenChange }) {
   };
 
   const handleDelete = async (roleId, roleName) => {
-    if (!confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
     try {
       setLoading(true);
       const response = await api.deleteCustomRole(roleId);
-      
+
       if (response.error) throw new Error(response.error);
-      toast.success('Role deleted successfully');
+      toast.success("Role deleted successfully");
       await loadRoles();
     } catch (error) {
-      console.error('Error deleting role:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete role';
+      console.error("Error deleting role:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete role";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -215,7 +224,7 @@ export function RoleManagementDialog({ open, onOpenChange }) {
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">
-                  {editingRole ? 'Edit Role' : 'Create New Role'}
+                  {editingRole ? "Edit Role" : "Create New Role"}
                 </h3>
                 <Button variant="ghost" size="icon" onClick={handleCancel}>
                   <X className="h-4 w-4" />
@@ -242,14 +251,19 @@ export function RoleManagementDialog({ open, onOpenChange }) {
                       </h4>
                       <div className="space-y-2 pl-4">
                         {perms.map((permission) => (
-                          <div key={permission.id} className="flex items-start gap-3 p-2 hover:bg-muted rounded">
+                          <div
+                            key={permission.id}
+                            className="flex items-start gap-3 p-2 hover:bg-muted rounded"
+                          >
                             <Checkbox
                               checked={selectedPermissions.includes(permission.id)}
                               onCheckedChange={() => togglePermission(permission.id)}
                             />
                             <div className="flex-1">
                               <div className="text-sm font-medium">{permission.name}</div>
-                              <div className="text-xs text-muted-foreground">{permission.description}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {permission.description}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -264,7 +278,7 @@ export function RoleManagementDialog({ open, onOpenChange }) {
                   Cancel
                 </Button>
                 <Button onClick={handleSave} disabled={loading}>
-                  {editingRole ? 'Update Role' : 'Create Role'}
+                  {editingRole ? "Update Role" : "Create Role"}
                 </Button>
               </div>
             </div>
@@ -308,7 +322,7 @@ export function RoleManagementDialog({ open, onOpenChange }) {
                         <div className="flex flex-wrap gap-1">
                           {role.permissions && role.permissions.length > 0 ? (
                             role.permissions.slice(0, 3).map((permId) => {
-                              const perm = PERMISSIONS.find(p => p.id === permId);
+                              const perm = PERMISSIONS.find((p) => p.id === permId);
                               return perm ? (
                                 <span key={permId} className="text-xs px-2 py-1 bg-muted rounded">
                                   {perm.name}
@@ -356,4 +370,3 @@ export function RoleManagementDialog({ open, onOpenChange }) {
     </Dialog>
   );
 }
-

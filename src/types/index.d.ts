@@ -1,7 +1,14 @@
 // Type declarations for the ERP system
 
 /** User roles in the system */
-export type UserRole = 'admin' | 'vice_head' | 'teacher' | 'student' | 'housekeeping' | 'librarian' | 'accountant';
+export type UserRole =
+  | "admin"
+  | "vice_head"
+  | "teacher"
+  | "student"
+  | "housekeeping"
+  | "librarian"
+  | "accountant";
 
 /** User object structure */
 export interface User {
@@ -26,6 +33,7 @@ export interface Organization {
   org_id: string;
   org_code: string;
   org_name: string;
+  org_logo?: string;
 }
 
 /** Dashboard stats structure */

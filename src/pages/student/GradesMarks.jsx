@@ -1,18 +1,25 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, AlertTriangle, XCircle, FileX, Calendar, TrendingDown } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useState, useEffect } from "react";
+import { BookOpen, AlertTriangle, XCircle, FileX, Calendar, TrendingDown } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function GradesMarks() {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState("all");
   const [grades, setGrades] = useState([]);
   const [failedCourses, setFailedCourses] = useState([]);
   const [absentDetails, setAbsentDetails] = useState([]);
@@ -31,28 +38,87 @@ export function GradesMarks() {
       if (currentUser?.id) {
         // Simulate API call - replace with actual API endpoint
         const mockGrades = [
-          { id: '1', courseCode: 'CS101', courseName: 'Introduction to Programming', credits: 3, grade: 'A', marks: 85, maxMarks: 100, semester: 'Fall 2024', year: '2024', status: 'passed' },
-          { id: '2', courseCode: 'CS102', courseName: 'Data Structures', credits: 4, grade: 'B', marks: 75, maxMarks: 100, semester: 'Fall 2024', year: '2024', status: 'passed' },
-          { id: '3', courseCode: 'MATH201', courseName: 'Calculus', credits: 3, grade: 'F', marks: 35, maxMarks: 100, semester: 'Fall 2024', year: '2024', status: 'failed' },
-          { id: '4', courseCode: 'PHY101', courseName: 'Physics', credits: 3, grade: 'C', marks: 65, maxMarks: 100, semester: 'Spring 2024', year: '2024', status: 'passed' },
+          {
+            id: "1",
+            courseCode: "CS101",
+            courseName: "Introduction to Programming",
+            credits: 3,
+            grade: "A",
+            marks: 85,
+            maxMarks: 100,
+            semester: "Fall 2024",
+            year: "2024",
+            status: "passed",
+          },
+          {
+            id: "2",
+            courseCode: "CS102",
+            courseName: "Data Structures",
+            credits: 4,
+            grade: "B",
+            marks: 75,
+            maxMarks: 100,
+            semester: "Fall 2024",
+            year: "2024",
+            status: "passed",
+          },
+          {
+            id: "3",
+            courseCode: "MATH201",
+            courseName: "Calculus",
+            credits: 3,
+            grade: "F",
+            marks: 35,
+            maxMarks: 100,
+            semester: "Fall 2024",
+            year: "2024",
+            status: "failed",
+          },
+          {
+            id: "4",
+            courseCode: "PHY101",
+            courseName: "Physics",
+            credits: 3,
+            grade: "C",
+            marks: 65,
+            maxMarks: 100,
+            semester: "Spring 2024",
+            year: "2024",
+            status: "passed",
+          },
         ];
 
         const mockAbsent = [
-          { id: '1', courseCode: 'CS103', courseName: 'Algorithms', examDate: '2024-12-15', examType: 'Midterm', reason: 'Medical emergency' },
+          {
+            id: "1",
+            courseCode: "CS103",
+            courseName: "Algorithms",
+            examDate: "2024-12-15",
+            examType: "Midterm",
+            reason: "Medical emergency",
+          },
         ];
 
         const mockMalpractice = [
-          { id: '1', courseCode: 'MATH201', courseName: 'Calculus', examDate: '2024-11-20', description: 'Found with unauthorized material', action: 'Warning issued', status: 'Resolved' },
+          {
+            id: "1",
+            courseCode: "MATH201",
+            courseName: "Calculus",
+            examDate: "2024-11-20",
+            description: "Found with unauthorized material",
+            action: "Warning issued",
+            status: "Resolved",
+          },
         ];
 
         setGrades(mockGrades);
-        setFailedCourses(mockGrades.filter((g) => g.status === 'failed'));
+        setFailedCourses(mockGrades.filter((g) => g.status === "failed"));
         setAbsentDetails(mockAbsent);
         setMalpracticeDetails(mockMalpractice);
       }
     } catch (error) {
-      console.error('Error loading grades data:', error);
-      toast.error('Failed to load grades data');
+      console.error("Error loading grades data:", error);
+      toast.error("Failed to load grades data");
     } finally {
       setLoading(false);
     }
@@ -60,35 +126,35 @@ export function GradesMarks() {
 
   const getGradeColor = (grade) => {
     switch (grade) {
-      case 'A':
-      case 'A+':
-        return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'B':
-      case 'B+':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      case 'C':
-      case 'C+':
-        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-      case 'F':
-        return 'bg-red-500/10 text-red-600 border-red-500/20';
+      case "A":
+      case "A+":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "B":
+      case "B+":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "C":
+      case "C+":
+        return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
+      case "F":
+        return "bg-red-500/10 text-red-600 border-red-500/20";
       default:
-        return 'bg-muted text-muted-foreground';
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const calculateGPA = () => {
     if (grades.length === 0) return 0;
     const gradePoints = {
-      'A+': 4.0,
+      "A+": 4.0,
       A: 4.0,
-      'A-': 3.7,
-      'B+': 3.3,
+      "A-": 3.7,
+      "B+": 3.3,
       B: 3.0,
-      'B-': 2.7,
-      'C+': 2.3,
+      "B-": 2.7,
+      "C+": 2.3,
       C: 2.0,
-      'C-': 1.7,
-      'D+': 1.3,
+      "C-": 1.7,
+      "D+": 1.3,
       D: 1.0,
       F: 0.0,
     };
@@ -98,7 +164,7 @@ export function GradesMarks() {
     }, 0);
 
     const totalCredits = grades.reduce((sum, grade) => sum + grade.credits, 0);
-    return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '0.00';
+    return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
   };
 
   if (loading) {
@@ -156,7 +222,10 @@ export function GradesMarks() {
               <div>
                 <p className="text-sm text-muted-foreground">Pass Rate</p>
                 <p className="text-2xl font-bold text-success">
-                  {grades.length > 0 ? Math.round(((grades.length - failedCourses.length) / grades.length) * 100) : 0}%
+                  {grades.length > 0
+                    ? Math.round(((grades.length - failedCourses.length) / grades.length) * 100)
+                    : 0}
+                  %
                 </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-success" />
@@ -216,8 +285,8 @@ export function GradesMarks() {
                         </TableCell>
                         <TableCell>{grade.semester}</TableCell>
                         <TableCell>
-                          <Badge variant={grade.status === 'passed' ? 'default' : 'destructive'}>
-                            {grade.status === 'passed' ? 'Passed' : 'Failed'}
+                          <Badge variant={grade.status === "passed" ? "default" : "destructive"}>
+                            {grade.status === "passed" ? "Passed" : "Failed"}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -299,7 +368,7 @@ export function GradesMarks() {
                         <TableCell>{absent.courseName}</TableCell>
                         <TableCell>{absent.examType}</TableCell>
                         <TableCell>{new Date(absent.examDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{absent.reason || 'Not specified'}</TableCell>
+                        <TableCell>{absent.reason || "Not specified"}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -338,7 +407,9 @@ export function GradesMarks() {
                         <TableCell>{malpractice.description}</TableCell>
                         <TableCell>{malpractice.action}</TableCell>
                         <TableCell>
-                          <Badge variant={malpractice.status === 'Resolved' ? 'default' : 'destructive'}>
+                          <Badge
+                            variant={malpractice.status === "Resolved" ? "default" : "destructive"}
+                          >
                             {malpractice.status}
                           </Badge>
                         </TableCell>

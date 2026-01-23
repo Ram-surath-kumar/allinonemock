@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
     if (req.body.facility_id && req.body.date && req.body.time) {
         const logMsg = (msg) => {
             const logLine = `[${new Date().toISOString()}] ${msg}\n`;
-            try { fs.appendFileSync(path.join(__dirname, '../debug_events.log'), logLine); } catch (e) { }
+            try { fs.appendFileSync(path.join(__dirname, '../debug_events.log'), logLine); } catch (_e) { /* Ignore file write errors */ }
             console.log(logLine.trim());
         };
 

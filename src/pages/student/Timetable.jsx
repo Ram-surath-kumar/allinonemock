@@ -1,22 +1,28 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, User, BookOpen, Bell } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect } from "react";
+import { Calendar, Clock, MapPin, User, BookOpen, Bell } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export function Timetable() {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [schedules, setSchedules] = useState([]);
-  const [viewMode, setViewMode] = useState('week');
+  const [viewMode, setViewMode] = useState("week");
   const [selectedWeek, setSelectedWeek] = useState(new Date());
 
   useEffect(() => {
@@ -31,53 +37,53 @@ export function Timetable() {
       // Mock timetable data - replace with actual API call
       const mockSchedules = daysOfWeek.map((day, index) => ({
         day,
-        date: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         slots: [
           {
             id: `${day}-1`,
-            period: '1',
-            startTime: '09:00',
-            endTime: '10:00',
-            subject: 'Mathematics',
-            subjectCode: 'MATH101',
-            teacher: 'Dr. Smith',
-            room: 'A-101',
-            type: 'lecture',
+            period: "1",
+            startTime: "09:00",
+            endTime: "10:00",
+            subject: "Mathematics",
+            subjectCode: "MATH101",
+            teacher: "Dr. Smith",
+            room: "A-101",
+            type: "lecture",
           },
           {
             id: `${day}-2`,
-            period: '2',
-            startTime: '10:15',
-            endTime: '11:15',
-            subject: 'Physics',
-            subjectCode: 'PHY101',
-            teacher: 'Prof. Johnson',
-            room: 'B-205',
-            type: 'lecture',
+            period: "2",
+            startTime: "10:15",
+            endTime: "11:15",
+            subject: "Physics",
+            subjectCode: "PHY101",
+            teacher: "Prof. Johnson",
+            room: "B-205",
+            type: "lecture",
           },
           {
             id: `${day}-3`,
-            period: '3',
-            startTime: '11:30',
-            endTime: '12:30',
-            subject: 'Chemistry Lab',
-            subjectCode: 'CHEM101L',
-            teacher: 'Dr. Williams',
-            room: 'Lab-3',
-            type: 'lab',
+            period: "3",
+            startTime: "11:30",
+            endTime: "12:30",
+            subject: "Chemistry Lab",
+            subjectCode: "CHEM101L",
+            teacher: "Dr. Williams",
+            room: "Lab-3",
+            type: "lab",
           },
           ...(index % 2 === 0
             ? [
                 {
                   id: `${day}-4`,
-                  period: '4',
-                  startTime: '14:00',
-                  endTime: '15:00',
-                  subject: 'Tutorial',
-                  subjectCode: 'TUT101',
-                  teacher: 'TA',
-                  room: 'C-102',
-                  type: 'tutorial',
+                  period: "4",
+                  startTime: "14:00",
+                  endTime: "15:00",
+                  subject: "Tutorial",
+                  subjectCode: "TUT101",
+                  teacher: "TA",
+                  room: "C-102",
+                  type: "tutorial",
                 },
               ]
             : []),
@@ -86,8 +92,8 @@ export function Timetable() {
 
       setSchedules(mockSchedules);
     } catch (error) {
-      console.error('Error loading timetable:', error);
-      toast.error('Failed to load timetable');
+      console.error("Error loading timetable:", error);
+      toast.error("Failed to load timetable");
     } finally {
       setLoading(false);
     }
@@ -95,27 +101,33 @@ export function Timetable() {
 
   const getSlotColor = (type) => {
     switch (type) {
-      case 'lecture':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-      case 'lab':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
-      case 'tutorial':
-        return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'seminar':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+      case "lecture":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "lab":
+        return "bg-purple-500/10 text-purple-600 border-purple-500/20";
+      case "tutorial":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "seminar":
+        return "bg-orange-500/10 text-orange-600 border-orange-500/20";
       default:
-        return 'bg-muted text-muted-foreground';
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getTodaySchedule = () => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    return schedules.find((s) => s.day === today) || { day: today, date: new Date().toISOString().split('T')[0], slots: [] };
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+    return (
+      schedules.find((s) => s.day === today) || {
+        day: today,
+        date: new Date().toISOString().split("T")[0],
+        slots: [],
+      }
+    );
   };
 
   const getNextClass = () => {
     const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
     const today = getTodaySchedule();
 
     return today.slots.find((slot) => slot.startTime > currentTime) || null;
@@ -168,22 +180,32 @@ export function Timetable() {
               <CardDescription>View your weekly schedule</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant={viewMode === 'today' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('today')}>
+              <Button
+                variant={viewMode === "today" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("today")}
+              >
                 Today
               </Button>
-              <Button variant={viewMode === 'week' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('week')}>
+              <Button
+                variant={viewMode === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+              >
                 Week
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {viewMode === 'today' ? (
+          {viewMode === "today" ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium">{todaySchedule.day}</span>
-                <span className="text-sm text-muted-foreground">{new Date(todaySchedule.date).toLocaleDateString()}</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(todaySchedule.date).toLocaleDateString()}
+                </span>
               </div>
               {todaySchedule.slots.length === 0 ? (
                 <div className="flex items-center justify-center py-12 text-muted-foreground">
@@ -200,7 +222,9 @@ export function Timetable() {
                             {slot.type}
                           </Badge>
                           <span className="font-medium">{slot.subject}</span>
-                          <span className="text-sm text-muted-foreground">({slot.subjectCode})</span>
+                          <span className="text-sm text-muted-foreground">
+                            ({slot.subjectCode})
+                          </span>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-4 text-sm">
                           <span className="flex items-center gap-1">
@@ -233,14 +257,19 @@ export function Timetable() {
                   <div className="mb-3 flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">{schedule.day}</span>
-                    <span className="text-xs text-muted-foreground">{new Date(schedule.date).toLocaleDateString()}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(schedule.date).toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {schedule.slots.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No classes</p>
                     ) : (
                       schedule.slots.map((slot) => (
-                        <div key={slot.id} className={`rounded border p-2 text-xs ${getSlotColor(slot.type)}`}>
+                        <div
+                          key={slot.id}
+                          className={`rounded border p-2 text-xs ${getSlotColor(slot.type)}`}
+                        >
                           <div className="space-y-1">
                             <div className="flex items-center gap-1">
                               <Badge variant="outline" className="text-xs">

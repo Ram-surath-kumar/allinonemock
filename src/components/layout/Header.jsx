@@ -1,28 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AISearchBar } from '@/components/ui/AISearchBar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { useState, useEffect, useCallback } from "react";
+import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AISearchBar } from "@/components/ui/AISearchBar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
-import { ROLE_LABELS } from '@/types/erp';
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/lib/i18n";
+import { api } from "@/services/api";
+import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
+import { ROLE_LABELS } from "@/types/erp";
 
 export function Header({ title, subtitle, onMenuClick, onNavigate }) {
   const { currentUser } = useAuth();
+  const { t } = useI18n();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -34,47 +32,14 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!currentUser) return;
-
-    if (open) {
-      fetchNotifications();
-    } else {
-      fetchNotifications();
-    }
-
-    let refreshTimeout = null;
-    const handleRefresh = () => {
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
-      refreshTimeout = setTimeout(() => {
-        if (open) {
-          fetchNotifications();
-        }
-      }, 500);
-    };
-
-    window.addEventListener('notification-sent', handleRefresh);
-    window.addEventListener('notification-read', handleRefresh);
-
-    return () => {
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
-      window.removeEventListener('notification-sent', handleRefresh);
-      window.removeEventListener('notification-read', handleRefresh);
-    };
-  }, [currentUser, open]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!currentUser) return;
 
     try {
       setLoading(true);
       const response = await api.getNotifications({
         user_id: currentUser.id,
-        limit: 10
+        limit: 10,
       });
 
       if (response.error) throw new Error(response.error);
@@ -89,26 +54,53 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
           created_at: row.created_at,
         }));
         setNotifications(mappedNotifications);
-        setUnreadCount(mappedNotifications.filter(n => !n.read).length);
+        setUnreadCount(mappedNotifications.filter((n) => !n.read).length);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    fetchNotifications();
+
+    let refreshTimeout = null;
+    const handleRefresh = () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(() => {
+        fetchNotifications();
+      }, 500);
+    };
+
+    window.addEventListener("notification-sent", handleRefresh);
+    window.addEventListener("notification-read", handleRefresh);
+
+    return () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      window.removeEventListener("notification-sent", handleRefresh);
+      window.removeEventListener("notification-read", handleRefresh);
+    };
+  }, [currentUser?.id, fetchNotifications]);
 
   const markAsRead = async (notificationId) => {
     try {
       const response = await api.markNotificationAsRead(notificationId);
       if (response.error) throw new Error(response.error);
 
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
     }
   };
 
@@ -119,23 +111,23 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
       const response = await api.markAllNotificationsAsRead(currentUser.id);
       if (response.error) throw new Error(response.error);
 
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error("Error marking all as read:", error);
     }
   };
 
   const getNotificationColor = (type) => {
     switch (type) {
-      case 'success':
-        return 'bg-success/10 text-success border-success/20';
-      case 'warning':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'error':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
+      case "success":
+        return "bg-success/10 text-success border-success/20";
+      case "warning":
+        return "bg-warning/10 text-warning border-warning/20";
+      case "error":
+        return "bg-destructive/10 text-destructive border-destructive/20";
       default:
-        return 'bg-primary/10 text-primary border-primary/20';
+        return "bg-primary/10 text-primary border-primary/20";
     }
   };
 
@@ -144,18 +136,28 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 60) return t("header.justNow");
+    if (diffInSeconds < 3600)
+      return t("header.minutesAgo", { minutes: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400)
+      return t("header.hoursAgo", { hours: Math.floor(diffInSeconds / 3600) });
+    return t("header.daysAgo", { days: Math.floor(diffInSeconds / 86400) });
   };
 
   const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
-    <header className="flex h-16 md:h-18 items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern" role="banner">
+    <header
+      className="flex h-16 md:h-18 items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
+      role="banner"
+    >
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
         {onMenuClick && (
           <Button
@@ -173,7 +175,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
           </div>
           {currentUser && (
             <p className="text-xs text-muted-foreground truncate">
-              Welcome back {currentUser.name}
+              {t("header.welcomeBack", { name: currentUser.name })}
             </p>
           )}
           {!currentUser && subtitle && (
@@ -184,20 +186,17 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
 
       <div className="flex items-center gap-2 md:gap-3">
         {/* AI-Powered Search Bar */}
-        <AISearchBar
-          onNavigate={onNavigate}
-          className="hidden sm:block"
-        />
+        <AISearchBar onNavigate={onNavigate} className="hidden sm:block" />
 
         {/* Theme Toggle */}
         {mounted && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="h-9 w-9 rounded-sm hover-lift"
-            title="Toggle theme"
-            aria-label="Toggle theme"
+            title={t("header.toggleTheme")}
+            aria-label={t("header.toggleTheme")}
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -210,10 +209,10 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onNavigate('/settings')}
+            onClick={() => onNavigate("/settings")}
             className="h-9 w-9 rounded-sm hover-lift"
-            title="Settings"
-            aria-label="Settings"
+            title={t("header.settings")}
+            aria-label={t("header.settings")}
           >
             <Settings className="h-5 w-5" />
           </Button>
@@ -226,33 +225,28 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <Badge className="absolute -right-1 -top-1 h-5 w-5 flex items-center justify-center rounded-full p-0 text-xs bg-destructive text-destructive-foreground border-2 border-background">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </Badge>
               )}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0 glass-modern">
             <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-              <h3 className="font-semibold text-sm">Notifications</h3>
+              <h3 className="font-semibold text-sm">{t("header.notifications")}</h3>
               {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={markAllAsRead}
-                >
-                  Mark all as read
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={markAllAsRead}>
+                  {t("header.markAllAsRead")}
                 </Button>
               )}
             </div>
             <div className="max-h-96 overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Loading notifications...
+                  {t("header.loadingNotifications")}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  No notifications
+                  {t("header.noNotifications")}
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
@@ -265,16 +259,20 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "mt-1 h-2 w-2 rounded-full shrink-0",
-                          getNotificationColor(notification.type).split(' ')[0]
-                        )} />
+                        <div
+                          className={cn(
+                            "mt-1 h-2 w-2 rounded-full shrink-0",
+                            getNotificationColor(notification.type).split(" ")[0]
+                          )}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className={cn(
-                              "text-sm font-medium",
-                              !notification.read && "font-semibold"
-                            )}>
+                            <p
+                              className={cn(
+                                "text-sm font-medium",
+                                !notification.read && "font-semibold"
+                              )}
+                            >
                               {notification.title}
                             </p>
                             {!notification.read && (
@@ -320,7 +318,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start">
                   <span className="text-xs font-semibold text-foreground leading-none">
-                    {currentUser.name.split(' ')[0]}
+                    {currentUser.name.split(" ")[0]}
                   </span>
                   <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
                     {ROLE_LABELS[currentUser.role]}
@@ -332,13 +330,14 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
               <div className="px-2 py-1.5">
                 <p className="text-sm font-semibold">{currentUser.name}</p>
                 <p className="text-xs text-muted-foreground">{currentUser.email}</p>
-                <p className="text-xs text-muted-foreground mt-1">{ROLE_LABELS[currentUser.role]}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {ROLE_LABELS[currentUser.role]}
+                </p>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
       </div>
-
     </header>
   );
 }

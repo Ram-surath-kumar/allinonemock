@@ -70,7 +70,7 @@ export const reducer = (state, action) => {
                 ...t,
                 open: false,
               }
-            : t,
+            : t
         ),
       };
     }

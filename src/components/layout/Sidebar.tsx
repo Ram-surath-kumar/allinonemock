@@ -19,20 +19,22 @@ import {
   Library,
   Settings as SettingsIcon,
   Bus,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_LABELS, UserRole, User } from '@/types/erp';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/lib/i18n";
+import { ROLE_LABELS } from "@/types/erp";
+import type { UserRole, User } from "@/types";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { api } from '@/services/api';
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+} from "@/components/ui/dropdown-menu";
+import { api } from "@/services/api";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -42,31 +44,21 @@ interface NavItem {
   roles?: UserRole[];
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: Users, label: 'User Management', href: '/users', roles: ['admin', 'vice_head'] },
-  { icon: GraduationCap, label: 'Students', href: '/students', permission: 'view_students' },
-  { icon: Calendar, label: 'Attendance', href: '/attendance', permission: 'manage_attendance' },
-  { icon: BookOpen, label: 'Academic Gov.', href: '/governance/academic', permission: 'view_grades' },
-  { icon: FileText, label: 'MIS Reports', href: '/governance/mis', roles: ['admin', 'vice_head'] },
-  { icon: CreditCard, label: 'Finance', href: '/finance', permission: 'view_finance' },
-  { icon: Building2, label: 'Facilities', href: '/facilities', permission: 'manage_facilities' },
-  { icon: BedDouble, label: 'Hostel', href: '/hostel' },
-  { icon: Library, label: 'Library', href: '/library' },
-  { icon: Bus, label: 'Transportation', href: '/transport' },
-  { icon: FileText, label: 'Examinations', href: '/exam', roles: ['admin', 'vice_head'] },
-  { icon: Wrench, label: 'Tools', href: '/tools', roles: ['admin', 'vice_head'] },
-  { icon: Settings, label: 'Settings', href: '/settings' },
-];
+// Note: navItems will be created inside component to use i18n
 
 // Student-specific navigation items
 const studentNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: UserIcon, label: 'Personal Details', href: '/student/personal-details', roles: ['student'] },
-  { icon: BookOpen, label: 'Grades & Marks', href: '/student/grades-marks', roles: ['student'] },
-  { icon: Calendar, label: 'Attendance Details', href: '/student/attendance', roles: ['student'] },
-  { icon: Clock, label: 'Timetable', href: '/student/timetable', roles: ['student'] },
-  { icon: CreditCard, label: 'Fee Payment', href: '/student/fee-payment', roles: ['student'] },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+  {
+    icon: UserIcon,
+    label: "Personal Details",
+    href: "/student/personal-details",
+    roles: ["student"],
+  },
+  { icon: BookOpen, label: "Grades & Marks", href: "/student/grades-marks", roles: ["student"] },
+  { icon: Calendar, label: "Attendance Details", href: "/student/attendance", roles: ["student"] },
+  { icon: Clock, label: "Timetable", href: "/student/timetable", roles: ["student"] },
+  { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
 ];
 
 interface SidebarProps {
@@ -76,6 +68,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   const { currentUser, login, logout, hasPermission } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -113,15 +106,30 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
           avatar?: string;
         }
 
-        const orgIds = [...new Set(data.filter((u: ApiUserRow) => u.org_id).map((u: ApiUserRow) => u.org_id))];
-        const orgMap = new Map<number, { id: number; org_id: number; org_code: string; org_name: string }>();
+        const orgIds = [
+          ...new Set(data.filter((u: ApiUserRow) => u.org_id).map((u: ApiUserRow) => u.org_id)),
+        ];
+        const orgMap = new Map<
+          number,
+          { id: number; org_id: number; org_code: string; org_name: string }
+        >();
 
         if (orgIds.length > 0) {
           for (const orgId of orgIds) {
             if (orgId) {
               const orgResponse = await api.getOrganizations({ id: String(orgId) });
-              if (!orgResponse.error && orgResponse.data && Array.isArray(orgResponse.data) && orgResponse.data.length > 0) {
-                const org = orgResponse.data[0] as { id: number; org_id: number; org_code: string; org_name: string };
+              if (
+                !orgResponse.error &&
+                orgResponse.data &&
+                Array.isArray(orgResponse.data) &&
+                orgResponse.data.length > 0
+              ) {
+                const org = orgResponse.data[0] as {
+                  id: number;
+                  org_id: number;
+                  org_code: string;
+                  org_name: string;
+                };
                 orgMap.set(org.id, org);
               }
             }
@@ -134,72 +142,137 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
             id: row.id,
             loopid: row.loopid,
             org_id: row.org_id,
-            user_id: row.user_id,
+            user_id: String(row.user_id || ""),
             name: row.name,
             email: row.email,
             role: row.role as UserRole,
             permissions: row.permissions || [],
             department: row.department,
             createdAt: new Date(row.created_at),
-            status: row.status as 'active' | 'inactive',
+            status: row.status as "active" | "inactive",
             avatar: row.avatar,
-            organization: org ? {
-              id: org.id,
-              org_id: org.org_id,
-              org_code: org.org_code,
-              org_name: org.org_name,
-            } : undefined,
+            organization: org
+              ? {
+                  id: org.id,
+                  org_id: String(org.org_id),
+                  org_code: org.org_code,
+                  org_name: org.org_name,
+                }
+              : undefined,
           };
         });
         setAllUsers(mappedUsers);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     } finally {
       setLoadingUsers(false);
     }
   };
 
-  const filteredNavItems = navItems.filter(item => {
-    console.log('Sidebar Debug:', {
-      itemLabel: item.label,
-      permission: item.permission,
-      hasPermission: item.permission ? hasPermission(item.permission) : 'N/A',
-      userRole: currentUser?.role,
-      userPermissions: currentUser?.permissions
-    });
-    if (item.permission && !hasPermission(item.permission)) return false;
-    if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
-    return true;
-  });
+  // Create navItems inside component to use i18n - memoized to prevent recreation on every render
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/" },
+      {
+        icon: Users,
+        label: t("sidebar.userManagement"),
+        href: "/users",
+        roles: ["admin", "vice_head"],
+      },
+      {
+        icon: GraduationCap,
+        label: t("sidebar.students"),
+        href: "/students",
+        permission: "view_students",
+      },
+      {
+        icon: Calendar,
+        label: t("sidebar.attendance"),
+        href: "/attendance",
+        permission: "manage_attendance",
+      },
+      {
+        icon: BookOpen,
+        label: t("sidebar.academicGov"),
+        href: "/governance/academic",
+        permission: "view_grades",
+      },
+      {
+        icon: FileText,
+        label: t("sidebar.misReports"),
+        href: "/governance/mis",
+        roles: ["admin", "vice_head"],
+      },
+      {
+        icon: CreditCard,
+        label: t("sidebar.finance"),
+        href: "/finance",
+        permission: "view_finance",
+      },
+      {
+        icon: Building2,
+        label: t("sidebar.facilities"),
+        href: "/facilities",
+        permission: "manage_facilities",
+      },
+      { icon: BedDouble, label: t("sidebar.hostel"), href: "/hostel" },
+      { icon: Library, label: t("sidebar.library"), href: "/library" },
+      { icon: Bus, label: t("sidebar.transportation"), href: "/transport" },
+      {
+        icon: FileText,
+        label: t("sidebar.examinations"),
+        href: "/exam",
+        roles: ["admin", "vice_head"],
+      },
+      { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
+      { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
+    ],
+    [t]
+  );
+
+  const filteredNavItems = useMemo(
+    () =>
+      navItems.filter((item) => {
+        if (item.permission && !hasPermission(item.permission)) return false;
+        if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
+        return true;
+      }),
+    [navItems, currentUser?.role, currentUser?.permissions]
+  );
 
   const handleUserSwitch = async (user: User) => {
     if (!user.organization || !user.user_id) {
-      console.error('User does not have organization or user_id');
+      console.error("User does not have organization or user_id");
       return;
     }
 
     const pathToTab: Record<string, string> = {
-      '/': 'dashboard',
-      '/users': 'users',
-      '/students': 'students',
-      '/attendance': 'attendance',
-      '/academics': 'academics',
-      '/finance': 'finance',
-      '/facilities': 'facilities',
-      '/settings': 'settings',
+      "/": "dashboard",
+      "/users": "users",
+      "/students": "students",
+      "/attendance": "attendance",
+      "/academics": "academics",
+      "/finance": "finance",
+      "/facilities": "facilities",
+      "/settings": "settings",
     };
 
-    const currentTab = pathToTab[currentPath] || 'dashboard';
+    const currentTab = pathToTab[currentPath] || "dashboard";
 
     if (user.user_id && user.organization?.org_name) {
       navigate(`/${user.organization.org_name}/${user.user_id}/${currentTab}`);
-      await login('', user.organization.org_name, user.user_id);
+      await login("", user.organization.org_name, user.user_id);
     }
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -215,36 +288,39 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className={cn(
-        "flex items-center border-b border-sidebar-border",
-        "bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-        collapsed ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
-      )}>
-        <div className={cn(
-          "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-md shrink-0 transition-transform duration-300 hover:scale-105 hover:shadow-glow overflow-hidden",
-          collapsed ? "h-10 w-10" : "h-11 w-11"
-        )} aria-hidden="true">
+      <div
+        className={cn(
+          "flex items-center border-b border-sidebar-border",
+          "bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
+          collapsed ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-md shrink-0 transition-transform duration-300 hover:scale-105 hover:shadow-glow overflow-hidden",
+            collapsed ? "h-10 w-10" : "h-11 w-11"
+          )}
+          aria-hidden="true"
+        >
           {currentUser?.organization?.org_logo ? (
             <img
               src={currentUser.organization.org_logo}
               alt={currentUser.organization.org_name || "College Logo"}
-              className={cn(
-                "object-cover",
-                collapsed ? "h-10 w-10" : "h-11 w-11"
-              )}
+              className={cn("object-cover", collapsed ? "h-10 w-10" : "h-11 w-11")}
             />
           ) : (
-            <GraduationCap className={cn(
-              "text-sidebar-primary-foreground",
-              collapsed ? "h-5 w-5" : "h-6 w-6"
-            )} />
+            <GraduationCap
+              className={cn("text-sidebar-primary-foreground", collapsed ? "h-5 w-5" : "h-6 w-6")}
+            />
           )}
         </div>
-        <div className={cn(
-          "overflow-hidden transition-[max-width,opacity] duration-300 ease-out",
-          collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
-          collapsed ? "" : "delay-50"
-        )}>
+        <div
+          className={cn(
+            "overflow-hidden transition-[max-width,opacity] duration-300 ease-out",
+            collapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100",
+            collapsed ? "" : "delay-50"
+          )}
+        >
           <div className="whitespace-nowrap pl-3">
             <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground">
               {currentUser?.organization?.org_name || "College Name"}
@@ -255,10 +331,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className={cn(
-        "flex-1 space-y-2 overflow-y-auto",
-        collapsed ? "px-1.5 py-3" : "p-3"
-      )}>
+      <nav className={cn("flex-1 space-y-2 overflow-y-auto", collapsed ? "px-1.5 py-3" : "p-3")}>
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.href;
@@ -271,33 +344,31 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 "group relative flex items-center rounded-xl text-sm font-medium",
                 "transition-all duration-200",
                 "hover:scale-[1.02] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
-                collapsed
-                  ? "justify-center w-full py-3"
-                  : "justify-start w-full gap-4 px-4 py-3.5",
-                collapsed && isActive
-                  ? "px-2.5"
-                  : collapsed
-                    ? "px-1.5"
-                    : "",
+                collapsed ? "justify-center w-full py-3" : "justify-start w-full gap-4 px-4 py-3.5",
+                collapsed && isActive ? "px-2.5" : collapsed ? "px-1.5" : "",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
                   : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm"
               )}
               title={collapsed ? item.label : undefined}
               aria-label={item.label}
-              aria-current={isActive ? 'page' : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
-              <Icon className={cn(
-                "shrink-0 transition-all duration-200",
-                "h-5 w-5",
-                isActive ? "scale-110" : "group-hover:scale-110"
-              )} />
+              <Icon
+                className={cn(
+                  "shrink-0 transition-all duration-200",
+                  "h-5 w-5",
+                  isActive ? "scale-110" : "group-hover:scale-110"
+                )}
+              />
 
-              <span className={cn(
-                "relative z-10 whitespace-nowrap overflow-hidden transition-[max-width,opacity] duration-300 ease-out",
-                collapsed ? "max-w-0 opacity-0" : "max-w-[180px] opacity-100",
-                collapsed ? "" : "delay-75"
-              )}>
+              <span
+                className={cn(
+                  "relative z-10 whitespace-nowrap overflow-hidden transition-[max-width,opacity] duration-300 ease-out",
+                  collapsed ? "max-w-0 opacity-0" : "max-w-[180px] opacity-100",
+                  collapsed ? "" : "delay-75"
+                )}
+              >
                 {item.label}
               </span>
 
@@ -317,57 +388,69 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       </nav>
 
       {/* User Profile */}
-      <div className={cn(
-        "border-t border-sidebar-border bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-        collapsed ? "p-1.5" : "p-3"
-      )}>
+      <div
+        className={cn(
+          "border-t border-sidebar-border bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
+          collapsed ? "p-1.5" : "p-3"
+        )}
+      >
         <DropdownMenu open={usersDropdownOpen} onOpenChange={setUsersDropdownOpen}>
           <DropdownMenuTrigger asChild>
-            <button className={cn(
-              "flex w-full items-center rounded-xl text-left",
-              "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
-              collapsed
-                ? "justify-center px-0 py-3"
-                : "justify-start gap-3 px-3 py-3"
-            )}>
-              <div className={cn(
-                "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sm font-bold text-sidebar-primary-foreground shadow-md shrink-0 transition-transform duration-200 hover:scale-105",
-                collapsed ? "h-10 w-10" : "h-11 w-11"
-              )}>
-                {currentUser ? getInitials(currentUser.name) : 'U'}
+            <button
+              className={cn(
+                "flex w-full items-center rounded-xl text-left",
+                "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
+                collapsed ? "justify-center px-0 py-3" : "justify-start gap-3 px-3 py-3"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sm font-bold text-sidebar-primary-foreground shadow-md shrink-0 transition-transform duration-200 hover:scale-105",
+                  collapsed ? "h-10 w-10" : "h-11 w-11"
+                )}
+              >
+                {currentUser ? getInitials(currentUser.name) : "U"}
               </div>
-              <div className={cn(
-                "overflow-hidden min-w-0 transition-[max-width,opacity] duration-300 ease-out",
-                collapsed ? "max-w-0 opacity-0" : "max-w-[180px] flex-1 opacity-100",
-                collapsed ? "" : "delay-75"
-              )}>
-                <p className="truncate text-sm font-semibold text-sidebar-foreground">{currentUser?.name}</p>
+              <div
+                className={cn(
+                  "overflow-hidden min-w-0 transition-[max-width,opacity] duration-300 ease-out",
+                  collapsed ? "max-w-0 opacity-0" : "max-w-[180px] flex-1 opacity-100",
+                  collapsed ? "" : "delay-75"
+                )}
+              >
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                  {currentUser?.name}
+                </p>
                 <p className="truncate text-xs text-sidebar-muted font-medium">
                   {currentUser && ROLE_LABELS[currentUser.role]}
                 </p>
               </div>
-              <div className={cn(
-                "shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-                collapsed ? "w-0 opacity-0" : "w-4 opacity-100"
-              )}>
+              <div
+                className={cn(
+                  "shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                  collapsed ? "w-0 opacity-0" : "w-4 opacity-100"
+                )}
+              >
                 <ChevronDown className="h-4 w-4 text-sidebar-muted transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </div>
             </button>
           </DropdownMenuTrigger>
+          {/* @ts-expect-error - DropdownMenuContent accepts children but TypeScript doesn't recognize it from JSX component */}
           <DropdownMenuContent align="end" className="w-64 glass-modern">
             <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-              Switch Role (Demo)
+              {t("sidebar.switchRole")}
             </div>
             {loadingUsers ? (
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                Loading users...
+                {t("sidebar.loadingUsers")}
               </div>
             ) : allUsers.length === 0 ? (
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                No users available
+                {t("sidebar.noUsersAvailable")}
               </div>
             ) : (
               allUsers.map((user) => (
+                /* @ts-expect-error - DropdownMenuItem accepts children but TypeScript doesn't recognize it from JSX component */
                 <DropdownMenuItem
                   key={user.id}
                   onClick={() => handleUserSwitch(user)}
@@ -390,9 +473,10 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 </DropdownMenuItem>
               ))
             )}
+            {/* @ts-expect-error - DropdownMenuItem accepts children but TypeScript doesn't recognize it from JSX component */}
             <DropdownMenuItem onClick={logout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {t("sidebar.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -400,4 +484,3 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     </aside>
   );
 }
-

@@ -12,7 +12,7 @@ router.get('/routes', async (req, res) => {
     try {
         const { org_id } = req.query;
         // Fetch detailed routes
-        let routes = await secureDb.get('transport_routes', q => {
+        const routes = await secureDb.get('transport_routes', q => {
             if (org_id) return q.eq('org_id', org_id);
             return q.order('route_name');
         });

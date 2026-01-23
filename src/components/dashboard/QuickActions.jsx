@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   UserPlus,
   FileText,
@@ -7,79 +7,81 @@ import {
   Sparkles,
   TrendingUp,
   DollarSign,
-  Loader2
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { createEventScheduledActivity } from '@/services/activities';
-import { toast } from 'sonner';
-import { SendNoticeDialog } from '@/components/notices/SendNoticeDialog';
-import { ScheduleEventDialog } from '@/components/dashboard/ScheduleEventDialog';
-import { cn } from '@/lib/utils';
-import { callGeminiAnalytics } from '@/services/gemini';
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/lib/i18n";
+import { createEventScheduledActivity } from "@/services/activities";
+import { toast } from "sonner";
+import { SendNoticeDialog } from "@/components/notices/SendNoticeDialog";
+import { ScheduleEventDialog } from "@/components/dashboard/ScheduleEventDialog";
+import { cn } from "@/lib/utils";
+import { callGeminiAnalytics } from "@/services/gemini";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-
-const quickActions = [
-  {
-    icon: UserPlus,
-    label: 'Add User',
-    permission: 'manage_staff',
-    color: 'text-blue-600 dark:text-blue-400',
-  },
-  {
-    icon: Calendar,
-    label: 'Schedule Event',
-    color: 'text-green-600 dark:text-green-400',
-  },
-  {
-    icon: FileText, // Reusing FileText or finding a proper Task icon like ClipboardList
-    label: 'Assign Task',
-    permission: 'manage_staff', // Using manage_staff as proxy for Admin/Teacher power for now
-    color: 'text-red-600 dark:text-red-400',
-  },
-  {
-    icon: MessageSquare,
-    label: 'Send Notice',
-    permission: 'manage_staff',
-    color: 'text-orange-600 dark:text-orange-400',
-  },
-];
-
-const aiActions = [
-  {
-    icon: Sparkles,
-    label: 'Smart Report',
-    color: 'text-pink-600 dark:text-pink-400',
-  },
-  {
-    icon: TrendingUp,
-    label: 'Predict Attendance',
-    color: 'text-indigo-600 dark:text-indigo-400',
-  },
-  {
-    icon: DollarSign,
-    label: 'Forecast Finance',
-    color: 'text-cyan-600 dark:text-cyan-400',
-  },
-];
+} from "@/components/ui/dialog";
 
 export function QuickActions({ onAddUser, onAssignTask }) {
   const { hasPermission } = useAuth();
+  const { t } = useI18n();
+
+  const quickActions = [
+    {
+      icon: UserPlus,
+      label: t("dashboard.addUser"),
+      permission: "manage_staff",
+      color: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: Calendar,
+      label: t("dashboard.scheduleEvent"),
+      color: "text-green-600 dark:text-green-400",
+    },
+    {
+      icon: FileText,
+      label: t("dashboard.assignTask"),
+      permission: "manage_staff",
+      color: "text-red-600 dark:text-red-400",
+    },
+    {
+      icon: MessageSquare,
+      label: t("dashboard.sendNotice"),
+      permission: "manage_staff",
+      color: "text-orange-600 dark:text-orange-400",
+    },
+  ];
+
+  const aiActions = [
+    {
+      icon: Sparkles,
+      label: t("dashboard.smartReport"),
+      color: "text-pink-600 dark:text-pink-400",
+    },
+    {
+      icon: TrendingUp,
+      label: t("dashboard.predictAttendance"),
+      color: "text-indigo-600 dark:text-indigo-400",
+    },
+    {
+      icon: DollarSign,
+      label: t("dashboard.forecastFinance"),
+      color: "text-cyan-600 dark:text-cyan-400",
+    },
+  ];
   const [sendNoticeDialogOpen, setSendNoticeDialogOpen] = useState(false);
   const [scheduleEventDialogOpen, setScheduleEventDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiActionType, setAiActionType] = useState('');
+  const [aiActionType, setAiActionType] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState('');
+  const [aiResult, setAiResult] = useState("");
 
   const filteredActions = quickActions.filter(
-    action => !action.permission || hasPermission(action.permission)
+    (action) => !action.permission || hasPermission(action.permission)
   );
 
   const handleScheduleEvent = () => {
@@ -94,7 +96,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
     setAiActionType(actionType);
     setAiDialogOpen(true);
     setAiLoading(true);
-    setAiResult('');
+    setAiResult("");
 
     try {
       const generateHistorical = (current, count = 6) => {
@@ -105,12 +107,16 @@ export function QuickActions({ onAddUser, onAssignTask }) {
         return data;
       };
 
-      let query = '';
+      let query = "";
       let data = {};
 
+      const smartReportLabel = t("dashboard.smartReport");
+      const predictAttendanceLabel = t("dashboard.predictAttendance");
+      const forecastFinanceLabel = t("dashboard.forecastFinance");
+
       switch (actionType) {
-        case 'Smart Report':
-          query = 'Provide a comprehensive analytics report with key insights, trends, and recommendations for the school.';
+        case smartReportLabel:
+          query = t("dashboard.smartReportQuery");
           data = {
             attendance: {
               current: 94.2,
@@ -126,8 +132,8 @@ export function QuickActions({ onAddUser, onAssignTask }) {
             },
           };
           break;
-        case 'Predict Attendance':
-          query = 'Analyze attendance trends and predict future attendance rates. Provide insights on factors affecting attendance.';
+        case predictAttendanceLabel:
+          query = t("dashboard.predictAttendanceQuery");
           data = {
             attendance: {
               current: 94.2,
@@ -135,8 +141,8 @@ export function QuickActions({ onAddUser, onAssignTask }) {
             },
           };
           break;
-        case 'Forecast Finance':
-          query = 'Analyze financial trends and forecast revenue and expenses for the next period. Provide recommendations.';
+        case forecastFinanceLabel:
+          query = t("dashboard.forecastFinanceQuery");
           data = {
             finance: {
               current: 284500,
@@ -149,21 +155,21 @@ export function QuickActions({ onAddUser, onAssignTask }) {
       const result = await callGeminiAnalytics(query, data);
       setAiResult(result);
     } catch (error) {
-      console.error('Error calling AI:', error);
-      setAiResult(`Error: ${error.message || 'Failed to generate insights'}`);
+      console.error("Error calling AI:", error);
+      setAiResult(`Error: ${error.message || "Failed to generate insights"}`);
     } finally {
       setAiLoading(false);
     }
   };
 
   const handleAction = (action) => {
-    if (action.label === 'Add User') {
+    if (action.label === t("dashboard.addUser")) {
       onAddUser?.();
-    } else if (action.label === 'Schedule Event') {
+    } else if (action.label === t("dashboard.scheduleEvent")) {
       handleScheduleEvent();
-    } else if (action.label === 'Send Notice') {
+    } else if (action.label === t("dashboard.sendNotice")) {
       handleSendNotice();
-    } else if (action.label === 'Assign Task') {
+    } else if (action.label === t("dashboard.assignTask")) {
       onAssignTask?.();
     } else {
       action.onClick?.();
@@ -173,10 +179,14 @@ export function QuickActions({ onAddUser, onAssignTask }) {
   return (
     <div className="space-y-3">
       {/* Quick Actions */}
-      <div className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="Quick Actions">
+      <div
+        className="rounded-2xl border border-border/30 bg-card/80 backdrop-blur-xl p-3 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern"
+        role="region"
+        aria-label="Quick Actions"
+      >
         <div className="flex items-center gap-2 mb-3">
           <div className="h-0.5 w-6 bg-gradient-to-r from-primary to-primary/50 rounded-full"></div>
-          <h3 className="text-sm font-semibold text-foreground">Quick Actions</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("dashboard.quickActions")}</h3>
         </div>
 
         <div className="grid grid-cols-4 gap-2">
@@ -207,11 +217,15 @@ export function QuickActions({ onAddUser, onAssignTask }) {
       </div>
 
       {/* AI Actions */}
-      <div className="rounded-2xl border border-border/30 bg-gradient-to-br from-card/80 via-card/70 to-primary/5 backdrop-blur-xl p-4 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern" role="region" aria-label="AI Actions">
+      <div
+        className="rounded-2xl border border-border/30 bg-gradient-to-br from-card/80 via-card/70 to-primary/5 backdrop-blur-xl p-4 shadow-depth-2 hover:shadow-depth-3 transition-all duration-300 glass-modern"
+        role="region"
+        aria-label="AI Actions"
+      >
         <div className="flex items-center gap-2 mb-3">
           <div className="h-0.5 w-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></div>
           <Sparkles className="h-3.5 w-3.5 text-pink-500" />
-          <h3 className="text-sm font-semibold text-foreground">AI Actions</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("dashboard.aiActions")}</h3>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
@@ -250,7 +264,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
               {aiActionType}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              AI-powered insights and predictions
+              {t("dashboard.aiPoweredInsights")}
             </DialogDescription>
           </DialogHeader>
 
@@ -258,7 +272,9 @@ export function QuickActions({ onAddUser, onAssignTask }) {
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-3 text-sm text-muted-foreground">Generating insights...</span>
+                <span className="ml-3 text-sm text-muted-foreground">
+                  {t("dashboard.generatingInsights")}
+                </span>
               </div>
             ) : aiResult ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -268,17 +284,14 @@ export function QuickActions({ onAddUser, onAssignTask }) {
               </div>
             ) : (
               <div className="text-sm text-muted-foreground text-center py-8">
-                No results available
+                {t("dashboard.noResultsAvailable")}
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      <SendNoticeDialog
-        open={sendNoticeDialogOpen}
-        onOpenChange={setSendNoticeDialogOpen}
-      />
+      <SendNoticeDialog open={sendNoticeDialogOpen} onOpenChange={setSendNoticeDialogOpen} />
 
       <ScheduleEventDialog
         open={scheduleEventDialogOpen}

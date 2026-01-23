@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -9,27 +9,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { fetchDepartments } from '@/services/departments';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+} from "@/components/ui/select";
+import { fetchDepartments } from "@/services/departments";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
-export function EditStudentDialog({
-  open,
-  onOpenChange,
-  student,
-  onUpdate,
-}) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [departmentId, setDepartmentId] = useState('');
+export function EditStudentDialog({ open, onOpenChange, student, onUpdate }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [departments, setDepartments] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
 
@@ -53,8 +48,8 @@ export function EditStudentDialog({
       const depts = await fetchDepartments();
       setDepartments(depts);
     } catch (error) {
-      console.error('Error loading departments:', error);
-      toast.error('Failed to load departments');
+      console.error("Error loading departments:", error);
+      toast.error("Failed to load departments");
     } finally {
       setLoadingDepartments(false);
     }
@@ -63,28 +58,28 @@ export function EditStudentDialog({
   const loadStudentDepartment = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('department_id')
-        .eq('id', userId)
+        .from("users")
+        .select("department_id")
+        .eq("id", userId)
         .single();
 
       if (error) throw error;
-      setDepartmentId(data?.department_id || '');
+      setDepartmentId(data?.department_id || "");
     } catch (error) {
-      console.error('Error loading student department:', error);
+      console.error("Error loading student department:", error);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!name || !email) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
     if (!departmentId) {
-      toast.error('Please select a department');
+      toast.error("Please select a department");
       return;
     }
 
@@ -100,9 +95,7 @@ export function EditStudentDialog({
       <DialogContent className="max-w-md w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Edit Student Information</DialogTitle>
-          <DialogDescription>
-            Update the basic information for this student.
-          </DialogDescription>
+          <DialogDescription>Update the basic information for this student.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,8 +124,8 @@ export function EditStudentDialog({
 
           <div className="space-y-2">
             <Label htmlFor="edit-department">Department *</Label>
-            <Select 
-              value={departmentId} 
+            <Select
+              value={departmentId}
               onValueChange={setDepartmentId}
               disabled={loadingDepartments}
             >
@@ -153,9 +146,7 @@ export function EditStudentDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              Save Changes
-            </Button>
+            <Button type="submit">Save Changes</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -20,15 +20,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Trash2, Edit2, Plus, X } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-
-
-
-
-
-
+} from "@/components/ui/table";
+import { Trash2, Edit2, Plus, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DepartmentManagementDialog({ open, onOpenChange }) {
   const { currentUser } = useAuth();
@@ -36,7 +30,7 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
   const [loading, setLoading] = useState(false);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
-  const [departmentName, setDepartmentName] = useState('');
+  const [departmentName, setDepartmentName] = useState("");
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -53,13 +47,13 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
       setLoading(true);
       const response = await api.getDepartments();
       if (response.error) throw new Error(response.error);
-      
+
       if (response.data && Array.isArray(response.data)) {
         setDepartments(response.data);
       }
     } catch (error) {
-      console.error('Error loading departments:', error);
-      toast.error('Failed to load departments');
+      console.error("Error loading departments:", error);
+      toast.error("Failed to load departments");
     } finally {
       setLoading(false);
     }
@@ -68,12 +62,11 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
   const loadTeachers = async () => {
     try {
       setLoadingTeachers(true);
-      const response = await api.getUsers({ role: 'teacher', status: 'active' });
+      const response = await api.getUsers({ role: "teacher", status: "active" });
       if (response.error) throw new Error(response.error);
-      
+
       if (response.data && Array.isArray(response.data)) {
-        
-        const teacherList= response.data.map((t) => ({
+        const teacherList = response.data.map((t) => ({
           id: t.id,
           name: t.name,
           email: t.email,
@@ -81,15 +74,15 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
         setTeachers(teacherList);
       }
     } catch (error) {
-      console.error('Error loading teachers:', error);
-      toast.error('Failed to load teachers');
+      console.error("Error loading teachers:", error);
+      toast.error("Failed to load teachers");
     } finally {
       setLoadingTeachers(false);
     }
   };
 
   const resetForm = () => {
-    setDepartmentName('');
+    setDepartmentName("");
     setSelectedTeachers([]);
     setEditingDepartment(null);
     setIsCreating(false);
@@ -114,17 +107,15 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
   const loadDepartmentTeachers = async (departmentId) => {
     try {
       // Get all teachers and check which ones have this department
-      const response = await api.getUsers({ role: 'teacher', status: 'active' });
+      const response = await api.getUsers({ role: "teacher", status: "active" });
       if (response.error) throw new Error(response.error);
-      
+
       if (response.data && Array.isArray(response.data)) {
-        const mappedTeachers= [];
+        const mappedTeachers = [];
         for (const teacher of response.data) {
           const deptResponse = await api.getTeacherDepartments(teacher.id);
           if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
-            const hasDepartment = (deptResponse.data).some(
-              (td) => td.department_id === departmentId
-            );
+            const hasDepartment = deptResponse.data.some((td) => td.department_id === departmentId);
             if (hasDepartment) {
               mappedTeachers.push(teacher.id);
             }
@@ -133,7 +124,7 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
         setSelectedTeachers(mappedTeachers);
       }
     } catch (error) {
-      console.error('Error loading department teachers:', error);
+      console.error("Error loading department teachers:", error);
     }
   };
 
@@ -142,38 +133,36 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
   };
 
   const toggleTeacher = (teacherId) => {
-    setSelectedTeachers(prev =>
-      prev.includes(teacherId)
-        ? prev.filter(id => id !== teacherId)
-        : [...prev, teacherId]
+    setSelectedTeachers((prev) =>
+      prev.includes(teacherId) ? prev.filter((id) => id !== teacherId) : [...prev, teacherId]
     );
   };
 
   const handleSave = async () => {
     if (!departmentName.trim()) {
-      toast.error('Please enter a department name');
+      toast.error("Please enter a department name");
       return;
     }
 
     try {
       setLoading(true);
-      
+
       if (editingDepartment) {
         // Update existing department
         const updateResponse = await api.updateDepartment(editingDepartment.id, {
           name: departmentName.trim(),
         });
-        
+
         if (updateResponse.error) throw new Error(updateResponse.error);
-        
+
         // Update teacher mappings if needed
         if (selectedTeachers.length > 0) {
           // Get current teachers for this department
-          const currentTeachers= [];
+          const currentTeachers = [];
           for (const teacher of teachers) {
             const deptResponse = await api.getTeacherDepartments(teacher.id);
             if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
-              const hasDepartment = (deptResponse.data).some(
+              const hasDepartment = deptResponse.data.some(
                 (td) => td.department_id === editingDepartment.id
               );
               if (hasDepartment) {
@@ -181,50 +170,49 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
               }
             }
           }
-          
+
           // Remove department from teachers who are no longer selected
           for (const teacherId of currentTeachers) {
             if (!selectedTeachers.includes(teacherId)) {
               const deptResponse = await api.getTeacherDepartments(teacherId);
-              let currentDeptIds= [];
-              
+              let currentDeptIds = [];
+
               if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
-                currentDeptIds = (deptResponse.data).map((td) => td.department_id);
+                currentDeptIds = deptResponse.data.map((td) => td.department_id);
               }
-              
-              const updatedDeptIds = currentDeptIds.filter(id => id !== editingDepartment.id);
+
+              const updatedDeptIds = currentDeptIds.filter((id) => id !== editingDepartment.id);
               await api.updateTeacherDepartments(teacherId, updatedDeptIds);
             }
           }
-          
+
           // Add department to newly selected teachers
           for (const teacherId of selectedTeachers) {
             if (!currentTeachers.includes(teacherId)) {
               const deptResponse = await api.getTeacherDepartments(teacherId);
-              let currentDeptIds= [];
-              
+              let currentDeptIds = [];
+
               if (!deptResponse.error && deptResponse.data && Array.isArray(deptResponse.data)) {
-                currentDeptIds = (deptResponse.data).map((td) => td.department_id);
+                currentDeptIds = deptResponse.data.map((td) => td.department_id);
               }
-              
+
               const updatedDeptIds = [...new Set([...currentDeptIds, editingDepartment.id])];
               await api.updateTeacherDepartments(teacherId, updatedDeptIds);
             }
           }
         }
-        
-        toast.success('Department updated successfully');
+
+        toast.success("Department updated successfully");
       } else {
         // Create new department
         const deptResponse = await api.createDepartment({
           name: departmentName.trim(),
           created_by: currentUser?.id,
         });
-        
-        if (deptResponse.error) throw new Error(deptResponse.error);
-        if (!deptResponse.data) throw new Error('Failed to create department');
 
-        
+        if (deptResponse.error) throw new Error(deptResponse.error);
+        if (!deptResponse.data) throw new Error("Failed to create department");
+
         const newDepartment = deptResponse.data;
         const departmentId = newDepartment.id;
 
@@ -233,10 +221,13 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
           for (const teacherId of selectedTeachers) {
             // Get current teacher departments
             const currentDeptResponse = await api.getTeacherDepartments(teacherId);
-            let currentDeptIds= [];
-            
-            if (!currentDeptResponse.error && currentDeptResponse.data && Array.isArray(currentDeptResponse.data)) {
-              
+            let currentDeptIds = [];
+
+            if (
+              !currentDeptResponse.error &&
+              currentDeptResponse.data &&
+              Array.isArray(currentDeptResponse.data)
+            ) {
               currentDeptIds = currentDeptResponse.data.map((td) => td.department_id);
             }
 
@@ -248,14 +239,16 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
           }
         }
 
-        toast.success(`Department "${departmentName}" created successfully${selectedTeachers.length > 0 ? ` and mapped to ${selectedTeachers.length} teacher(s)` : ''}`);
+        toast.success(
+          `Department "${departmentName}" created successfully${selectedTeachers.length > 0 ? ` and mapped to ${selectedTeachers.length} teacher(s)` : ""}`
+        );
       }
 
       await loadDepartments();
       resetForm();
     } catch (error) {
-      console.error('Error saving department:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save department';
+      console.error("Error saving department:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save department";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -263,20 +256,24 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
   };
 
   const handleDelete = async (departmentId, departmentName) => {
-    if (!confirm(`Are you sure you want to delete the department "${departmentName}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete the department "${departmentName}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
     try {
       setLoading(true);
       const response = await api.deleteDepartment(departmentId);
-      
+
       if (response.error) throw new Error(response.error);
-      toast.success('Department deleted successfully');
+      toast.success("Department deleted successfully");
       await loadDepartments();
     } catch (error) {
-      console.error('Error deleting department:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete department';
+      console.error("Error deleting department:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete department";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -299,7 +296,7 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">
-                  {editingDepartment ? 'Edit Department' : 'Create New Department'}
+                  {editingDepartment ? "Edit Department" : "Create New Department"}
                 </h3>
                 <Button variant="ghost" size="icon" onClick={handleCancel}>
                   <X className="h-4 w-4" />
@@ -343,16 +340,21 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
                             if (selectedTeachers.length === teachers.length) {
                               setSelectedTeachers([]);
                             } else {
-                              setSelectedTeachers(teachers.map(t => t.id));
+                              setSelectedTeachers(teachers.map((t) => t.id));
                             }
                           }}
                           className="h-6 text-xs"
                         >
-                          {selectedTeachers.length === teachers.length ? 'Deselect All' : 'Select All'}
+                          {selectedTeachers.length === teachers.length
+                            ? "Deselect All"
+                            : "Select All"}
                         </Button>
                       </div>
                       {teachers.map((teacher) => (
-                        <div key={teacher.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                        <div
+                          key={teacher.id}
+                          className="flex items-center space-x-2 p-2 hover:bg-muted rounded"
+                        >
                           <Checkbox
                             checked={selectedTeachers.includes(teacher.id)}
                             onCheckedChange={() => toggleTeacher(teacher.id)}
@@ -373,7 +375,7 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
                   Cancel
                 </Button>
                 <Button onClick={handleSave} disabled={loading}>
-                  {editingDepartment ? 'Update Department' : 'Create Department'}
+                  {editingDepartment ? "Update Department" : "Create Department"}
                 </Button>
               </div>
             </div>
@@ -443,4 +445,3 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
     </Dialog>
   );
 }
-

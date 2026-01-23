@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
-import { ROLE_LABELS, ROLE_DEFAULT_PERMISSIONS, ROLE_HIERARCHY } from '@/types/erp';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserTable } from '@/components/users/UserTable';
-import { AddUserDialog } from '@/components/users/AddUserDialog';
-import { EditUserDialog } from '@/components/users/EditUserDialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { Plus, Search, Filter } from "lucide-react";
+import { ROLE_LABELS, ROLE_DEFAULT_PERMISSIONS, ROLE_HIERARCHY } from "@/types/erp";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserTable } from "@/components/users/UserTable";
+import { AddUserDialog } from "@/components/users/AddUserDialog";
+import { EditUserDialog } from "@/components/users/EditUserDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { api } from '@/services/api';
-import { createUserAddedActivity, createBulkUserAddedActivities } from '@/services/activities';
-import { updateTeacherDepartments } from '@/services/departments';
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { api } from "@/services/api";
+import { createUserAddedActivity, createBulkUserAddedActivities } from "@/services/activities";
+import { updateTeacherDepartments } from "@/services/departments";
 
 import {
   AlertDialog,
@@ -34,8 +34,8 @@ import {
 export function UserManagement({ dialogOpen, setDialogOpen }) {
   const { currentUser, canManageRole } = useAuth();
   const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -52,22 +52,24 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       setLoading(true);
       // Fetch users first
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       if (data) {
         // Fetch department names separately for users with department_id
-        const departmentIds = [...new Set(data.filter((u) => u.department_id).map((u) => u.department_id))];
+        const departmentIds = [
+          ...new Set(data.filter((u) => u.department_id).map((u) => u.department_id)),
+        ];
         const deptMap = new Map();
 
         if (departmentIds.length > 0) {
           const { data: deptData, error: deptError } = await supabase
-            .from('departments')
-            .select('id, name')
-            .in('id', departmentIds);
+            .from("departments")
+            .select("id, name")
+            .in("id", departmentIds);
 
           if (!deptError && deptData) {
             deptData.forEach((dept) => {
@@ -86,25 +88,28 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           college_email: row.college_email,
           role: row.role,
           permissions: row.permissions || [],
-          department: row.department_id ? deptMap.get(row.department_id) || null : row.department || null,
+          department: row.department_id
+            ? deptMap.get(row.department_id) || null
+            : row.department || null,
           createdAt: new Date(row.created_at),
-          status: row.status || 'inactive',
+          status: row.status || "inactive",
           avatar: row.avatar,
         }));
         setUsers(mappedUsers);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
@@ -118,7 +123,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       let tempEmail = email;
       if (!tempEmail) {
         // For all roles, use temporary email - will be updated after user_id is known
-        tempEmail = `temp-${currentUser?.organization?.org_id || 'org'}-${Date.now()}@loopverse.in`;
+        tempEmail = `temp-${currentUser?.organization?.org_id || "org"}-${Date.now()}@loopverse.in`;
       }
 
       // Use API to create user (which will handle email sending)
@@ -129,7 +134,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         permissions: newUser.permissions,
         department_id: newUser.department_id || null,
         loopid: loopid || null, // Will be updated after user_id is known
-        status: 'active',
+        status: "active",
         college_email: college_email, // Pass college email to backend
       });
 
@@ -141,26 +146,27 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         const generatedEmail = `${currentUser.organization.org_id}${data.user_id}@loopverse.in`;
 
         // For students, also generate loopid
-        const updateData = newUser.role === 'student'
-          ? {
-            email: generatedEmail,
-            loopid: `${currentUser.organization.org_id}${data.user_id}`,
-          }
-          : { email: generatedEmail };
+        const updateData =
+          newUser.role === "student"
+            ? {
+                email: generatedEmail,
+                loopid: `${currentUser.organization.org_id}${data.user_id}`,
+              }
+            : { email: generatedEmail };
 
         // Update the user with generated email (and loopid for students)
         const { error: updateError } = await supabase
-          .from('users')
+          .from("users")
           .update(updateData)
-          .eq('id', data.id);
+          .eq("id", data.id);
 
         if (updateError) {
-          console.error('Error updating email and loopid:', updateError);
+          console.error("Error updating email and loopid:", updateError);
           throw updateError;
         } else {
           // Update data object with new values
           data.email = generatedEmail;
-          if (newUser.role === 'student') {
+          if (newUser.role === "student") {
             data.loopid = updateData.loopid;
           }
         }
@@ -172,35 +178,39 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           const emailResponse = await api.sendWelcomeEmail({
             college_email,
             loop_email: data.email,
-            loopid: data.loopid || '',
+            loopid: data.loopid || "",
             user_name: data.name,
             user_id: data.user_id,
           });
 
           if (emailResponse.error) {
-            console.error('Error sending welcome email:', emailResponse.error);
+            console.error("Error sending welcome email:", emailResponse.error);
             // Don't fail user creation if email fails
-            toast.warning('User created but email could not be sent. Please check email configuration.');
+            toast.warning(
+              "User created but email could not be sent. Please check email configuration."
+            );
           } else {
-            toast.success('Welcome email sent successfully');
+            toast.success("Welcome email sent successfully");
           }
         } catch (emailError) {
-          console.error('Error sending welcome email:', emailError);
+          console.error("Error sending welcome email:", emailError);
           // Don't fail user creation if email fails
         }
       }
 
       if (data) {
         // For teachers, update teacher_departments
-        if (newUser.role === 'teacher' && newUser.department_ids && newUser.department_ids.length > 0) {
-          const { error: deptError } = await supabase
-            .from('teacher_departments')
-            .insert(
-              newUser.department_ids.map(deptId => ({
-                teacher_id: data.id,
-                department_id: deptId,
-              }))
-            );
+        if (
+          newUser.role === "teacher" &&
+          newUser.department_ids &&
+          newUser.department_ids.length > 0
+        ) {
+          const { error: deptError } = await supabase.from("teacher_departments").insert(
+            newUser.department_ids.map((deptId) => ({
+              teacher_id: data.id,
+              department_id: deptId,
+            }))
+          );
 
           if (deptError) throw deptError;
         }
@@ -209,9 +219,9 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         let departmentName = null;
         if (data.department_id) {
           const { data: deptData } = await supabase
-            .from('departments')
-            .select('name')
-            .eq('id', data.department_id)
+            .from("departments")
+            .select("name")
+            .eq("id", data.department_id)
             .single();
           departmentName = deptData?.name || null;
         }
@@ -227,19 +237,19 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           permissions: data.permissions || [],
           department: departmentName,
           createdAt: new Date(data.created_at),
-          status: data.status || 'inactive',
+          status: data.status || "inactive",
           avatar: data.avatar,
         };
-        setUsers(prev => [user, ...prev]);
+        setUsers((prev) => [user, ...prev]);
 
         // Create activity for new user
-        await createUserAddedActivity(user.name, user.department || '');
+        await createUserAddedActivity(user.name, user.department || "");
 
         toast.success(`User ${user.name} added successfully`);
       }
     } catch (error) {
-      console.error('Error adding user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add user';
+      console.error("Error adding user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to add user";
       toast.error(errorMessage);
     }
   };
@@ -247,7 +257,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
   const handleAddMultipleUsers = async (users) => {
     try {
       if (!currentUser?.organization?.org_id) {
-        throw new Error('Organization ID is required');
+        throw new Error("Organization ID is required");
       }
 
       // Prepare users for bulk insert with temporary emails
@@ -265,19 +275,19 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           permissions: user.permissions || [],
           department_id: user.department_id || null,
           loopid: user.loopid || null,
-          status: 'active',
+          status: "active",
         };
       });
 
       // Bulk insert all users at once
       const { data: insertedUsers, error: insertError } = await supabase
-        .from('users')
+        .from("users")
         .insert(usersToInsert)
         .select();
 
       if (insertError) throw insertError;
       if (!insertedUsers || insertedUsers.length === 0) {
-        throw new Error('No users were inserted');
+        throw new Error("No users were inserted");
       }
 
       // For all users, update email in batch (format: org_id + user_id @loopverse.in)
@@ -292,7 +302,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
               email: generatedEmail,
             };
             // For students, also generate loopid
-            if (originalUser.role === 'student') {
+            if (originalUser.role === "student") {
               update.loopid = `${currentUser.organization.org_id}${user.user_id}`;
             }
             return update;
@@ -304,24 +314,24 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       // Batch update all user emails (and loopids for students)
       if (userUpdates.length > 0) {
         // Use Promise.all to update all users in parallel
-        const updatePromises = userUpdates.map(update =>
+        const updatePromises = userUpdates.map((update) =>
           supabase
-            .from('users')
+            .from("users")
             .update({
               email: update.email,
               ...(update.loopid && { loopid: update.loopid }),
             })
-            .eq('id', update.id)
+            .eq("id", update.id)
         );
 
         const updateResults = await Promise.all(updatePromises);
-        const updateErrors = updateResults.filter(result => result.error);
+        const updateErrors = updateResults.filter((result) => result.error);
 
         if (updateErrors.length > 0) {
-          console.error('Some email updates failed:', updateErrors);
+          console.error("Some email updates failed:", updateErrors);
           // Update insertedUsers with new values for successful updates
-          userUpdates.forEach(update => {
-            const user = insertedUsers.find(u => u.id === update.id);
+          userUpdates.forEach((update) => {
+            const user = insertedUsers.find((u) => u.id === update.id);
             if (user) {
               user.email = update.email;
               if (update.loopid) {
@@ -331,8 +341,8 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           });
         } else {
           // Update all successfully
-          userUpdates.forEach(update => {
-            const user = insertedUsers.find(u => u.id === update.id);
+          userUpdates.forEach((update) => {
+            const user = insertedUsers.find((u) => u.id === update.id);
             if (user) {
               user.email = update.email;
               if (update.loopid) {
@@ -347,8 +357,12 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       const teacherInserts = insertedUsers
         .map((user, index) => {
           const originalUser = users[index];
-          if (originalUser.role === 'teacher' && originalUser.department_ids && originalUser.department_ids.length > 0) {
-            return originalUser.department_ids.map(deptId => ({
+          if (
+            originalUser.role === "teacher" &&
+            originalUser.department_ids &&
+            originalUser.department_ids.length > 0
+          ) {
+            return originalUser.department_ids.map((deptId) => ({
               teacher_id: user.id,
               department_id: deptId,
             }));
@@ -359,27 +373,27 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
       if (teacherInserts.length > 0) {
         const { error: deptError } = await supabase
-          .from('teacher_departments')
+          .from("teacher_departments")
           .insert(teacherInserts);
 
         if (deptError) {
-          console.error('Error inserting teacher departments:', deptError);
+          console.error("Error inserting teacher departments:", deptError);
           // Don't throw - users were created, just department mapping failed
         }
       }
 
       // Fetch department names for display
-      const departmentIds = [...new Set(insertedUsers.map(u => u.department_id).filter(Boolean))];
+      const departmentIds = [...new Set(insertedUsers.map((u) => u.department_id).filter(Boolean))];
       const deptMap = new Map();
 
       if (departmentIds.length > 0) {
         const { data: deptData } = await supabase
-          .from('departments')
-          .select('id, name')
-          .in('id', departmentIds);
+          .from("departments")
+          .select("id, name")
+          .in("id", departmentIds);
 
         if (deptData) {
-          deptData.forEach(dept => {
+          deptData.forEach((dept) => {
             deptMap.set(dept.id, dept.name);
           });
         }
@@ -401,11 +415,11 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         avatar: row.avatar,
       }));
 
-      setUsers(prev => [...newUsers, ...prev]);
+      setUsers((prev) => [...newUsers, ...prev]);
 
       // Create activities for new users in bulk (single API call)
       await createBulkUserAddedActivities(
-        newUsers.map(user => ({
+        newUsers.map((user) => ({
           name: user.name,
           department: user.department || undefined,
         }))
@@ -413,8 +427,8 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
       toast.success(`Successfully added ${newUsers.length} user(s)`);
     } catch (error) {
-      console.error('Error adding multiple users:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add users';
+      console.error("Error adding multiple users:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to add users";
       toast.error(errorMessage);
       throw error; // Re-throw so caller can handle it
     }
@@ -422,7 +436,9 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
   const handleEditUser = (user) => {
     if (!canManageRole(user.role)) {
-      toast.error(`You cannot edit users with the ${user.role} role. You can only manage roles below yours in the hierarchy.`);
+      toast.error(
+        `You cannot edit users with the ${user.role} role. You can only manage roles below yours in the hierarchy.`
+      );
       return;
     }
     setSelectedUser(user);
@@ -432,7 +448,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
   const handleUpdateUser = async (user, updatedData) => {
     try {
       const { error } = await supabase
-        .from('users')
+        .from("users")
         .update({
           name: updatedData.name,
           email: updatedData.email,
@@ -440,22 +456,22 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           permissions: updatedData.permissions,
           department_id: updatedData.department_id || null,
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (error) throw error;
 
       // For teachers, update teacher_departments using the service function
-      if (updatedData.role === 'teacher') {
+      if (updatedData.role === "teacher") {
         await updateTeacherDepartments(user.id, updatedData.department_ids || []);
       } else {
         // If role changed from teacher to something else, remove teacher_departments
         const { error: deleteError } = await supabase
-          .from('teacher_departments')
+          .from("teacher_departments")
           .delete()
-          .eq('teacher_id', user.id);
+          .eq("teacher_id", user.id);
 
         if (deleteError) {
-          console.error('Error removing teacher departments:', deleteError);
+          console.error("Error removing teacher departments:", deleteError);
           // Don't throw - this is cleanup, not critical
         }
       }
@@ -466,8 +482,8 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       setSelectedUser(null);
       toast.success(`User ${updatedData.name} updated successfully`);
     } catch (error) {
-      console.error('Error updating user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+      console.error("Error updating user:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update user";
       toast.error(errorMessage);
     }
   };
@@ -475,14 +491,14 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
   const handleResendEmail = async (user) => {
     try {
       if (!user.college_email) {
-        toast.error('College email not found for this user');
+        toast.error("College email not found for this user");
         return;
       }
 
       const emailResponse = await api.sendWelcomeEmail({
         college_email: user.college_email,
-        loop_email: user.email || '',
-        loopid: user.loopid || '',
+        loop_email: user.email || "",
+        loopid: user.loopid || "",
         user_name: user.name,
         user_id: user.user_id,
       });
@@ -491,10 +507,10 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         throw new Error(emailResponse.error);
       }
 
-      toast.success('Welcome email sent successfully');
+      toast.success("Welcome email sent successfully");
     } catch (error) {
-      console.error('Error resending welcome email:', error);
-      toast.error(error.message || 'Failed to resend welcome email');
+      console.error("Error resending welcome email:", error);
+      toast.error(error.message || "Failed to resend welcome email");
     }
   };
 
@@ -511,7 +527,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
     const previousUsers = [...users];
 
     // Optimistic Update: Immediately remove from UI and close dialog
-    setUsers(prev => prev.filter(u => u.id !== user.id));
+    setUsers((prev) => prev.filter((u) => u.id !== user.id));
     setDeleteDialogOpen(false);
     setUserToDelete(null);
     toast.info(`Deleting ${user.name}...`);
@@ -524,18 +540,18 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
       toast.success(`User ${user.name} permanently deleted`);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
 
       // Revert state on error
       setUsers(previousUsers);
 
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete user";
       toast.error(`Failed to delete user: ${errorMessage}`);
     }
   };
 
   // Filter roles based on what current user can manage
-  const manageableRoles = Object.keys(ROLE_LABELS).filter(role => canManageRole(role));
+  const manageableRoles = Object.keys(ROLE_LABELS).filter((role) => canManageRole(role));
 
   return (
     <div className="space-y-6">
@@ -559,7 +575,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                {manageableRoles.map(role => (
+                {manageableRoles.map((role) => (
                   <SelectItem key={role} value={role}>
                     {ROLE_LABELS[role]}
                   </SelectItem>
@@ -578,11 +594,12 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       {/* Info banner */}
       <div className="rounded-lg border border-border bg-muted/50 p-4">
         <p className="text-sm text-muted-foreground">
-          <strong>Role Hierarchy:</strong> As a{' '}
+          <strong>Role Hierarchy:</strong> As a{" "}
           <span className="font-medium text-foreground">
             {currentUser && ROLE_LABELS[currentUser.role]}
           </span>
-          , you can manage users with roles below yours in the hierarchy. Lower-level users cannot manage higher-level users.
+          , you can manage users with roles below yours in the hierarchy. Lower-level users cannot
+          manage higher-level users.
         </p>
       </div>
 
@@ -591,7 +608,11 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden animate-fade-in">
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+              <div
+                key={i}
+                className="flex items-center gap-4 animate-pulse"
+                style={{ animationDelay: `${i * 100}ms` }}
+              >
                 <div className="h-10 w-10 rounded-full bg-muted" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 w-48 bg-muted rounded" />
@@ -623,7 +644,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
             await handleAddMultipleUsers(users);
             await fetchUsers(); // Refresh the list
           } catch (error) {
-            console.error('Error adding multiple users:', error);
+            console.error("Error adding multiple users:", error);
             // Error already shown in handleAddMultipleUsers
           }
         }}
@@ -641,7 +662,9 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete <strong>{userToDelete?.name}</strong> and remove all associated data including grades, attendance, and fee records from the database.
+              This action cannot be undone. This will permanently delete{" "}
+              <strong>{userToDelete?.name}</strong> and remove all associated data including grades,
+              attendance, and fee records from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

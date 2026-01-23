@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Wrench, Building2, ArrowRight, Shield } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RoleManagementDialog } from '@/components/roles/RoleManagementDialog';
-import { DepartmentManagementDialog } from '@/components/departments/DepartmentManagementDialog';
+import { useState } from "react";
+import { Wrench, Building2, ArrowRight, Shield } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RoleManagementDialog } from "@/components/roles/RoleManagementDialog";
+import { DepartmentManagementDialog } from "@/components/departments/DepartmentManagementDialog";
 
 export function Tools() {
   const { currentUser } = useAuth();
