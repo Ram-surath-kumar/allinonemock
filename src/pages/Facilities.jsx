@@ -124,9 +124,9 @@ export default function Facilities() {
                     </Card>
                 </div>
             ) : (
-                <Card className="flex-1 overflow-hidden shadow-sm border-border/50">
+                <div className="flex-1 min-h-0">
                     <VehicleInventory />
-                </Card>
+                </div>
             )}
 
             <AddBuildingDialog

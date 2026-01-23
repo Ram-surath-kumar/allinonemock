@@ -40,19 +40,16 @@ export function AddVehicleDialog({ open, onOpenChange, onSaved }) {
                 registration_date: formData.registration_date === '' ? null : formData.registration_date,
                 renewal_date: formData.renewal_date === '' ? null : formData.renewal_date,
                 expiry_date: formData.expiry_date === '' ? null : formData.expiry_date,
-                purchase_date: formData.purchase_date === '' ? null : formData.purchase_date,
 
                 // Numeric fields - convert empty strings to null or 0
                 seating_capacity: formData.seating_capacity === '' ? null : parseInt(formData.seating_capacity),
                 year_of_manufacture: formData.year_of_manufacture === '' ? null : parseInt(formData.year_of_manufacture),
                 fuel_tank_capacity: formData.fuel_tank_capacity === '' ? null : parseFloat(formData.fuel_tank_capacity),
-                current_odometer_reading: formData.current_odometer_reading === '' ? 0 : parseFloat(formData.current_odometer_reading),
-                purchase_cost: formData.purchase_cost === '' ? null : parseFloat(formData.purchase_cost),
-                monthly_lease_cost: formData.monthly_lease_cost === '' ? null : parseFloat(formData.monthly_lease_cost)
+                current_odometer_reading: formData.current_odometer_reading === '' ? 0 : parseFloat(formData.current_odometer_reading)
             };
 
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-            const response = await fetch(`${baseUrl}/transport/vehicles`, {
+            const response = await fetch(`${baseUrl}/transport/v1/vehicles`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(cleanedData)

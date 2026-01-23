@@ -32,8 +32,10 @@ export function VehicleInventory() {
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
             const response = await fetch(`${baseUrl}/transport/vehicles`);
             const result = await response.json();
-            if (result.success) {
+            if (result.data) {
                 setVehicles(result.data);
+            } else if (result.error) {
+                toast.error(result.error);
             }
         } catch (error) {
             console.error(error);

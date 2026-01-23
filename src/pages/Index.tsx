@@ -61,7 +61,7 @@ const Facilities = lazy(() =>
   import('@/pages/Facilities').then(module => ({ default: module.default }))
 );
 const Transportation = lazy(() =>
-  import('@/pages/Transportation/TransportationDashboard').then(module => ({ default: module.default }))
+  import('@/pages/Transportation').then(module => ({ default: module.default }))
 );
 
 // Import AcademicGovernance

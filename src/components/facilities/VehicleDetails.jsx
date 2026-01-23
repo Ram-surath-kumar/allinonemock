@@ -8,7 +8,7 @@ import {
     ChevronLeft, Info, ShieldCheck, Wrench, Navigation,
     Activity, Clock, Plus, Bookmark, StickyNote, Trash2,
     Calendar, User, FileText, Smartphone, Gauge, Fuel,
-    CheckCircle2, AlertCircle, MapPin, Briefcase
+    CheckCircle2, AlertCircle, MapPin, Briefcase, ClipboardCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -20,18 +20,67 @@ export function VehicleDetails({ vehicleId, onBack }) {
     const [loading, setLoading] = useState(true);
     const [note, setNote] = useState('');
     const [task, setTask] = useState({ title: '', due_date: '', priority: 'Medium' });
+    const [routes, setRoutes] = useState([]);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editData, setEditData] = useState({});
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [crew, setCrew] = useState({ drivers: [], conductors: [] });
+    const [isCrewDialogOpen, setIsCrewDialogOpen] = useState(false);
+    const [crewType, setCrewType] = useState('driver'); // 'driver' or 'conductor'
+    const [selectedCrew, setSelectedCrew] = useState('');
 
     useEffect(() => {
         fetchVehicleDetails();
+        fetchRoutes();
+        fetchCrew();
+
+        // Refresh crew when user comes back to this page (e.g., after adding a new driver)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchCrew();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [vehicleId]);
+
+    const fetchCrew = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${baseUrl}/transport/crew`);
+            const result = await response.json();
+            if (result.data) {
+                setCrew(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching crew:', error);
+        }
+    };
+
+    const fetchRoutes = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${baseUrl}/transport/routes`);
+            const result = await response.json();
+            if (result.data) {
+                setRoutes(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching routes:', error);
+        }
+    };
 
     const fetchVehicleDetails = async () => {
         try {
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
             const response = await fetch(`${baseUrl}/transport/vehicles/${vehicleId}`);
             const result = await response.json();
-            if (result.success) {
+            if (result.data) {
                 setVehicle(result.data);
+            } else if (result.error) {
+                toast.error(result.error);
             }
         } catch (error) {
             console.error(error);
@@ -50,12 +99,18 @@ export function VehicleDetails({ vehicleId, onBack }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ note })
             });
-            if (response.ok) {
+            const result = await response.json();
+            if (result.data) {
                 toast.success("Note added");
                 setNote('');
                 fetchVehicleDetails();
+            } else if (result.error) {
+                toast.error(result.error);
             }
-        } catch (error) { toast.error("Failed to add note"); }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to add note");
+        }
     };
 
     const handleAddTask = async () => {
@@ -71,12 +126,68 @@ export function VehicleDetails({ vehicleId, onBack }) {
                     priority: task.priority
                 })
             });
-            if (response.ok) {
+            const result = await response.json();
+            if (result.data) {
                 toast.success("Task bookmarked");
                 setTask({ title: '', due_date: '', priority: 'Medium' });
                 fetchVehicleDetails();
+            } else if (result.error) {
+                toast.error(result.error);
             }
-        } catch (error) { toast.error("Failed to bookmark task"); }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to bookmark task");
+        }
+    };
+
+    const handleDeleteVehicle = async () => {
+        setDeleting(true);
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const response = await fetch(`${baseUrl}/transport/vehicles/${vehicleId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.data || response.ok) {
+                toast.success('Vehicle deleted successfully');
+                onBack(); // Go back to inventory
+            } else if (result.error) {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to delete vehicle');
+        } finally {
+            setDeleting(false);
+            setIsDeleteDialogOpen(false);
+        }
+    };
+
+    const handleAssignCrew = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const body = crewType === 'driver'
+                ? { driver_id: selectedCrew || null }
+                : { conductor_id: selectedCrew || null };
+
+            const response = await fetch(`${baseUrl}/transport/vehicles/${vehicleId}/crew`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const result = await response.json();
+            if (result.data) {
+                toast.success(`${crewType === 'driver' ? 'Driver' : 'Conductor'} ${selectedCrew ? 'assigned' : 'removed'} successfully`);
+                setIsCrewDialogOpen(false);
+                setSelectedCrew('');
+                fetchVehicleDetails();
+            } else if (result.error) {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to assign crew');
+        }
     };
 
     if (loading) return <div className="p-20 text-center animate-pulse">Loading vehicle details...</div>;
@@ -108,7 +219,14 @@ export function VehicleDetails({ vehicleId, onBack }) {
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge variant={vehicle.status === 'Active' ? 'success' : 'warning'}>{vehicle.status}</Badge>
-                    <Button variant="outline" size="sm">Edit Details</Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        setEditData(vehicle);
+                        setIsEditDialogOpen(true);
+                    }}>Edit Details</Button>
+                    <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                    </Button>
                 </div>
             </div>
 
@@ -314,13 +432,42 @@ export function VehicleDetails({ vehicleId, onBack }) {
 
                     <TabsContent value="status" className="mt-0 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <StatusCard label="Route Assigned" value={vehicle.route_assigned || 'Route A-1'} icon={Navigation} />
+                            <StatusCard label="Route Assigned" value={vehicle.route?.route_name || 'Not Assigned'} icon={Navigation} />
                             <StatusCard label="Operating Hours" value={vehicle.operating_hours || '5 AM - 6 PM'} icon={Clock} />
                             <StatusCard label="Trips per Day" value={`${vehicle.trips_per_day || 4} Trips`} icon={Activity} />
-                            <StatusCard label="Students Assigned" value={`${vehicle.students_assigned_count || 32} Students`} icon={User} />
+                            <StatusCard label="Students Assigned" value={`${vehicle.passengers?.length || 0} Students`} icon={User} />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                            {vehicle.route && vehicle.route.stops && vehicle.route.stops.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <MapPin className="h-5 w-5 text-primary" />
+                                            Pickup Points ({vehicle.route.stops.length})
+                                        </CardTitle>
+                                        <CardDescription>Route stops in order</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                            {vehicle.route.stops.map((stop, idx) => (
+                                                <div key={idx} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                                                        {stop.stop_order || idx + 1}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium">{stop.stop_name}</p>
+                                                        {stop.arrival_time && (
+                                                            <p className="text-xs text-muted-foreground">Arrival: {stop.arrival_time}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Crew Assignment</CardTitle>
@@ -332,11 +479,16 @@ export function VehicleDetails({ vehicleId, onBack }) {
                                                 <User className="h-5 w-5 text-primary" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold">{vehicle.current_driver_assigned || 'Rajesh Kumar'}</p>
-                                                <p className="text-xs text-muted-foreground">Primary Driver • ID: D-402</p>
+                                                <p className="text-sm font-bold">{vehicle.current_driver_assigned || 'Not Assigned'}</p>
+                                                <p className="text-xs text-muted-foreground">Primary Driver</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm">Change</Button>
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            fetchCrew(); // Refresh crew list before opening
+                                            setCrewType('driver');
+                                            setSelectedCrew(vehicle.current_driver_assigned || '');
+                                            setIsCrewDialogOpen(true);
+                                        }}>Change</Button>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                                         <div className="flex items-center gap-3">
@@ -344,11 +496,16 @@ export function VehicleDetails({ vehicleId, onBack }) {
                                                 <User className="h-5 w-5 text-secondary" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold">{vehicle.conductor_assigned || 'Suresh Mani'}</p>
-                                                <p className="text-xs text-muted-foreground">Conductor • ID: C-105</p>
+                                                <p className="text-sm font-bold">{vehicle.conductor_assigned || 'Not Assigned'}</p>
+                                                <p className="text-xs text-muted-foreground">Conductor</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm">Change</Button>
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            fetchCrew(); // Refresh crew list before opening
+                                            setCrewType('conductor');
+                                            setSelectedCrew(vehicle.conductor_assigned || '');
+                                            setIsCrewDialogOpen(true);
+                                        }}>Change</Button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -458,6 +615,171 @@ export function VehicleDetails({ vehicleId, onBack }) {
                     </TabsContent>
                 </div>
             </Tabs>
+
+            {/* Edit Details Dialog */}
+            {isEditDialogOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-background rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Edit Vehicle Details</h3>
+                            <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(false)}>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Assign Route</Label>
+                                <select
+                                    className="w-full p-2 border rounded-md"
+                                    value={vehicle.route?.id || ''}
+                                    onChange={async (e) => {
+                                        const routeId = e.target.value;
+                                        try {
+                                            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+                                            const response = await fetch(`${baseUrl}/transport/routes/${routeId}`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ vehicle_id: vehicleId })
+                                            });
+                                            const result = await response.json();
+                                            if (result.data) {
+                                                toast.success('Route assigned successfully');
+                                                fetchVehicleDetails();
+                                            } else if (result.error) {
+                                                toast.error(result.error);
+                                            }
+                                        } catch (error) {
+                                            console.error(error);
+                                            toast.error('Failed to assign route');
+                                        }
+                                    }}
+                                >
+                                    <option value="">No Route Assigned</option>
+                                    {routes.map((route) => (
+                                        <option key={route.id} value={route.id}>
+                                            {route.route_name} ({route.route_code || 'N/A'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {vehicle.route && (
+                                <div className="p-4 bg-muted/50 rounded-lg">
+                                    <h4 className="font-semibold mb-2">Current Route</h4>
+                                    <p className="text-sm">Route: {vehicle.route.route_name}</p>
+                                    <p className="text-sm">Code: {vehicle.route.route_code}</p>
+                                    {vehicle.passengers && vehicle.passengers.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="text-sm font-semibold mb-1">Allocated Students ({vehicle.passengers.length}):</p>
+                                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                {vehicle.passengers.map((passenger, idx) => (
+                                                    <div key={idx} className="text-xs bg-background p-2 rounded">
+                                                        {passenger.student?.name || 'Student'}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="flex gap-2 pt-4">
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
+                                    Cancel
+                                </Button>
+                                <Button onClick={() => {
+                                    setIsEditDialogOpen(false);
+                                    toast.success('Changes saved');
+                                }} className="flex-1">
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Crew Assignment Dialog */}
+            {isCrewDialogOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold">Assign {crewType === 'driver' ? 'Driver' : 'Conductor'}</h3>
+                            <Button variant="ghost" size="icon" onClick={() => setIsCrewDialogOpen(false)}>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Select {crewType === 'driver' ? 'Driver' : 'Conductor'}</Label>
+                                <select
+                                    className="w-full p-2 border rounded-md"
+                                    value={selectedCrew}
+                                    onChange={(e) => setSelectedCrew(e.target.value)}
+                                >
+                                    <option value="">No {crewType === 'driver' ? 'Driver' : 'Conductor'} Assigned</option>
+                                    {(crewType === 'driver' ? crew.drivers : crew.conductors).map((member) => (
+                                        <option key={member.id} value={member.name}>
+                                            {member.name} (ID: {member.user_id})
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-muted-foreground">
+                                    {crewType === 'driver' ? crew.drivers.length : crew.conductors.length} {crewType === 'driver' ? 'drivers' : 'conductors'} available
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2 pt-4">
+                                <Button variant="outline" onClick={() => setIsCrewDialogOpen(false)} className="flex-1">
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleAssignCrew} className="flex-1">
+                                    {selectedCrew ? 'Assign' : 'Remove'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {isDeleteDialogOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="p-3 bg-red-100 rounded-full">
+                                <AlertCircle className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold mb-2">Delete Vehicle</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Are you sure you want to delete <span className="font-bold">{vehicle.registration_number}</span>?
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsDeleteDialogOpen(false)}
+                                disabled={deleting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleDeleteVehicle}
+                                disabled={deleting}
+                            >
+                                {deleting ? 'Deleting...' : 'Delete Vehicle'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
