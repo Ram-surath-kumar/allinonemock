@@ -115,29 +115,16 @@ router.post('/register', async (req, res) => {
         // 3. Create Registration
         const registration = await secureDb.create('transport_registrations', payload, context);
 
-        // 4. Create Fee Installments (Example Logic)
+        // 4. Generate Fees via Service
         if (data.fee_annual > 0) {
-            const semFee = data.fee_annual / 2;
-
-            // Installment 1
-            await secureDb.create('transport_fee_payments', {
-                registration_id: registration.id,
-                installment_no: 1,
-                amount_due: semFee,
-                due_date: new Date().toISOString(), // Immediate
-                status: 'Pending'
-            }, context);
-
-            // Installment 2 (6 months later)
-            const date2 = new Date();
-            date2.setMonth(date2.getMonth() + 6);
-            await secureDb.create('transport_fee_payments', {
-                registration_id: registration.id,
-                installment_no: 2,
-                amount_due: semFee,
-                due_date: date2.toISOString(),
-                status: 'Pending'
-            }, context);
+            try {
+                // Import feeService dynamically if not at top, or ensure it's imported
+                const { feeService } = await import('../services/feeService.js');
+                await feeService.assignTransportFee(data.student_id, registration.id, context);
+            } catch (err) {
+                console.error('Failed to generate transport fee:', err);
+                // Non-blocking for registration success, but logged
+            }
         }
 
         sendSuccess(res, registration);
@@ -151,8 +138,9 @@ router.post('/register', async (req, res) => {
  */
 router.get('/vehicles', async (req, res) => {
     try {
-        const vehicles = await secureDb.get('transport_vehicles');
-        sendSuccess(res, vehicles);
+        // Query the same table that POST inserts into (vehicles, not transport_vehicles)
+        const vehicles = await secureDb.get('vehicles');
+        res.json({ success: true, data: vehicles });
     } catch (error) {
         handleError(error, res, 'Failed to fetch vehicles');
     }
@@ -163,13 +151,41 @@ router.get('/vehicles', async (req, res) => {
  */
 router.post('/vehicles', async (req, res) => {
     try {
-        const context = { user: req.user };
-        const newVehicle = await secureDb.create('transport_vehicles', req.body, context);
-        sendSuccess(res, newVehicle);
+        // Import supabase client
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+
+        console.log('Creating vehicle via RPC:', req.body.vehicle_id);
+        const { data, error } = await supabase
+            .rpc('create_vehicle', { vehicle_data: req.body });
+
+        if (error) {
+            // Check for duplicate key error
+            if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+                if (error.message.includes('vehicles_vehicle_id_key')) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Vehicle ID "${req.body.vehicle_id}" already exists. Please use a different Vehicle ID.`
+                    });
+                }
+                if (error.message.includes('vehicles_registration_number_key')) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Registration Number "${req.body.registration_number}" already exists. Please use a different Registration Number.`
+                    });
+                }
+            }
+            throw error;
+        }
+        res.status(201).json({ success: true, data });
     } catch (error) {
         handleError(error, res, 'Failed to add vehicle');
     }
 });
+
 
 /**
  * @route GET /api/transport/student/:studentId

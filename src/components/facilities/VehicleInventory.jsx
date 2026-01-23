@@ -44,10 +44,10 @@ export function VehicleInventory() {
     };
 
     const filteredVehicles = vehicles.filter(v => {
-        const matchesSearch = v.registration_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            v.vehicle_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            v.make_model?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = filterType === 'all' || v.vehicle_type.toLowerCase() === filterType.toLowerCase();
+        const matchesSearch = (v.registration_number?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (v.vehicle_id?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (v.make_model?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+        const matchesFilter = filterType === 'all' || v.vehicle_type?.toLowerCase() === filterType.toLowerCase();
         return matchesSearch && matchesFilter;
     });
 

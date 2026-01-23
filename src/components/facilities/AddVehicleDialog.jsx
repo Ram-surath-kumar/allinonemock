@@ -52,13 +52,23 @@ export function AddVehicleDialog({ open, onOpenChange, onSaved }) {
             };
 
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            console.log('🚗 Sending vehicle data to:', `${baseUrl}/transport/vehicles`);
+            console.log('📦 Payload:', cleanedData);
+
             const response = await fetch(`${baseUrl}/transport/vehicles`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(cleanedData)
             });
+
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
+
             const result = await response.json();
-            if (result.success) {
+            console.log('📄 Response body:', result);
+
+            // Check both HTTP status and success field
+            if (response.ok && result.success) {
                 toast.success("Vehicle added successfully");
                 onSaved();
                 onOpenChange(false);
@@ -83,11 +93,12 @@ export function AddVehicleDialog({ open, onOpenChange, onSaved }) {
                     status: 'Active'
                 });
             } else {
-                toast.error(result.message || "Failed to add vehicle");
+                console.error('❌ Vehicle creation failed:', result);
+                toast.error(result.message || result.error || "Failed to add vehicle");
             }
         } catch (error) {
-            console.error(error);
-            toast.error("An error occurred");
+            console.error('💥 Exception during vehicle creation:', error);
+            toast.error("An error occurred: " + error.message);
         } finally {
             setLoading(false);
         }
