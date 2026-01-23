@@ -20,8 +20,7 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
 
-  // Debug logging
-  console.log("App Render:", { currentUser, loading, path: window.location.pathname });
+  // Debug logging removed to prevent console spam
 
   // Optional: Redirect logic if needed at App level, but usually handled in protected routes or Index.jsx
   // if (!currentUser && !loading && window.location.pathname !== '/login') {

@@ -157,7 +157,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
 
         const totalStudents =
           typeof dashboardStats.totalStudents === "number"
-            ? dashboardStats.totalStudents
+          ? dashboardStats.totalStudents
             : Array.isArray(students)
               ? students.length
               : 0;
@@ -170,8 +170,8 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
 
         const feeCollectionPercentage =
           typeof dashboardStats.feeCollectionPercentage === "number"
-            ? dashboardStats.feeCollectionPercentage
-            : 0;
+          ? dashboardStats.feeCollectionPercentage
+          : 0;
 
         const feeCollection =
           typeof dashboardStats.feeCollection === "number" ? dashboardStats.feeCollection : 0;

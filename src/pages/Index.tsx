@@ -173,42 +173,45 @@ function AppContent() {
       }
     };
     initializeUser();
-  }, [orgName, userId, currentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgName, userId, currentUser?.organization?.org_name, currentUser?.user_id]);
 
-  // Update URL when user changes
-  // Update URL when user changes
   // Update URL when user changes
   useEffect(() => {
-    if (currentUser?.organization && currentUser.user_id) {
-      const currentTab = tab || pathToTab[location.pathname] || "dashboard";
-      const newPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
+    if (!currentUser?.organization || !currentUser.user_id) return;
 
-      // If the URL already specifies a user (orgName & userId exist),
-      // we assume the user intends to be there (potentially switching users).
-      // We only auto-redirect if I am logged in but the URL is generic (e.g. '/')
-      // OR if the mismatched URL is NOT a valid user path loop.
+    const currentTab = tab || pathToTab[location.pathname] || "dashboard";
+    const expectedPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
 
-      const isUrlSwitchingUser =
-        orgName &&
-        userId &&
-        (orgName !== currentUser.organization.org_name ||
-          parseInt(userId, 10) !== currentUser.user_id);
+    // If the URL already specifies a user (orgName & userId exist),
+    // we assume the user intends to be there (potentially switching users).
+    const isUrlSwitchingUser =
+      orgName &&
+      userId &&
+      (orgName !== currentUser.organization.org_name ||
+        parseInt(userId, 10) !== currentUser.user_id);
 
-      // If we are switching user via URL, DO NOT redirect back to old user.
-      if (isUrlSwitchingUser) {
-        return;
-      }
-
-      // Only update if URL is different and we are simply fixing the URL
-      // for the CURRENT user (e.g. they landed on '/')
-      if (location.pathname !== newPath) {
-        navigate(newPath, { replace: true });
-      }
+    // If we are switching user via URL, DO NOT redirect back to old user.
+    if (isUrlSwitchingUser) {
+      return;
     }
+
+    // Only navigate if:
+    // 1. Current path doesn't match expected path
+    // 2. Current path is not already a valid path for this user (prevents loops)
+    const isOnUserPath = location.pathname.startsWith(
+      `/${currentUser.organization.org_name}/${currentUser.user_id}/`
+    );
+    const pathMatches = location.pathname === expectedPath;
+
+    if (!pathMatches && !isOnUserPath) {
+      navigate(expectedPath, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentUser?.organization?.org_name,
     currentUser?.user_id,
-    location.pathname,
+    tab,
     orgName,
     userId,
   ]);

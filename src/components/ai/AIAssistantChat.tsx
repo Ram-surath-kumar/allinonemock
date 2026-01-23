@@ -192,9 +192,9 @@ export function AIAssistantChat({ onNavigate }) {
       if (response.data && response.data.length > 0) {
         setMessages(
           response.data.map((msg) => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
             timestamp: new Date(msg.timestamp), // Ensure timestamp is a Date object
           }))
         );
@@ -264,10 +264,10 @@ export function AIAssistantChat({ onNavigate }) {
         const dateStr = action.date || format(new Date(), "yyyy-MM-dd");
         const response = await api.markAttendance([
           {
-            student_id: action.student_id,
-            date: dateStr,
-            status: action.status,
-            marked_by: currentUser?.id || null,
+          student_id: action.student_id,
+          date: dateStr,
+          status: action.status,
+          marked_by: currentUser?.id || null,
           },
         ]);
 
@@ -419,7 +419,7 @@ export function AIAssistantChat({ onNavigate }) {
         const message =
           deletedCount > 0
             ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? "s" : ""}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ""}`
-            : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
+          : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
 
         addMessage("assistant", message);
 
@@ -813,10 +813,10 @@ export function AIAssistantChat({ onNavigate }) {
       {isOpen && (
         <div
           className={cn(
-            "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
-            "flex flex-col overflow-hidden transition-all duration-300",
-            isMinimized ? "h-14" : "h-[600px]"
-          )}
+          "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
+          "flex flex-col overflow-hidden transition-all duration-300",
+          isMinimized ? "h-14" : "h-[600px]"
+        )}
           style={{
             zIndex: 99999,
             pointerEvents: "auto",
@@ -871,10 +871,10 @@ export function AIAssistantChat({ onNavigate }) {
                     >
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                           message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
                         )}
                       >
                         {message.content}
@@ -899,13 +899,13 @@ export function AIAssistantChat({ onNavigate }) {
               {attachments.length > 0 && (
                 <div className="px-4 py-2 border-t border-border bg-muted/20">
                   <div className="flex gap-1.5 flex-wrap">
-                    {attachments.map((file, index) => (
+                  {attachments.map((file, index) => (
                       <div key={index} className="group relative">
                         {file.type.startsWith("image/") ? (
                           <div className="relative h-10 w-10 rounded-[6px] overflow-hidden bg-muted border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow aspect-square">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={file.name}
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
                               className="h-full w-full object-cover aspect-square"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -925,17 +925,17 @@ export function AIAssistantChat({ onNavigate }) {
                             >
                               <X className="h-2.5 w-2.5" />
                             </button>
-                          </div>
-                        ) : (
+                        </div>
+                      ) : (
                           <div className="relative h-10 w-10 rounded-[6px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow flex items-center justify-center aspect-square">
                             <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            <button
-                              onClick={() => removeAttachment(index)}
+                      <button
+                        onClick={() => removeAttachment(index)}
                               className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
                               title={t("aiAssistant.removeAttachment")}
-                            >
+                      >
                               <X className="h-2.5 w-2.5" />
-                            </button>
+                      </button>
                           </div>
                         )}
                         {/* Hover Tooltip with Details */}
@@ -950,8 +950,8 @@ export function AIAssistantChat({ onNavigate }) {
                             <div className="h-1.5 w-1.5 bg-popover border-r border-b border-border rotate-45"></div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                    </div>
+                  ))}
                   </div>
                 </div>
               )}
@@ -1130,35 +1130,35 @@ export function AIAssistantChat({ onNavigate }) {
 
       {/* Camera Modal */}
       {isCameraOpen && (
-        <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
-          <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
+          <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+            <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
 
-            <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
-              >
-                <X className="h-6 w-6" />
-              </button>
+              <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
+                >
+                  <X className="h-6 w-6" />
+                </button>
 
-              <button
-                type="button"
-                onClick={capturePhoto}
-                className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
-              >
-                <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
-              </button>
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
+                >
+                  <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
       )}
     </>,
     document.body

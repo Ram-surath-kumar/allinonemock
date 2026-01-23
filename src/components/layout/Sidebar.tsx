@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/services/api";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface NavItem {
@@ -170,71 +170,76 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     }
   };
 
-  // Create navItems inside component to use i18n
-  const navItems: NavItem[] = [
-    { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/" },
-    {
-      icon: Users,
-      label: t("sidebar.userManagement"),
-      href: "/users",
-      roles: ["admin", "vice_head"],
-    },
-    {
-      icon: GraduationCap,
-      label: t("sidebar.students"),
-      href: "/students",
-      permission: "view_students",
-    },
-    {
-      icon: Calendar,
-      label: t("sidebar.attendance"),
-      href: "/attendance",
-      permission: "manage_attendance",
-    },
-    {
-      icon: BookOpen,
-      label: t("sidebar.academicGov"),
-      href: "/governance/academic",
-      permission: "view_grades",
-    },
-    {
-      icon: FileText,
-      label: t("sidebar.misReports"),
-      href: "/governance/mis",
-      roles: ["admin", "vice_head"],
-    },
-    { icon: CreditCard, label: t("sidebar.finance"), href: "/finance", permission: "view_finance" },
-    {
-      icon: Building2,
-      label: t("sidebar.facilities"),
-      href: "/facilities",
-      permission: "manage_facilities",
-    },
-    { icon: BedDouble, label: t("sidebar.hostel"), href: "/hostel" },
-    { icon: Library, label: t("sidebar.library"), href: "/library" },
-    { icon: Bus, label: t("sidebar.transportation"), href: "/transport" },
-    {
-      icon: FileText,
-      label: t("sidebar.examinations"),
-      href: "/exam",
-      roles: ["admin", "vice_head"],
-    },
-    { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
-    { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
-  ];
+  // Create navItems inside component to use i18n - memoized to prevent recreation on every render
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/" },
+      {
+        icon: Users,
+        label: t("sidebar.userManagement"),
+        href: "/users",
+        roles: ["admin", "vice_head"],
+      },
+      {
+        icon: GraduationCap,
+        label: t("sidebar.students"),
+        href: "/students",
+        permission: "view_students",
+      },
+      {
+        icon: Calendar,
+        label: t("sidebar.attendance"),
+        href: "/attendance",
+        permission: "manage_attendance",
+      },
+      {
+        icon: BookOpen,
+        label: t("sidebar.academicGov"),
+        href: "/governance/academic",
+        permission: "view_grades",
+      },
+      {
+        icon: FileText,
+        label: t("sidebar.misReports"),
+        href: "/governance/mis",
+        roles: ["admin", "vice_head"],
+      },
+      {
+        icon: CreditCard,
+        label: t("sidebar.finance"),
+        href: "/finance",
+        permission: "view_finance",
+      },
+      {
+        icon: Building2,
+        label: t("sidebar.facilities"),
+        href: "/facilities",
+        permission: "manage_facilities",
+      },
+      { icon: BedDouble, label: t("sidebar.hostel"), href: "/hostel" },
+      { icon: Library, label: t("sidebar.library"), href: "/library" },
+      { icon: Bus, label: t("sidebar.transportation"), href: "/transport" },
+      {
+        icon: FileText,
+        label: t("sidebar.examinations"),
+        href: "/exam",
+        roles: ["admin", "vice_head"],
+      },
+      { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
+      { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
+    ],
+    [t]
+  );
 
-  const filteredNavItems = navItems.filter((item) => {
-    console.log("Sidebar Debug:", {
-      itemLabel: item.label,
-      permission: item.permission,
-      hasPermission: item.permission ? hasPermission(item.permission) : "N/A",
-      userRole: currentUser?.role,
-      userPermissions: currentUser?.permissions,
-    });
-    if (item.permission && !hasPermission(item.permission)) return false;
-    if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
-    return true;
-  });
+  const filteredNavItems = useMemo(
+    () =>
+      navItems.filter((item) => {
+        if (item.permission && !hasPermission(item.permission)) return false;
+        if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
+        return true;
+      }),
+    [navItems, currentUser?.role, currentUser?.permissions]
+  );
 
   const handleUserSwitch = async (user: User) => {
     if (!user.organization || !user.user_id) {

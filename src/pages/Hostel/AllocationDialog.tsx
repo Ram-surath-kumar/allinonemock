@@ -47,6 +47,7 @@ export function AllocationDialog({
     if (open) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const loadData = async () => {

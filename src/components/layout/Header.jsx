@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,40 +32,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!currentUser) return;
-
-    if (open) {
-      fetchNotifications();
-    } else {
-      fetchNotifications();
-    }
-
-    let refreshTimeout = null;
-    const handleRefresh = () => {
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
-      refreshTimeout = setTimeout(() => {
-        if (open) {
-          fetchNotifications();
-        }
-      }, 500);
-    };
-
-    window.addEventListener("notification-sent", handleRefresh);
-    window.addEventListener("notification-read", handleRefresh);
-
-    return () => {
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
-      window.removeEventListener("notification-sent", handleRefresh);
-      window.removeEventListener("notification-read", handleRefresh);
-    };
-  }, [currentUser, open]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!currentUser) return;
 
     try {
@@ -94,7 +61,34 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    fetchNotifications();
+
+    let refreshTimeout = null;
+    const handleRefresh = () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(() => {
+        fetchNotifications();
+      }, 500);
+    };
+
+    window.addEventListener("notification-sent", handleRefresh);
+    window.addEventListener("notification-read", handleRefresh);
+
+    return () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      window.removeEventListener("notification-sent", handleRefresh);
+      window.removeEventListener("notification-read", handleRefresh);
+    };
+  }, [currentUser?.id, fetchNotifications]);
 
   const markAsRead = async (notificationId) => {
     try {

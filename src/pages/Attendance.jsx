@@ -178,13 +178,17 @@ export function Attendance() {
 
         // Set students with department names mapped
         const studentsData = response.data.students;
-        if (Array.isArray(studentsData)) {
+        if (Array.isArray(studentsData) && studentsData.length > 0) {
           const mappedStudents = studentsData.map((student) => ({
             ...student,
             department: student.department_id ? deptMap.get(student.department_id) || null : null,
+            // Ensure department_id is preserved for filtering
+            department_id: student.department_id || null,
           }));
+          console.log("Attendance: Loaded students", mappedStudents.length, "students");
           setStudents(mappedStudents);
         } else {
+          console.log("Attendance: No students data or empty array", studentsData);
           setStudents([]);
         }
 
@@ -232,7 +236,16 @@ export function Attendance() {
     if (currentUser) {
       loadData();
     }
-  }, [currentUser, loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, currentUser?.role]);
+  
+  // Reload data when category or selectedDate changes
+  useEffect(() => {
+    if (currentUser) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, selectedDate]);
 
   useEffect(() => {
     if (selectedDate && students.length > 0) {
@@ -589,8 +602,15 @@ export function Attendance() {
           {filteredStudents.length === 0 ? (
             <div className="text-center py-8 rounded-xl border border-border bg-card">
               <p className="text-muted-foreground">
-                No {category === "staff" ? "staff members" : "students"} found
+                {students.length === 0
+                  ? `No ${category === "staff" ? "staff members" : "students"} available`
+                  : `No ${category === "staff" ? "staff members" : "students"} match your filters`}
               </p>
+              {students.length > 0 && filteredStudents.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Try adjusting your search or filter settings
+                </p>
+              )}
             </div>
           ) : (
             <>

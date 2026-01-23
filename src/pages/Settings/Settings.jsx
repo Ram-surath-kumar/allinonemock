@@ -480,6 +480,7 @@ const SystemSettings = ({ currentUser }) => {
 
 export const Settings = () => {
   const { currentUser } = useAuth();
+  const { t } = useI18n();
   const isAdmin = currentUser?.role === "admin";
   const isStudent = currentUser?.role === "student";
 

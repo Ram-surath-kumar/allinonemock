@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,12 +27,9 @@ export default function HostelDashboard() {
   const [editHostelOpen, setEditHostelOpen] = useState(false);
   const [hostelToEdit, setHostelToEdit] = useState<any>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await api.getHostelDashboard();
       if (response.error) {
         throw new Error(response.error);
@@ -43,7 +40,11 @@ export default function HostelDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleDeleteHostel = async () => {
     if (!hostelToDelete) return;

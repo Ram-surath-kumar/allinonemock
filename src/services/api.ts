@@ -450,12 +450,14 @@ class ApiClient {
   async getAttendancePageData(
     userId?: string,
     role?: string,
-    date?: string
+    date?: string,
+    category?: string
   ): Promise<ApiResponse<AttendancePageData>> {
     const params = new URLSearchParams();
     if (userId) params.append("userId", userId);
     if (role) params.append("role", role);
     if (date) params.append("date", date);
+    if (category) params.append("category", category);
     const query = params.toString();
     return this.request<AttendancePageData>(`/attendance/page-data${query ? `?${query}` : ""}`);
   }
