@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from "./api";
 
 export async function fetchDepartments() {
   try {
@@ -6,7 +6,7 @@ export async function fetchDepartments() {
     if (response.error) throw new Error(response.error);
     return response.data || [];
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    console.error("Error fetching departments:", error);
     throw error;
   }
 }
@@ -18,10 +18,10 @@ export async function createDepartment(name, createdBy) {
       created_by: createdBy,
     });
     if (response.error) throw new Error(response.error);
-    if (!response.data) throw new Error('No data returned');
+    if (!response.data) throw new Error("No data returned");
     return response.data;
   } catch (error) {
-    console.error('Error creating department:', error);
+    console.error("Error creating department:", error);
     throw error;
   }
 }
@@ -32,7 +32,7 @@ export async function fetchTeacherDepartments(teacherId) {
     if (response.error) throw new Error(response.error);
     return response.data?.map((d) => d.department_id) || [];
   } catch (error) {
-    console.error('Error fetching teacher departments:', error);
+    console.error("Error fetching teacher departments:", error);
     throw error;
   }
 }
@@ -42,7 +42,7 @@ export async function updateTeacherDepartments(teacherId, departmentIds) {
     const response = await api.updateTeacherDepartments(teacherId, departmentIds);
     if (response.error) throw new Error(response.error);
   } catch (error) {
-    console.error('Error updating teacher departments:', error);
+    console.error("Error updating teacher departments:", error);
     throw error;
   }
 }

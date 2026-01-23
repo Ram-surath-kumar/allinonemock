@@ -11,7 +11,7 @@ export const feeService = {
 
             // 1. Get student admission data & extended profile
             let users;
-            try { users = await db.get('users', q => q.eq('id', studentId)); } catch (e) { throw e; }
+            users = await db.get('users', q => q.eq('id', studentId));
             if (!users || users.length === 0) throw new Error('Student not found');
             const student = users[0];
 
@@ -66,9 +66,9 @@ export const feeService = {
             const structure = structures[0];
 
             // 3. Calculate Amounts
-            let totalAmount = structure.total_amount;
+            const totalAmount = structure.total_amount;
             let discountAmount = 0;
-            let concessionalAmount = 0;
+            const concessionalAmount = 0;
             let appliedScholarshipId = null;
 
             // check for scholarships with Rule Engine
@@ -249,7 +249,7 @@ export const feeService = {
             // 2. Find or Create Hostel Fee Structure
             // Look for a fee structure specifically for this Hostel/Room Type
             // For simplicity, we'll look for a generic "Hostel Fee" structure or one named after the room type
-            let structures = await db.get('fee_structures', q =>
+            const structures = await db.get('fee_structures', q =>
                 q.ilike('name', `%Hostel%`).eq('batch_year', new Date().getFullYear())
             );
 

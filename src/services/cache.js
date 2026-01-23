@@ -46,6 +46,6 @@ export const apiCache = new ApiCache();
 
 // Generate cache key from endpoint and params
 export function getCacheKey(endpoint, params) {
-  const paramStr = params ? JSON.stringify(params) : '';
+  const paramStr = params ? JSON.stringify(params) : "";
   return `${endpoint}:${paramStr}`;
 }

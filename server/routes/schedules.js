@@ -77,7 +77,7 @@ router.put('/:id', (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    let schedules = readData();
+    const schedules = readData();
     const index = schedules.findIndex(s => s.id === id);
 
     if (index === -1) {
@@ -93,7 +93,7 @@ router.put('/:id', (req, res) => {
 // DELETE a schedule
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
-    let schedules = readData();
+    const schedules = readData();
     const filteredSchedules = schedules.filter(s => s.id !== id);
 
     if (schedules.length === filteredSchedules.length) {

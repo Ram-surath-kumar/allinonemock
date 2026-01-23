@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { ROLE_LABELS, PERMISSIONS, ROLE_DEFAULT_PERMISSIONS, ROLE_ALLOWED_PERMISSIONS } from '@/types/erp';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  ROLE_LABELS,
+  PERMISSIONS,
+  ROLE_DEFAULT_PERMISSIONS,
+  ROLE_ALLOWED_PERMISSIONS,
+} from "@/types/erp";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +20,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -31,45 +36,61 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { toast } from 'sonner';
-import { fetchDepartments } from '@/services/departments';
-import { api } from '@/services/api';
-import { extractStudentDataFromFile } from '@/services/gemini';
-import { Sparkles, Upload, X, Loader2, CheckCircle2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import { fetchDepartments } from "@/services/departments";
+import { api } from "@/services/api";
+import { extractStudentDataFromFile } from "@/services/gemini";
+import { Sparkles, Upload, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-
-const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().optional(), // Email is optional for all roles - will be auto-generated
-  college_email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
-  role: z.string().min(1, 'Please select a role'), // Accept any string to support custom roles
-  department_id: z.string().optional(),
-  department_ids: z.array(z.string()).optional(),
-  permissions: z.array(z.string()),
-  loopid: z.string().optional(),
-}).refine((data) => {
-  if (data.role === 'student') {
-    return !!data.department_id && data.department_id.length > 0;
-  }
-  return true;
-}, {
-  message: 'Please select a department for the student',
-  path: ['department_id'],
-}).refine((data) => {
-  if (data.role === 'teacher') {
-    return data.department_ids && data.department_ids.length > 0;
-  }
-  return true;
-}, {
-  message: 'Please select at least one department for the teacher',
-  path: ['department_ids'],
-});
-
-
-
+const formSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().optional(), // Email is optional for all roles - will be auto-generated
+    college_email: z
+      .string()
+      .email("Please enter a valid email address")
+      .optional()
+      .or(z.literal("")),
+    role: z.string().min(1, "Please select a role"), // Accept any string to support custom roles
+    department_id: z.string().optional(),
+    department_ids: z.array(z.string()).optional(),
+    permissions: z.array(z.string()),
+    loopid: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.role === "student") {
+        return !!data.department_id && data.department_id.length > 0;
+      }
+      return true;
+    },
+    {
+      message: "Please select a department for the student",
+      path: ["department_id"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role === "teacher") {
+        return data.department_ids && data.department_ids.length > 0;
+      }
+      return true;
+    },
+    {
+      message: "Please select at least one department for the teacher",
+      path: ["department_ids"],
+    }
+  );
 
 export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   const { currentUser, canManageRole } = useAuth();
@@ -77,37 +98,42 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [customRoles, setCustomRoles] = useState([]);
   const [loadingCustomRoles, setLoadingCustomRoles] = useState(false);
-  const [activeTab, setActiveTab] = useState('manual');
+  const [activeTab, setActiveTab] = useState("manual");
   const [selectedFile, setSelectedFile] = useState(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedStudents, setExtractedStudents] = useState([]);
   const [addingStudents, setAddingStudents] = useState(false);
-  const [userPrompt, setUserPrompt] = useState('');
+  const [userPrompt, setUserPrompt] = useState("");
 
-  const availableRoles = (Object.keys(ROLE_LABELS)).filter(r => canManageRole(r));
-  
+  const availableRoles = Object.keys(ROLE_LABELS).filter((r) => canManageRole(r));
+
   // Combine default roles with custom roles
   const allAvailableRoles = [
-    ...availableRoles.map(r => ({ id: r, name: ROLE_LABELS[r], isCustom: false })),
-    ...customRoles.map(r => ({ id: r.id, name: r.name, isCustom: true, permissions: r.permissions }))
+    ...availableRoles.map((r) => ({ id: r, name: ROLE_LABELS[r], isCustom: false })),
+    ...customRoles.map((r) => ({
+      id: r.id,
+      name: r.name,
+      isCustom: true,
+      permissions: r.permissions,
+    })),
   ];
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      college_email: '',
+      name: "",
+      email: "",
+      college_email: "",
       role: undefined,
-      department_id: '',
+      department_id: "",
       department_ids: [],
       permissions: [],
-      loopid: '',
+      loopid: "",
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
-  const watchedRole = form.watch('role');
+  const watchedRole = form.watch("role");
 
   useEffect(() => {
     if (open) {
@@ -116,8 +142,8 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       form.reset();
       setSelectedFile(null);
       setExtractedStudents([]);
-      setUserPrompt('');
-      setActiveTab('manual');
+      setUserPrompt("");
+      setActiveTab("manual");
     }
   }, [open, form]);
 
@@ -127,8 +153,8 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       const depts = await fetchDepartments();
       setDepartments(depts);
     } catch (error) {
-      console.error('Error loading departments:', error);
-      toast.error('Failed to load departments');
+      console.error("Error loading departments:", error);
+      toast.error("Failed to load departments");
     } finally {
       setLoadingDepartments(false);
     }
@@ -139,12 +165,12 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       setLoadingCustomRoles(true);
       const response = await api.getCustomRoles();
       if (response.error) throw new Error(response.error);
-      
+
       if (response.data && Array.isArray(response.data)) {
         setCustomRoles(response.data);
       }
     } catch (error) {
-      console.error('Error loading custom roles:', error);
+      console.error("Error loading custom roles:", error);
       // Don't show error toast - custom roles are optional
     } finally {
       setLoadingCustomRoles(false);
@@ -154,49 +180,49 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   useEffect(() => {
     if (watchedRole) {
       // Check if it's a custom role
-      const customRole = customRoles.find(r => r.id === watchedRole);
+      const customRole = customRoles.find((r) => r.id === watchedRole);
       if (customRole) {
         // Use custom role permissions
-        form.setValue('permissions', customRole.permissions);
+        form.setValue("permissions", customRole.permissions);
       } else {
         // Use default role permissions
         const defaultPermissions = ROLE_DEFAULT_PERMISSIONS[watchedRole] || [];
-        form.setValue('permissions', defaultPermissions);
+        form.setValue("permissions", defaultPermissions);
       }
-      form.setValue('department_id', '');
-      form.setValue('department_ids', []);
+      form.setValue("department_id", "");
+      form.setValue("department_ids", []);
     }
   }, [watchedRole, form, customRoles]);
 
   const togglePermission = (permissionId, currentPermissions) => {
     // Check if it's a custom role
-    const customRole = customRoles.find(r => r.id === watchedRole);
+    const customRole = customRoles.find((r) => r.id === watchedRole);
     if (customRole) {
       // For custom roles, allow all permissions
       const newPermissions = currentPermissions.includes(permissionId)
-        ? currentPermissions.filter(p => p !== permissionId)
+        ? currentPermissions.filter((p) => p !== permissionId)
         : [...currentPermissions, permissionId];
-      form.setValue('permissions', newPermissions);
+      form.setValue("permissions", newPermissions);
     } else {
       // For default roles, only allow toggling permissions that are allowed for the role
       const allowedPerms = ROLE_ALLOWED_PERMISSIONS[watchedRole] || [];
       if (!allowedPerms.includes(permissionId)) {
         return; // Don't allow toggling disallowed permissions
       }
-      
-      const filtered = currentPermissions.filter(p => allowedPerms.includes(p)); // Remove any disallowed permissions
+
+      const filtered = currentPermissions.filter((p) => allowedPerms.includes(p)); // Remove any disallowed permissions
       const newPermissions = filtered.includes(permissionId)
-        ? filtered.filter(p => p !== permissionId)
+        ? filtered.filter((p) => p !== permissionId)
         : [...filtered, permissionId];
-      form.setValue('permissions', newPermissions);
+      form.setValue("permissions", newPermissions);
     }
   };
 
   const toggleDepartment = (deptId, currentDeptIds) => {
     const newDeptIds = currentDeptIds.includes(deptId)
-      ? currentDeptIds.filter(id => id !== deptId)
+      ? currentDeptIds.filter((id) => id !== deptId)
       : [...currentDeptIds, deptId];
-    form.setValue('department_ids', newDeptIds);
+    form.setValue("department_ids", newDeptIds);
   };
 
   const onSubmit = (values) => {
@@ -208,13 +234,13 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       role: values.role,
       permissions: values.permissions,
       loopid: values.loopid,
-      ...(values.role === 'student' ? { department_id: values.department_id } : {}),
-      ...(values.role === 'teacher' ? { department_ids: values.department_ids || [] } : {}),
+      ...(values.role === "student" ? { department_id: values.department_id } : {}),
+      ...(values.role === "teacher" ? { department_ids: values.department_ids || [] } : {}),
     });
 
     form.reset();
     onOpenChange(false);
-    toast.success('User added successfully');
+    toast.success("User added successfully");
   };
 
   const handleFileSelect = (event) => {
@@ -227,28 +253,31 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
 
   const handleExtractData = async () => {
     if (!selectedFile) {
-      toast.error('Please select a file first');
+      toast.error("Please select a file first");
       return;
     }
 
     try {
       setExtracting(true);
       const extracted = await extractStudentDataFromFile(selectedFile, userPrompt);
-      
+
       // Parse user prompt to extract department name if mentioned
-      let promptDepartment= null;
+      let promptDepartment = null;
       if (userPrompt) {
         // Look for patterns like "to CPEI department", "to CPEI", "CPEI department", etc.
-        const deptMatch = userPrompt.match(/(?:to|in|department|dept)[\s:]*([A-Za-z0-9\s]+?)(?:\s+department|\s+dept|$|,|\.)/i);
+        const deptMatch = userPrompt.match(
+          /(?:to|in|department|dept)[\s:]*([A-Za-z0-9\s]+?)(?:\s+department|\s+dept|$|,|\.)/i
+        );
         if (deptMatch) {
           promptDepartment = deptMatch[1].trim();
         } else {
           // Try to find department name directly (e.g., "CPEI", "Computer Science")
           const words = userPrompt.split(/\s+/);
           for (const word of words) {
-            const dept = departments.find(d => 
-              d.name.toLowerCase().includes(word.toLowerCase()) ||
-              word.toLowerCase().includes(d.name.toLowerCase())
+            const dept = departments.find(
+              (d) =>
+                d.name.toLowerCase().includes(word.toLowerCase()) ||
+                word.toLowerCase().includes(d.name.toLowerCase())
             );
             if (dept) {
               promptDepartment = dept.name;
@@ -257,19 +286,20 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
           }
         }
       }
-      
+
       // Map department names to department IDs
       const studentsWithDeptIds = await Promise.all(
         extracted.map(async (student) => {
           let department_id = student.department_id;
           let department_name = student.department;
-          
+
           // If user prompt specifies a department, use that
           if (promptDepartment) {
             const dept = departments.find(
-              d => d.name.toLowerCase() === promptDepartment.toLowerCase() ||
-                   d.name.toLowerCase().includes(promptDepartment.toLowerCase()) ||
-                   promptDepartment.toLowerCase().includes(d.name.toLowerCase())
+              (d) =>
+                d.name.toLowerCase() === promptDepartment.toLowerCase() ||
+                d.name.toLowerCase().includes(promptDepartment.toLowerCase()) ||
+                promptDepartment.toLowerCase().includes(d.name.toLowerCase())
             );
             if (dept) {
               department_id = dept.id;
@@ -279,12 +309,13 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
               department_name = promptDepartment;
             }
           }
-          
+
           // If department name is provided but not department_id, try to find it
           if (department_name && !department_id) {
             const dept = departments.find(
-              d => d.name.toLowerCase().includes(department_name.toLowerCase()) ||
-                   department_name.toLowerCase().includes(d.name.toLowerCase())
+              (d) =>
+                d.name.toLowerCase().includes(department_name.toLowerCase()) ||
+                department_name.toLowerCase().includes(d.name.toLowerCase())
             );
             department_id = dept?.id;
           }
@@ -301,19 +332,25 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       setExtractedStudents(studentsWithDeptIds);
       toast.success(`Extracted ${studentsWithDeptIds.length} student(s) from file`);
     } catch (error) {
-      console.error('Error extracting data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to extract student data from file';
-      
+      console.error("Error extracting data:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to extract student data from file";
+
       // Provide more helpful error messages
       let userFriendlyMessage = errorMessage;
-      if (errorMessage.includes('No students found') || errorMessage.includes('No valid student data')) {
-        userFriendlyMessage = 'No student data found in the file. Please ensure the file contains student names and IDs. Try a different file or check the file format.';
-      } else if (errorMessage.includes('parse') || errorMessage.includes('JSON')) {
-        userFriendlyMessage = 'AI returned data in unexpected format. Please try again or use a different file.';
-      } else if (errorMessage.includes('No response')) {
-        userFriendlyMessage = 'AI service is not responding. Please try again in a moment.';
+      if (
+        errorMessage.includes("No students found") ||
+        errorMessage.includes("No valid student data")
+      ) {
+        userFriendlyMessage =
+          "No student data found in the file. Please ensure the file contains student names and IDs. Try a different file or check the file format.";
+      } else if (errorMessage.includes("parse") || errorMessage.includes("JSON")) {
+        userFriendlyMessage =
+          "AI returned data in unexpected format. Please try again or use a different file.";
+      } else if (errorMessage.includes("No response")) {
+        userFriendlyMessage = "AI service is not responding. Please try again in a moment.";
       }
-      
+
       toast.error(userFriendlyMessage, { duration: 5000 });
     } finally {
       setExtracting(false);
@@ -321,38 +358,38 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   };
 
   const handleAddExtractedStudents = async () => {
-    const selected = extractedStudents.filter(s => s.selected);
+    const selected = extractedStudents.filter((s) => s.selected);
     if (selected.length === 0) {
-      toast.error('Please select at least one student to add');
+      toast.error("Please select at least one student to add");
       return;
     }
 
     try {
       setAddingStudents(true);
-      
+
       if (onAddMultiple) {
         // Add all students at once using bulk insert
         // Note: loopid will be auto-generated+ user_id when user is created
-        const usersToAdd = selected.map(student => ({
+        const usersToAdd = selected.map((student) => ({
           name: student.name,
-          role: 'student',
+          role: "student",
           permissions: [],
           department_id: student.department_id,
         }));
-        
+
         await onAddMultiple(usersToAdd);
         // Clear extracted students after successful add
         setExtractedStudents([]);
         setSelectedFile(null);
-        setUserPrompt('');
+        setUserPrompt("");
       } else {
         // Add one by one
         // Note: loopid will be auto-generated+ user_id when user is created
         for (const student of selected) {
-          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between adds
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay between adds
           onAdd({
             name: student.name,
-            role: 'student',
+            role: "student",
             permissions: [],
             department_id: student.department_id,
           });
@@ -363,11 +400,11 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
       // Reset
       setSelectedFile(null);
       setExtractedStudents([]);
-      setActiveTab('manual');
+      setActiveTab("manual");
       onOpenChange(false);
     } catch (error) {
-      console.error('Error adding students:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add students';
+      console.error("Error adding students:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to add students";
       toast.error(errorMessage);
     } finally {
       setAddingStudents(false);
@@ -375,7 +412,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   };
 
   const toggleStudentSelection = (index) => {
-    setExtractedStudents(prev =>
+    setExtractedStudents((prev) =>
       prev.map((student, i) =>
         i === index ? { ...student, selected: !student.selected } : student
       )
@@ -386,26 +423,26 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
   const getAllowedPermissions = (role) => {
     if (!role) return [];
     const allowedPermissionIds = ROLE_ALLOWED_PERMISSIONS[role] || [];
-    return PERMISSIONS.filter(p => allowedPermissionIds.includes(p.id));
+    return PERMISSIONS.filter((p) => allowedPermissionIds.includes(p.id));
   };
 
   const groupedPermissions = (() => {
     const allowedPerms = getAllowedPermissions(watchedRole);
     return allowedPerms.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {});
+      if (!acc[permission.category]) {
+        acc[permission.category] = [];
+      }
+      acc[permission.category].push(permission);
+      return acc;
+    }, {});
   })();
 
-  const categoryLabels= {
-    student: 'Student Data',
-    staff: 'Staff Management',
-    finance: 'Finance',
-    academic: 'Academics',
-    facility: 'Facilities',
+  const categoryLabels = {
+    student: "Student Data",
+    staff: "Staff Management",
+    finance: "Finance",
+    academic: "Academics",
+    facility: "Facilities",
   };
 
   return (
@@ -441,17 +478,22 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                           <Input
                             placeholder="Enter full name"
                             {...field}
-                            className={form.formState.errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
+                            className={
+                              form.formState.errors.name
+                                ? "border-destructive focus-visible:ring-destructive"
+                                : ""
+                            }
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Email will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all users
+                          Email will be auto-generated as {`{org_id}{user_id}@loopverse.in`} for all
+                          users
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="college_email"
@@ -463,7 +505,11 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                             type="email"
                             placeholder="user@college.edu"
                             {...field}
-                            className={form.formState.errors.college_email ? 'border-destructive focus-visible:ring-destructive' : ''}
+                            className={
+                              form.formState.errors.college_email
+                                ? "border-destructive focus-visible:ring-destructive"
+                                : ""
+                            }
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
@@ -482,16 +528,18 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Role *</FormLabel>
-                        <Select 
-                          value={field.value} 
+                        <Select
+                          value={field.value}
                           onValueChange={(value) => {
                             field.onChange(value);
-                            form.setValue('department_id', '');
-                            form.setValue('department_ids', []);
+                            form.setValue("department_id", "");
+                            form.setValue("department_ids", []);
                           }}
                         >
                           <FormControl>
-                            <SelectTrigger className={form.formState.errors.role ? 'border-destructive' : ''}>
+                            <SelectTrigger
+                              className={form.formState.errors.role ? "border-destructive" : ""}
+                            >
                               <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                           </FormControl>
@@ -508,7 +556,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                     )}
                   />
 
-                  {watchedRole === 'student' && (
+                  {watchedRole === "student" && (
                     <>
                       <FormField
                         control={form.control}
@@ -517,10 +565,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                           <FormItem>
                             <FormLabel>Loop ID</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="e.g., 10334343 or g:10334343"
-                                {...field}
-                              />
+                              <Input placeholder="e.g., 10334343 or g:10334343" {...field} />
                             </FormControl>
                             <FormDescription className="text-xs">
                               Email will be auto-generated as loopid@loopverse.in
@@ -535,13 +580,17 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Department *</FormLabel>
-                            <Select 
-                              value={field.value} 
+                            <Select
+                              value={field.value}
                               onValueChange={field.onChange}
                               disabled={loadingDepartments}
                             >
                               <FormControl>
-                                <SelectTrigger className={form.formState.errors.department_id ? 'border-destructive' : ''}>
+                                <SelectTrigger
+                                  className={
+                                    form.formState.errors.department_id ? "border-destructive" : ""
+                                  }
+                                >
                                   <SelectValue placeholder="Select a department" />
                                 </SelectTrigger>
                               </FormControl>
@@ -559,20 +608,28 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                       />
                     </>
                   )}
-                  {watchedRole === 'teacher' && (
+                  {watchedRole === "teacher" && (
                     <FormField
                       control={form.control}
                       name="department_ids"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Departments *</FormLabel>
-                          <div className={`rounded-lg border p-3 min-h-[80px] max-h-[200px] overflow-y-auto ${
-                            form.formState.errors.department_ids ? 'border-destructive' : 'border-border'
-                          }`}>
+                          <div
+                            className={`rounded-lg border p-3 min-h-[80px] max-h-[200px] overflow-y-auto ${
+                              form.formState.errors.department_ids
+                                ? "border-destructive"
+                                : "border-border"
+                            }`}
+                          >
                             {loadingDepartments ? (
-                              <p className="text-sm text-muted-foreground">Loading departments...</p>
+                              <p className="text-sm text-muted-foreground">
+                                Loading departments...
+                              </p>
                             ) : departments.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">No departments available</p>
+                              <p className="text-sm text-muted-foreground">
+                                No departments available
+                              </p>
                             ) : (
                               <div className="space-y-2">
                                 {departments.map((dept) => (
@@ -580,7 +637,9 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                                     <Checkbox
                                       id={`dept-${dept.id}`}
                                       checked={field.value?.includes(dept.id) || false}
-                                      onCheckedChange={() => toggleDepartment(dept.id, field.value || [])}
+                                      onCheckedChange={() =>
+                                        toggleDepartment(dept.id, field.value || [])
+                                      }
                                     />
                                     <Label
                                       htmlFor={`dept-${dept.id}`}
@@ -600,52 +659,58 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                   )}
                 </div>
 
-                {watchedRole && watchedRole !== 'student' && (customRoles.find(r => r.id === watchedRole) || !['student'].includes(watchedRole)) && Object.keys(groupedPermissions).length > 0 && (
-                  <FormField
-                    control={form.control}
-                    name="permissions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Permissions</FormLabel>
-                        <div className="rounded-lg border border-border p-4 space-y-6">
-                          {Object.entries(groupedPermissions).map(([category, permissions]) => (
-                            <div key={category}>
-                              <h4 className="text-sm font-medium text-foreground mb-3">
-                                {categoryLabels[category]}
-                              </h4>
-                              <div className="grid grid-cols-2 gap-3">
-                                {permissions.map((permission) => (
-                                  <div key={permission.id} className="flex items-start gap-3">
-                                    <Checkbox
-                                      id={permission.id}
-                                      checked={field.value?.includes(permission.id) || false}
-                                      onCheckedChange={() => togglePermission(permission.id, field.value || [])}
-                                    />
-                                    <div className="grid gap-0.5">
-                                      <Label
-                                        htmlFor={permission.id}
-                                        className="text-sm font-medium cursor-pointer"
-                                      >
-                                        {permission.name}
-                                      </Label>
-                                      <p className="text-xs text-muted-foreground">
-                                        {permission.description}
-                                      </p>
+                {watchedRole &&
+                  watchedRole !== "student" &&
+                  (customRoles.find((r) => r.id === watchedRole) ||
+                    !["student"].includes(watchedRole)) &&
+                  Object.keys(groupedPermissions).length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="permissions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Permissions</FormLabel>
+                          <div className="rounded-lg border border-border p-4 space-y-6">
+                            {Object.entries(groupedPermissions).map(([category, permissions]) => (
+                              <div key={category}>
+                                <h4 className="text-sm font-medium text-foreground mb-3">
+                                  {categoryLabels[category]}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {permissions.map((permission) => (
+                                    <div key={permission.id} className="flex items-start gap-3">
+                                      <Checkbox
+                                        id={permission.id}
+                                        checked={field.value?.includes(permission.id) || false}
+                                        onCheckedChange={() =>
+                                          togglePermission(permission.id, field.value || [])
+                                        }
+                                      />
+                                      <div className="grid gap-0.5">
+                                        <Label
+                                          htmlFor={permission.id}
+                                          className="text-sm font-medium cursor-pointer"
+                                        >
+                                          {permission.name}
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                          {permission.description}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                        <FormDescription>
-                          Select the permissions for this user role
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                )}
-                {watchedRole === 'student' && (
+                            ))}
+                          </div>
+                          <FormDescription>
+                            Select the permissions for this user role
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                {watchedRole === "student" && (
                   <div className="rounded-lg border border-border bg-muted/50 p-4">
                     <p className="text-sm text-muted-foreground">
                       Students can only view their own data. No additional permissions are required.
@@ -654,10 +719,14 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                 )}
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
-                    form.reset();
-                    onOpenChange(false);
-                  }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      form.reset();
+                      onOpenChange(false);
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit">Add User</Button>
@@ -687,7 +756,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                       onClick={() => {
                         setSelectedFile(null);
                         setExtractedStudents([]);
-                        setUserPrompt('');
+                        setUserPrompt("");
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -700,7 +769,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                   </p>
                 )}
               </div>
-              
+
               {/* User Prompt Input */}
               <div className="space-y-2">
                 <Label htmlFor="user-prompt">Instructions (Optional)</Label>
@@ -712,17 +781,14 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Provide instructions for the AI. For example: "Add all students to CPEI department" or "Assign students to Computer Science"
+                  Provide instructions for the AI. For example: "Add all students to CPEI
+                  department" or "Assign students to Computer Science"
                 </p>
               </div>
 
               {/* Extract Button */}
               {selectedFile && (
-                <Button
-                  onClick={handleExtractData}
-                  disabled={extracting}
-                  className="w-full"
-                >
+                <Button onClick={handleExtractData} disabled={extracting} className="w-full">
                   {extracting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -741,15 +807,20 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
               {extractedStudents.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>Extracted Students ({extractedStudents.filter(s => s.selected).length} selected)</Label>
+                    <Label>
+                      Extracted Students ({extractedStudents.filter((s) => s.selected).length}{" "}
+                      selected)
+                    </Label>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setExtractedStudents(prev => prev.map(s => ({ ...s, selected: !s.selected })));
+                        setExtractedStudents((prev) =>
+                          prev.map((s) => ({ ...s, selected: !s.selected }))
+                        );
                       }}
                     >
-                      {extractedStudents.every(s => s.selected) ? 'Deselect All' : 'Select All'}
+                      {extractedStudents.every((s) => s.selected) ? "Deselect All" : "Select All"}
                     </Button>
                   </div>
                   <div className="rounded-lg border border-border overflow-hidden max-h-[400px] overflow-y-auto">
@@ -758,9 +829,11 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                         <TableRow>
                           <TableHead className="w-12">
                             <Checkbox
-                              checked={extractedStudents.every(s => s.selected)}
+                              checked={extractedStudents.every((s) => s.selected)}
                               onCheckedChange={(checked) => {
-                                setExtractedStudents(prev => prev.map(s => ({ ...s, selected: !!checked })));
+                                setExtractedStudents((prev) =>
+                                  prev.map((s) => ({ ...s, selected: !!checked }))
+                                );
                               }}
                             />
                           </TableHead>
@@ -779,7 +852,10 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                             </TableCell>
                             <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell>
-                              {student.department || (student.department_id && departments.find(d => d.id === student.department_id)?.name) || '-'}
+                              {student.department ||
+                                (student.department_id &&
+                                  departments.find((d) => d.id === student.department_id)?.name) ||
+                                "-"}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -789,11 +865,13 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
 
                   <div className="flex items-center justify-between pt-2">
                     <p className="text-xs text-muted-foreground">
-                      {extractedStudents.filter(s => s.selected).length} student(s) will be added
+                      {extractedStudents.filter((s) => s.selected).length} student(s) will be added
                     </p>
                     <Button
                       onClick={handleAddExtractedStudents}
-                      disabled={addingStudents || extractedStudents.filter(s => s.selected).length === 0}
+                      disabled={
+                        addingStudents || extractedStudents.filter((s) => s.selected).length === 0
+                      }
                     >
                       {addingStudents ? (
                         <>

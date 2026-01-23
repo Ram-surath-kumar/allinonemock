@@ -1,28 +1,25 @@
-import { useState, useEffect } from 'react';
-import { User } from '@/types/erp';
-import { useAuth } from '@/contexts/AuthContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/services/api';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { User } from "@/types/erp";
+import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/services/api";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { toast } from "sonner";
 
-export function StudentAttendanceCalendar({
-  open,
-  onOpenChange,
-  student,
-}) {
+export function StudentAttendanceCalendar({ open, onOpenChange, student }) {
   const { currentUser, hasPermission } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState(new Map());
   const [loading, setLoading] = useState(false);
 
-  const canViewAttendance = hasPermission('view_students') ||
-    currentUser?.role === 'admin' ||
-    currentUser?.role === 'vice_head' ||
-    currentUser?.role === 'teacher';
+  const canViewAttendance =
+    hasPermission("view_students") ||
+    currentUser?.role === "admin" ||
+    currentUser?.role === "vice_head" ||
+    currentUser?.role === "teacher";
 
   useEffect(() => {
     if (open && student && canViewAttendance) {
@@ -38,13 +35,13 @@ export function StudentAttendanceCalendar({
       const start = startOfMonth(selectedMonth);
       const end = endOfMonth(selectedMonth);
 
-      const startStr = format(start, 'yyyy-MM-dd');
-      const endStr = format(end, 'yyyy-MM-dd');
+      const startStr = format(start, "yyyy-MM-dd");
+      const endStr = format(end, "yyyy-MM-dd");
 
       const response = await api.getAttendance({
         student_id: student.id,
         start_date: startStr,
-        end_date: endStr
+        end_date: endStr,
       });
 
       if (response.error) throw new Error(response.error);
@@ -59,45 +56,45 @@ export function StudentAttendanceCalendar({
       });
       setAttendanceRecords(recordsMap);
     } catch (error) {
-      console.error('Error loading attendance:', error);
-      toast.error('Failed to load attendance data');
+      console.error("Error loading attendance:", error);
+      toast.error("Failed to load attendance data");
     } finally {
       setLoading(false);
     }
   };
 
   const getAttendanceForDate = (date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
+    const dateStr = format(date, "yyyy-MM-dd");
     return attendanceRecords.get(dateStr) || null;
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'present':
-        return 'bg-green-500 hover:bg-green-600';
-      case 'absent':
-        return 'bg-red-500 hover:bg-red-600';
-      case 'late':
-        return 'bg-yellow-500 hover:bg-yellow-600';
-      case 'excused':
-        return 'bg-blue-500 hover:bg-blue-600';
+      case "present":
+        return "bg-green-500 hover:bg-green-600";
+      case "absent":
+        return "bg-red-500 hover:bg-red-600";
+      case "late":
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case "excused":
+        return "bg-blue-500 hover:bg-blue-600";
       default:
-        return '';
+        return "";
     }
   };
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'present':
-        return 'Present';
-      case 'absent':
-        return 'Absent';
-      case 'late':
-        return 'Late';
-      case 'excused':
-        return 'Excused';
+      case "present":
+        return "Present";
+      case "absent":
+        return "Absent";
+      case "late":
+        return "Late";
+      case "excused":
+        return "Excused";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -115,7 +112,7 @@ export function StudentAttendanceCalendar({
     total: 0,
   };
 
-  monthDays.forEach(day => {
+  monthDays.forEach((day) => {
     const attendance = getAttendanceForDate(day);
     if (attendance) {
       stats[attendance.status]++;
@@ -123,9 +120,10 @@ export function StudentAttendanceCalendar({
     }
   });
 
-  const attendanceRate = monthDays.length > 0
-    ? ((stats.present + stats.excused) / monthDays.length * 100).toFixed(1)
-    : '0';
+  const attendanceRate =
+    monthDays.length > 0
+      ? (((stats.present + stats.excused) / monthDays.length) * 100).toFixed(1)
+      : "0";
 
   if (!student || !canViewAttendance) {
     return null;
@@ -137,7 +135,7 @@ export function StudentAttendanceCalendar({
         <DialogHeader>
           <DialogTitle>Attendance - {student.name}</DialogTitle>
           <div className="text-sm text-muted-foreground">
-            {student.loopid || student.id} • {student.department || 'No Department'}
+            {student.loopid || student.id} • {student.department || "No Department"}
           </div>
         </DialogHeader>
 
@@ -194,28 +192,28 @@ export function StudentAttendanceCalendar({
               onMonthChange={setSelectedMonth}
               className="rounded-md border"
               modifiers={{
-                present: monthDays.filter(day => {
+                present: monthDays.filter((day) => {
                   const att = getAttendanceForDate(day);
-                  return att?.status === 'present';
+                  return att?.status === "present";
                 }),
-                absent: monthDays.filter(day => {
+                absent: monthDays.filter((day) => {
                   const att = getAttendanceForDate(day);
-                  return att?.status === 'absent';
+                  return att?.status === "absent";
                 }),
-                late: monthDays.filter(day => {
+                late: monthDays.filter((day) => {
                   const att = getAttendanceForDate(day);
-                  return att?.status === 'late';
+                  return att?.status === "late";
                 }),
-                excused: monthDays.filter(day => {
+                excused: monthDays.filter((day) => {
                   const att = getAttendanceForDate(day);
-                  return att?.status === 'excused';
+                  return att?.status === "excused";
                 }),
               }}
               modifiersClassNames={{
-                present: 'bg-green-500 text-white hover:bg-green-600',
-                absent: 'bg-red-500 text-white hover:bg-red-600',
-                late: 'bg-yellow-500 text-white hover:bg-yellow-600',
-                excused: 'bg-blue-500 text-white hover:bg-blue-600',
+                present: "bg-green-500 text-white hover:bg-green-600",
+                absent: "bg-red-500 text-white hover:bg-red-600",
+                late: "bg-yellow-500 text-white hover:bg-yellow-600",
+                excused: "bg-blue-500 text-white hover:bg-blue-600",
               }}
             />
           </div>

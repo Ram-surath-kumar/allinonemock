@@ -11,4 +11,3 @@ export const UIConfiguration = {
    */
   minimizeSidebar: false,
 };
-

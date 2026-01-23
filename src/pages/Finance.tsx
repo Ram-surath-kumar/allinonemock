@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from "react-router-dom";
 import { FinanceDashboard } from "./finance/FinanceDashboard";
 import { FeeManagement } from "./finance/FeeManagement";
 import { PaymentCollection } from "./finance/PaymentCollection";
@@ -19,7 +19,11 @@ export function Finance() {
         <h2 className="text-3xl font-bold tracking-tight">Finance & Accounting</h2>
       </div>
 
-      <Tabs value={searchParams.get('tab') || 'dashboard'} onValueChange={(value) => setSearchParams({ tab: value })} className="space-y-4">
+      <Tabs
+        value={searchParams.get("tab") || "dashboard"}
+        onValueChange={(value) => setSearchParams({ tab: value })}
+        className="space-y-4"
+      >
         <TabsList className="flex h-auto flex-wrap gap-2 bg-muted/50 p-1 w-full justify-start overflow-x-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="fees">Fee Management</TabsTrigger>

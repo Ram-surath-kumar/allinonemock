@@ -75,7 +75,7 @@ router.put('/:id', (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    let tasks = readData();
+    const tasks = readData();
     const index = tasks.findIndex(t => t.id === id);
 
     if (index === -1) {
@@ -90,7 +90,7 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
-    let tasks = readData();
+    const tasks = readData();
     const filteredTasks = tasks.filter(t => t.id !== id);
 
     if (tasks.length === filteredTasks.length) {

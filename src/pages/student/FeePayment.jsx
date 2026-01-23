@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
-import { CreditCard, DollarSign, CheckCircle2, XCircle, Calendar, Download, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect } from "react";
+import {
+  CreditCard,
+  DollarSign,
+  CheckCircle2,
+  XCircle,
+  Calendar,
+  Download,
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -15,11 +23,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 export function FeePayment() {
   const { currentUser } = useAuth();
@@ -34,7 +57,7 @@ export function FeePayment() {
   });
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState("");
 
   useEffect(() => {
     if (currentUser) {
@@ -48,36 +71,36 @@ export function FeePayment() {
       // Mock fee data - replace with actual API call
       const mockPayments = [
         {
-          id: '1',
-          feeType: 'Tuition Fee',
+          id: "1",
+          feeType: "Tuition Fee",
           amount: 50000,
-          dueDate: '2024-12-15',
-          paidDate: '2024-12-10',
-          status: 'paid',
-          paymentMethod: 'Online Banking',
-          transactionId: 'TXN123456',
-          receiptUrl: '#',
+          dueDate: "2024-12-15",
+          paidDate: "2024-12-10",
+          status: "paid",
+          paymentMethod: "Online Banking",
+          transactionId: "TXN123456",
+          receiptUrl: "#",
         },
         {
-          id: '2',
-          feeType: 'Library Fee',
+          id: "2",
+          feeType: "Library Fee",
           amount: 2000,
-          dueDate: '2024-12-20',
-          status: 'pending',
+          dueDate: "2024-12-20",
+          status: "pending",
         },
         {
-          id: '3',
-          feeType: 'Lab Fee',
+          id: "3",
+          feeType: "Lab Fee",
           amount: 5000,
-          dueDate: '2024-11-30',
-          status: 'overdue',
+          dueDate: "2024-11-30",
+          status: "overdue",
         },
         {
-          id: '4',
-          feeType: 'Examination Fee',
+          id: "4",
+          feeType: "Examination Fee",
           amount: 3000,
-          dueDate: '2025-01-15',
-          status: 'pending',
+          dueDate: "2025-01-15",
+          status: "pending",
         },
       ];
 
@@ -85,9 +108,15 @@ export function FeePayment() {
 
       // Calculate summary
       const total = mockPayments.reduce((sum, p) => sum + p.amount, 0);
-      const paid = mockPayments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
-      const pending = mockPayments.filter((p) => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
-      const overdue = mockPayments.filter((p) => p.status === 'overdue').reduce((sum, p) => sum + p.amount, 0);
+      const paid = mockPayments
+        .filter((p) => p.status === "paid")
+        .reduce((sum, p) => sum + p.amount, 0);
+      const pending = mockPayments
+        .filter((p) => p.status === "pending")
+        .reduce((sum, p) => sum + p.amount, 0);
+      const overdue = mockPayments
+        .filter((p) => p.status === "overdue")
+        .reduce((sum, p) => sum + p.amount, 0);
       const percentage = total > 0 ? Math.round((paid / total) * 100) : 0;
 
       setSummary({
@@ -98,8 +127,8 @@ export function FeePayment() {
         paidPercentage: percentage,
       });
     } catch (error) {
-      console.error('Error loading fee data:', error);
-      toast.error('Failed to load fee data');
+      console.error("Error loading fee data:", error);
+      toast.error("Failed to load fee data");
     } finally {
       setLoading(false);
     }
@@ -124,42 +153,42 @@ export function FeePayment() {
           p.id === selectedPayment.id
             ? {
                 ...p,
-                status: 'paid',
-                paidDate: new Date().toISOString().split('T')[0],
-                paymentMethod: 'Online Banking',
+                status: "paid",
+                paidDate: new Date().toISOString().split("T")[0],
+                paymentMethod: "Online Banking",
                 transactionId: `TXN${Date.now()}`,
               }
             : p
         )
       );
 
-      toast.success('Payment processed successfully!');
+      toast.success("Payment processed successfully!");
       setPaymentDialogOpen(false);
       setSelectedPayment(null);
       loadFeeData();
     } catch (error) {
-      console.error('Error processing payment:', error);
-      toast.error('Failed to process payment');
+      console.error("Error processing payment:", error);
+      toast.error("Failed to process payment");
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'paid':
-        return 'bg-success/10 text-success border-success/20';
-      case 'pending':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'overdue':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
+      case "paid":
+        return "bg-success/10 text-success border-success/20";
+      case "pending":
+        return "bg-warning/10 text-warning border-warning/20";
+      case "overdue":
+        return "bg-destructive/10 text-destructive border-destructive/20";
       default:
-        return 'bg-muted text-muted-foreground';
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       maximumFractionDigits: 0,
     }).format(amount);
   };
@@ -174,9 +203,9 @@ export function FeePayment() {
   }
 
   const chartData = [
-    { name: 'Paid', value: summary.paidFees, color: 'hsl(var(--success))' },
-    { name: 'Pending', value: summary.pendingFees, color: 'hsl(var(--warning))' },
-    { name: 'Overdue', value: summary.overdueFees, color: 'hsl(var(--destructive))' },
+    { name: "Paid", value: summary.paidFees, color: "hsl(var(--success))" },
+    { name: "Pending", value: summary.pendingFees, color: "hsl(var(--warning))" },
+    { name: "Overdue", value: summary.overdueFees, color: "hsl(var(--destructive))" },
   ];
 
   return (
@@ -200,7 +229,9 @@ export function FeePayment() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Paid</p>
-                <p className="text-2xl font-bold text-success">{formatCurrency(summary.paidFees)}</p>
+                <p className="text-2xl font-bold text-success">
+                  {formatCurrency(summary.paidFees)}
+                </p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
@@ -212,7 +243,9 @@ export function FeePayment() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-warning">{formatCurrency(summary.pendingFees)}</p>
+                <p className="text-2xl font-bold text-warning">
+                  {formatCurrency(summary.pendingFees)}
+                </p>
               </div>
               <AlertCircle className="h-8 w-8 text-warning" />
             </div>
@@ -273,7 +306,10 @@ export function FeePayment() {
 
             <TabsContent value="all" className="mt-4 space-y-4">
               {payments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between rounded-lg border p-4">
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between rounded-lg border p-4"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{payment.feeType}</p>
@@ -297,20 +333,18 @@ export function FeePayment() {
                         </span>
                       )}
                       {payment.transactionId && (
-                        <span className="text-xs">
-                          TXN: {payment.transactionId}
-                        </span>
+                        <span className="text-xs">TXN: {payment.transactionId}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {payment.status === 'paid' && payment.receiptUrl && (
+                    {payment.status === "paid" && payment.receiptUrl && (
                       <Button variant="outline" size="sm" className="gap-1">
                         <Download className="h-4 w-4" />
                         Receipt
                       </Button>
                     )}
-                    {(payment.status === 'pending' || payment.status === 'overdue') && (
+                    {(payment.status === "pending" || payment.status === "overdue") && (
                       <Button size="sm" onClick={() => handlePayFee(payment)} className="gap-1.5">
                         <CreditCard className="h-4 w-4" />
                         Pay Now
@@ -323,9 +357,12 @@ export function FeePayment() {
 
             <TabsContent value="paid" className="mt-4 space-y-4">
               {payments
-                .filter((p) => p.status === 'paid')
+                .filter((p) => p.status === "paid")
                 .map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between rounded-lg border p-4">
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{payment.feeType}</p>
@@ -340,7 +377,8 @@ export function FeePayment() {
                         </span>
                         <span className="flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
-                          Paid: {payment.paidDate && new Date(payment.paidDate).toLocaleDateString()}
+                          Paid:{" "}
+                          {payment.paidDate && new Date(payment.paidDate).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -356,9 +394,12 @@ export function FeePayment() {
 
             <TabsContent value="pending" className="mt-4 space-y-4">
               {payments
-                .filter((p) => p.status === 'pending' || p.status === 'overdue')
+                .filter((p) => p.status === "pending" || p.status === "overdue")
                 .map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between rounded-lg border p-4">
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{payment.feeType}</p>
@@ -393,14 +434,16 @@ export function FeePayment() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Pay Fee</DialogTitle>
-            <DialogDescription>
-              Complete payment for {selectedPayment?.feeType}
-            </DialogDescription>
+            <DialogDescription>Complete payment for {selectedPayment?.feeType}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Amount</Label>
-              <Input value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} disabled />
+              <Input
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                disabled
+              />
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>

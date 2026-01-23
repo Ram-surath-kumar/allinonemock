@@ -1,14 +1,34 @@
-﻿import { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, GraduationCap, Building2, Edit2, Save, X, Home, Users, CreditCard } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+﻿import { useState, useEffect } from "react";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  GraduationCap,
+  Building2,
+  Edit2,
+  Save,
+  X,
+  Home,
+  Users,
+  CreditCard,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 export function PersonalDetails() {
@@ -17,55 +37,55 @@ export function PersonalDetails() {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     // Basic
-    name: '',
-    email: '',
-    collegeEmail: '',
-    phone: '',
-    altMobile: '',
-    landline: '',
+    name: "",
+    email: "",
+    collegeEmail: "",
+    phone: "",
+    altMobile: "",
+    landline: "",
 
     // Academic
-    studentId: '',
-    department: '',
-    year: '',
-    semester: '',
-    section: '',
-    admissionDate: '',
+    studentId: "",
+    department: "",
+    year: "",
+    semester: "",
+    section: "",
+    admissionDate: "",
 
     // Personal
-    dateOfBirth: '',
-    gender: '',
-    category: '',
-    religion: '',
-    nationality: '',
-    bloodGroup: '',
-    motherTongue: '',
+    dateOfBirth: "",
+    gender: "",
+    category: "",
+    religion: "",
+    nationality: "",
+    bloodGroup: "",
+    motherTongue: "",
     pwdStatus: false,
 
     // Address - Current
-    currentStreet: '',
-    currentCity: '',
-    currentState: '',
-    currentPincode: '',
-    currentCountry: '',
+    currentStreet: "",
+    currentCity: "",
+    currentState: "",
+    currentPincode: "",
+    currentCountry: "",
 
     // Address - Permanent
-    permanentStreet: '',
-    permanentCity: '',
-    permanentState: '',
-    permanentPincode: '',
-    permanentCountry: '',
+    permanentStreet: "",
+    permanentCity: "",
+    permanentState: "",
+    permanentPincode: "",
+    permanentCountry: "",
 
     // Family
-    fatherName: '',
-    fatherOccupation: '',
-    motherName: '',
-    motherOccupation: '',
-    familyIncome: '',
+    fatherName: "",
+    fatherOccupation: "",
+    motherName: "",
+    motherOccupation: "",
+    familyIncome: "",
 
     // Identity
-    aadharNo: '',
-    panNo: '',
+    aadharNo: "",
+    panNo: "",
   });
 
   useEffect(() => {
@@ -81,7 +101,7 @@ export function PersonalDetails() {
       if (currentUser?.id) {
         const [userResponse, profileResponse] = await Promise.all([
           api.getUserById(currentUser.id),
-          api.getStudentProfile(currentUser.id)
+          api.getStudentProfile(currentUser.id),
         ]);
 
         if (userResponse.error) throw new Error(userResponse.error);
@@ -92,61 +112,61 @@ export function PersonalDetails() {
         if (data) {
           setFormData({
             // Basic
-            name: data.name || '',
-            email: data.email || '',
-            collegeEmail: profile.college_email || '',
-            phone: data.phone || data.contact_number || '',
-            altMobile: profile.alt_mobile || '',
-            landline: profile.landline_phone || '',
+            name: data.name || "",
+            email: data.email || "",
+            collegeEmail: profile.college_email || "",
+            phone: data.phone || data.contact_number || "",
+            altMobile: profile.alt_mobile || "",
+            landline: profile.landline_phone || "",
 
             // Academic
-            dateOfBirth: profile.dob || data.date_of_birth || data.dob || '',
-            admissionDate: profile.enrollment_date || data.admission_date || '',
-            studentId: profile.student_id_no || data.student_id || data.user_id?.toString() || '',
-            department: data.department || '',
-            year: data.year || '',
-            semester: data.semester || '',
-            section: profile.section || '',
+            dateOfBirth: profile.dob || data.date_of_birth || data.dob || "",
+            admissionDate: profile.enrollment_date || data.admission_date || "",
+            studentId: profile.student_id_no || data.student_id || data.user_id?.toString() || "",
+            department: data.department || "",
+            year: data.year || "",
+            semester: data.semester || "",
+            section: profile.section || "",
 
             // Personal
-            gender: profile.gender || '',
-            category: profile.category || '',
-            religion: profile.religion || '',
-            nationality: profile.nationality || '',
-            bloodGroup: profile.blood_group || '',
-            motherTongue: profile.mother_tongue || '',
+            gender: profile.gender || "",
+            category: profile.category || "",
+            religion: profile.religion || "",
+            nationality: profile.nationality || "",
+            bloodGroup: profile.blood_group || "",
+            motherTongue: profile.mother_tongue || "",
             pwdStatus: profile.pwd_status || false,
 
             // Current Address
-            currentStreet: profile.current_street || '',
-            currentCity: profile.current_city || '',
-            currentState: profile.current_state || '',
-            currentPincode: profile.current_pincode || '',
-            currentCountry: profile.current_country || '',
+            currentStreet: profile.current_street || "",
+            currentCity: profile.current_city || "",
+            currentState: profile.current_state || "",
+            currentPincode: profile.current_pincode || "",
+            currentCountry: profile.current_country || "",
 
             // Permanent Address
-            permanentStreet: profile.permanent_street || '',
-            permanentCity: profile.permanent_city || '',
-            permanentState: profile.permanent_state || '',
-            permanentPincode: profile.permanent_pincode || '',
-            permanentCountry: profile.permanent_country || '',
+            permanentStreet: profile.permanent_street || "",
+            permanentCity: profile.permanent_city || "",
+            permanentState: profile.permanent_state || "",
+            permanentPincode: profile.permanent_pincode || "",
+            permanentCountry: profile.permanent_country || "",
 
             // Family
-            fatherName: profile.father_name || '',
-            fatherOccupation: profile.father_occupation || '',
-            motherName: profile.mother_name || '',
-            motherOccupation: profile.mother_occupation || '',
-            familyIncome: profile.family_annual_income || '',
+            fatherName: profile.father_name || "",
+            fatherOccupation: profile.father_occupation || "",
+            motherName: profile.mother_name || "",
+            motherOccupation: profile.mother_occupation || "",
+            familyIncome: profile.family_annual_income || "",
 
             // Identity
-            aadharNo: profile.aadhar_no || '',
-            panNo: profile.pan_no || '',
+            aadharNo: profile.aadhar_no || "",
+            panNo: profile.pan_no || "",
           });
         }
       }
     } catch (error) {
-      console.error('Error loading personal details:', error);
-      toast.error('Failed to load personal details');
+      console.error("Error loading personal details:", error);
+      toast.error("Failed to load personal details");
     } finally {
       setLoading(false);
     }
@@ -163,7 +183,7 @@ export function PersonalDetails() {
         phone: formData.phone,
         date_of_birth: formData.dateOfBirth,
         // user table usually holds summary address
-        address: `${formData.currentCity}, ${formData.currentState}`
+        address: `${formData.currentCity}, ${formData.currentState}`,
       });
 
       if (userUpdateResponse.error) throw new Error(userUpdateResponse.error);
@@ -208,12 +228,12 @@ export function PersonalDetails() {
 
       if (profileUpdateResponse.error) throw new Error(profileUpdateResponse.error);
 
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
       setEditing(false);
       await loadPersonalDetails();
     } catch (error) {
-      console.error('Error updating details:', error);
-      toast.error(error.message || 'Failed to update details');
+      console.error("Error updating details:", error);
+      toast.error(error.message || "Failed to update details");
     }
   };
 
@@ -244,7 +264,7 @@ export function PersonalDetails() {
           onChange={(e) => setFormData({ ...formData, [valueKey]: e.target.value })}
         />
       ) : (
-        <p className="font-medium">{formData[valueKey] || '-'}</p>
+        <p className="font-medium">{formData[valueKey] || "-"}</p>
       )}
     </div>
   );
@@ -288,15 +308,26 @@ export function PersonalDetails() {
             <div className="space-y-2">
               <Label>Full Name</Label>
               {editing ? (
-                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-              ) : <p className="font-medium">{formData.name}</p>}
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              ) : (
+                <p className="font-medium">{formData.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Date of Birth</Label>
               {editing ? (
-                <Input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
-              ) : <p className="font-medium">{formData.dateOfBirth}</p>}
+                <Input
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                />
+              ) : (
+                <p className="font-medium">{formData.dateOfBirth}</p>
+              )}
             </div>
 
             {renderField("Gender", "gender", null)}
@@ -321,7 +352,7 @@ export function PersonalDetails() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-muted-foreground">Student ID</Label>
-                <p className="font-semibold text-lg">{formData.studentId || 'Not Assigned'}</p>
+                <p className="font-semibold text-lg">{formData.studentId || "Not Assigned"}</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-muted-foreground">Department</Label>
@@ -333,11 +364,14 @@ export function PersonalDetails() {
               </div>
               <div className="space-y-1">
                 <Label className="text-muted-foreground">College Email</Label>
-                <p className="font-medium text-blue-600">{formData.collegeEmail || '-'}</p>
+                <p className="font-medium text-blue-600">{formData.collegeEmail || "-"}</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-muted-foreground">Current Semester</Label>
-                <p className="font-medium">{formData.semester && `Sem ${formData.semester}`} {formData.section && `(Sec ${formData.section})`}</p>
+                <p className="font-medium">
+                  {formData.semester && `Sem ${formData.semester}`}{" "}
+                  {formData.section && `(Sec ${formData.section})`}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -386,7 +420,9 @@ export function PersonalDetails() {
           </CardHeader>
           <CardContent className="grid gap-8 md:grid-cols-2">
             <div className="space-y-4">
-              <h4 className="font-semibold text-sm uppercase text-muted-foreground">Current Address</h4>
+              <h4 className="font-semibold text-sm uppercase text-muted-foreground">
+                Current Address
+              </h4>
               {renderField("Street/Area", "currentStreet", null)}
               {renderField("City", "currentCity", null)}
               {renderField("State", "currentState", null)}
@@ -394,7 +430,9 @@ export function PersonalDetails() {
               {renderField("Country", "currentCountry", null)}
             </div>
             <div className="space-y-4">
-              <h4 className="font-semibold text-sm uppercase text-muted-foreground">Permanent Address</h4>
+              <h4 className="font-semibold text-sm uppercase text-muted-foreground">
+                Permanent Address
+              </h4>
               {renderField("Street/Area", "permanentStreet", null)}
               {renderField("City", "permanentCity", null)}
               {renderField("State", "permanentState", null)}
@@ -403,7 +441,6 @@ export function PersonalDetails() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
