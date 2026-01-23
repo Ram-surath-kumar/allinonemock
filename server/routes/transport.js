@@ -67,11 +67,10 @@ router.get('/vehicles/:id', async (req, res) => {
 // Create new vehicle
 router.post('/vehicles', async (req, res) => {
     try {
+        console.log('Creating vehicle via RPC:', req.body.vehicle_id);
         const { data, error } = await supabase
-            .from('vehicles')
-            .insert([req.body])
-            .select()
-            .single();
+            .rpc('create_vehicle', { vehicle_data: req.body });
+
 
         if (error) throw error;
         res.status(201).json({ success: true, data });
@@ -79,6 +78,7 @@ router.post('/vehicles', async (req, res) => {
         handleError(res, error, 'Failed to create vehicle');
     }
 });
+
 
 // Update vehicle
 router.put('/vehicles/:id', async (req, res) => {

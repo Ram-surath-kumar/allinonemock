@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function Refunds() {
-    const { user } = useAuth();
+    const { currentUser: user } = useAuth();
     const [refunds, setRefunds] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -16,21 +16,32 @@ export function Refunds() {
         loadRefunds();
     }, []);
 
-    const loadRefunds = async () => {
-        setLoading(true);
+    const loadRefunds = async (background = false) => {
+        if (!background) setLoading(true);
         const res = await api.getRefunds();
         if (res.data) setRefunds(res.data);
-        setLoading(false);
+        if (!background) setLoading(false);
     };
 
     const handleApprove = async (id: string, status: 'approved' | 'rejected') => {
-        if (!user) return;
+        console.log('handleApprove Clicked:', { id, status, user });
+        if (!user) {
+            console.error('User is missing in Refunds component');
+            toast.error("Authentication error: User info missing. Please verify you are logged in.");
+            return;
+        }
+
+        // Optimistic Update
+        setRefunds(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+
         const res = await api.approveRefund(id, { status, approved_by: user.id });
         if (res.data) {
             toast.success(`Refund ${status}`);
-            loadRefunds();
+            loadRefunds(true); // Sync with server in background
         } else {
-            toast.error("Failed to update refund status");
+            // Revert on failure
+            toast.error(res.error || "Failed to update refund status");
+            loadRefunds(false); // Reload fully to restore correct state
         }
     };
 

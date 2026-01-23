@@ -40,27 +40,40 @@ const processOutputData = (data) => {
 const logAudit = async (action, entity, recordId, changes, context) => {
     try {
         const entry = {
-            entity_name: entity,
+            table_name: entity,
             record_id: recordId ? String(recordId) : null,
-            action: action, // 'CREATE', 'UPDATE', 'DELETE'
-            changes: changes, // JSONB
-            user_id: context.user?.id || null,
-            user_name: context.userProfile?.name || context.user?.email || 'System',
+            operation: action, // 'CREATE', 'UPDATE', 'DELETE'
+
+            // Default null
+            old_values: null,
+            new_values: null,
+
+            performed_by: context.user?.id || null,
             user_role: context.userProfile?.role || 'system',
             ip_address: context.ip,
             user_agent: context.userAgent,
             reason: context.reason || 'Standard Operation',
             created_at: new Date().toISOString()
         };
-        await supabaseAdmin.from('audit_logs').insert(entry);
+
+        // Construct payload based on action
+        if (action === 'UPDATE') {
+            entry.old_values = Object.keys(changes).reduce((acc, k) => ({ ...acc, [k]: changes[k]?.old }), {});
+            entry.new_values = Object.keys(changes).reduce((acc, k) => ({ ...acc, [k]: changes[k]?.new }), {});
+        } else if (action === 'CREATE' && changes.new_value) {
+            entry.new_values = changes.new_value;
+        } else if (action === 'DELETE' && changes.deleted_record) {
+            entry.old_values = changes.deleted_record;
+        }
+
+        const { error } = await supabaseAdmin.from('audit_logs').insert(entry);
+        if (error) {
+            console.error('CRITICAL: Audit Log Failed', error);
+            throw error;
+        }
     } catch (err) {
         console.error('CRITICAL: Audit Log Failed', err);
-        // Requirement: "Failure to log = operation fails"
-        // Since we log *after* op usually, to enforce this we might need to rollback.
-        // But preventing the *next* step or flagging inconsistency is practical here.
-        // But we want to avoid crashing production on audit glitch if possible, but security says otherwise.
-        // We will LOG ERROR and throw for now.
-        throw new Error('Audit Logging Failed - Operation Aborted per Security Policy');
+        throw new Error('Audit Logging Failed - ' + err.message);
     }
 }
 

@@ -475,6 +475,13 @@ class ApiClient {
         return this.request('/roles');
     }
 
+    async assignFeeStructureBulk(data: { student_ids: string[]; structure_id: string; scholarship_id?: string | null }): Promise<ApiResponse<any[]>> {
+        return this.request('/finance/assign-bulk', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
     async getCustomRoleById(id: string): Promise<ApiResponse<any>> {
         return this.request(`/roles/${id}`);
     }
@@ -571,7 +578,7 @@ class ApiClient {
 
     // Refunds
     async getRefunds(): Promise<ApiResponse<any[]>> {
-        return this.request('/finance/refunds');
+        return this.request('/finance/refunds', {}, false);
     }
 
     async requestRefund(data: any): Promise<ApiResponse<any>> {

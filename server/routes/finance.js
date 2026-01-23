@@ -125,7 +125,6 @@ router.get('/structures', async (req, res) => {
             if (category_id) q = q.eq('category_id', category_id);
             return q;
         });
-        if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -239,6 +238,68 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
 
         // if (error) throw error;
         res.status(201).json({ data, error: null });
+    } catch (error) {
+        res.status(500).json({ data: null, error: error.message });
+    }
+});
+
+// Bulk Assign Fee Structure
+router.post('/assign-bulk', authorizeRole(['admin', 'finance', 'registrar']), async (req, res) => {
+    try {
+        const { student_ids, structure_id, scholarship_id } = req.body;
+        // student_ids is an array of strings
+
+        if (!student_ids || !Array.isArray(student_ids) || student_ids.length === 0) {
+            return res.status(400).json({ data: null, error: 'No students selected' });
+        }
+
+        const structure = await secureDb.get('fee_structures', q => q.eq('id', structure_id).single());
+        if (!structure) throw new Error('Fee Structure not found');
+
+        let discount = 0;
+        if (scholarship_id) {
+            const scholarship = await secureDb.get('scholarships', q => q.eq('id', scholarship_id).single());
+            if (scholarship) {
+                if (scholarship.type === 'percentage') {
+                    discount = (structure.total_amount * scholarship.value) / 100;
+                } else {
+                    discount = scholarship.value;
+                }
+            }
+        }
+
+        const net_amount = structure.total_amount - discount;
+        const context = getContext(req, 'Bulk Assign Fee Structure');
+
+        // Iterate and create assignments
+        // Using Promise.all for parallel execution but handling errors individually might be better?
+        // Let's do parallel for speed.
+
+        const assignments = student_ids.map(student_id => ({
+            student_id,
+            structure_id,
+            scholarship_id,
+            total_amount: structure.total_amount,
+            discount_amount: discount,
+            net_amount: net_amount,
+            status: 'pending'
+        }));
+
+        const results = [];
+        // Insert one by one to ensure individual failures don't block all (or use bulk insert if secureDb supports it)
+        // secureDb.create usually takes one object.
+        // We will loop.
+
+        for (const item of assignments) {
+            try {
+                const data = await secureDb.create('student_fee_assignments', item, context);
+                results.push({ student_id: item.student_id, status: 'success', id: data.id });
+            } catch (e) {
+                results.push({ student_id: item.student_id, status: 'failed', error: e.message });
+            }
+        }
+
+        res.status(201).json({ data: results, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
     }
@@ -373,13 +434,13 @@ router.post('/pay/manual', async (req, res) => {
         // if (txError) throw txError;
 
         // 2. Update Fee Assignment (Paid Amount & Status)
-        const { data: assignment, error: assignErr } = await secureDb.get('student_fee_assignments', q => q
+        const assignment = await secureDb.get('student_fee_assignments', q => q
             .select('paid_amount, net_amount')
             .eq('id', assignment_id)
             .single()
         );
 
-        if (!assignErr) {
+        if (assignment) {
             const newPaid = (assignment.paid_amount || 0) + parseFloat(amount);
             const newStatus = newPaid >= assignment.net_amount ? 'paid' : 'partial';
 
@@ -402,7 +463,7 @@ router.post('/pay/online-mock', async (req, res) => {
         const context = getContext(req, 'Online Payment Mock');
 
         // 1. Create Transaction
-        const { data: transaction, error: txError } = await secureDb.create('transactions', {
+        const transaction = await secureDb.create('transactions', {
             student_id,
             assignment_id,
             amount,
@@ -413,16 +474,14 @@ router.post('/pay/online-mock', async (req, res) => {
             remarks: `Paid via ${gateway_provider} (Mock)`
         }, context);
 
-        if (txError) throw txError;
-
         // 2. Update Fee Assignment
-        const { data: assignment, error: assignErr } = await secureDb.get('student_fee_assignments', q => q
+        const assignment = await secureDb.get('student_fee_assignments', q => q
             .select('paid_amount, net_amount')
             .eq('id', assignment_id)
             .single()
         );
 
-        if (!assignErr) {
+        if (assignment) {
             const newPaid = (assignment.paid_amount || 0) + parseFloat(amount);
             const newStatus = newPaid >= assignment.net_amount ? 'paid' : 'partial';
 
@@ -441,7 +500,7 @@ router.post('/pay/online-mock', async (req, res) => {
 router.get('/receipt/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { data, error } = await secureDb.get('transactions', q => q
+        const data = await secureDb.get('transactions', q => q
             .select(`
                 *,
                 student:users(name, email, loopid),
@@ -453,7 +512,6 @@ router.get('/receipt/:id', async (req, res) => {
             .single()
         );
 
-        if (error) throw error;
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -483,15 +541,27 @@ router.put('/refund/approve/:id', authorizeRole(['admin', 'finance']), async (re
     try {
         const { id } = req.params;
         const { approved_by, status } = req.body; // status: approved/rejected
+
+        const fs = await import('fs');
+        const log = (msg) => {
+            const time = new Date().toISOString();
+            fs.appendFileSync('server_debug_log.txt', `[${time}] [REFUND-APPROVE] ${msg}\n`);
+        };
+        log(`Request to update Refund ${id} to ${status} by ${approved_by}`);
+
         const context = getContext(req, 'Approve Refund');
 
         const data = await secureDb.update('refund_requests', id, {
             status, approved_by, processed_date: new Date()
         }, context);
 
+        log(`Success: Updated Refund ${id}`);
         // if (error) throw error;
         res.status(200).json({ data, error: null });
     } catch (error) {
+        const fs = await import('fs');
+        fs.appendFileSync('server_debug_log.txt', `[${new Date().toISOString()}] [REFUND-ERROR] ${error.message}\n${error.stack}\n`);
+        console.error('REFUND ERROR:', error);
         res.status(500).json({ data: null, error: error.message });
     }
 });
@@ -499,7 +569,7 @@ router.put('/refund/approve/:id', authorizeRole(['admin', 'finance']), async (re
 // Get All Refund Requests
 router.get('/refunds', async (req, res) => {
     try {
-        const { data, error } = await secureDb.get('refund_requests', q => q
+        const data = await secureDb.get('refund_requests', q => q
             .select(`
                 *,
                 student:users!student_id(name, email, loopid)
@@ -507,7 +577,6 @@ router.get('/refunds', async (req, res) => {
             .order('created_at', { ascending: false })
         );
 
-        if (error) throw error;
         res.status(200).json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -535,9 +604,8 @@ router.get('/reports/financial-statements', async (req, res) => {
         const totalExpense = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
 
         // 3. Assets (Bank Balances)
-        const { data: banks, error: bankErr } = await secureDb.get('bank_accounts', q => q.select('*'));
+        const banks = await secureDb.get('bank_accounts', q => q.select('*'));
 
-        if (bankErr) throw bankErr;
         const totalBankBalance = banks.reduce((sum, b) => sum + (b.opening_balance || 0), 0);
 
         const data = {
@@ -705,10 +773,9 @@ router.get('/bank-transactions/:bankId', async (req, res) => {
 router.get('/tax-settings', async (req, res) => {
     try {
         // Use tax_config instead of tax_settings
-        const { data, error } = await secureDb.get('tax_config', q => q.select('*').single());
+        const [data] = await secureDb.get('tax_config', q => q.select('*').limit(1));
         // If no config exists, return default
-        if (!data && !error) return res.json({ data: { gst_rate: 18, tds_rate: 10 }, error: null });
-        if (error) throw error;
+        if (!data) return res.json({ data: { gst_rate: 18, tds_rate: 10 }, error: null });
         res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
@@ -728,7 +795,7 @@ router.post('/tax/config', authorizeRole(['admin', 'finance']), async (req, res)
         const { gst_rate, tds_rate, gst_no } = req.body;
         const context = getContext(req, 'Update Tax Config');
 
-        const { data: existing } = await secureDb.get('tax_config', q => q.select('id').single());
+        const [existing] = await secureDb.get('tax_config', q => q.select('id').limit(1));
 
         let result;
         if (existing) {
@@ -753,8 +820,8 @@ router.post('/tax/config', authorizeRole(['admin', 'finance']), async (req, res)
 router.get('/tax/config', async (req, res) => {
     // reuse logic
     try {
-        const { data, error } = await secureDb.get('tax_config', q => q.select('*').single());
-        if (!data && !error) return res.json({ data: { gst_rate: 18, tds_rate: 10 }, error: null });
+        const [data] = await secureDb.get('tax_config', q => q.select('*').limit(1));
+        if (!data) return res.json({ data: { gst_rate: 18, tds_rate: 10 }, error: null });
         res.json({ data: data || { gst_rate: 18, tds_rate: 10 }, error: null });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -763,14 +830,12 @@ router.get('/reports/collection', async (req, res) => {
     try {
         const { start_date, end_date } = req.query;
 
-        const { data, error } = await secureDb.get('transactions', (query) => {
+        const data = await secureDb.get('transactions', (query) => {
             let q = query.select('amount, payment_method, transaction_date').eq('status', 'success');
             if (start_date) q = q.gte('transaction_date', start_date);
             if (end_date) q = q.lte('transaction_date', end_date);
             return q;
         });
-
-        if (error) throw error;
 
 
         // Aggregate by method
