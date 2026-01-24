@@ -22,7 +22,9 @@ export function StudentAllocation({ onUpdate }) {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedRoute, setSelectedRoute] = useState(null);
+
     const [routeStops, setRouteStops] = useState([]);
+    const [showAllocationsDialog, setShowAllocationsDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({
         student_id: '',
@@ -44,12 +46,25 @@ export function StudentAllocation({ onUpdate }) {
                 api.getUsers({ role: 'student' })
             ]);
 
+            console.log('StudentAllocation: routesRes', routesRes);
+            console.log('StudentAllocation: studentsRes', studentsRes);
+
             if (routesRes.data) {
+                console.log('StudentAllocation: Setting routes', routesRes.data);
                 setRoutes(routesRes.data);
                 // Fetch registrations for each route
                 await fetchAllRegistrations(routesRes.data);
+            } else if (routesRes.error) {
+                console.error('StudentAllocation: API Error routes', routesRes.error);
+                toast.error(`Failed to load routes: ${routesRes.error}`);
             }
-            if (studentsRes.data) setStudents(studentsRes.data);
+
+            if (studentsRes.data) {
+                setStudents(studentsRes.data);
+            } else if (studentsRes.error) {
+                console.error('StudentAllocation: API Error students', studentsRes.error);
+                toast.error(`Failed to load students: ${studentsRes.error}`);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
             toast.error('Failed to load data');
@@ -145,6 +160,11 @@ export function StudentAllocation({ onUpdate }) {
         return student ? student.name : 'Unknown Student';
     };
 
+    const getRouteName = (routeId) => {
+        const route = routes.find(r => r.id === routeId);
+        return route ? route.route_name : 'Unknown Route';
+    };
+
     const filteredStudents = students.filter(student =>
         student.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -157,10 +177,16 @@ export function StudentAllocation({ onUpdate }) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Student Route Allocation</h3>
-                <p className="text-sm text-muted-foreground">
-                    Assign students to transport routes
-                </p>
+                <div>
+                    <h3 className="text-lg font-semibold">Student Route Allocation</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Assign students to transport routes
+                    </p>
+                </div>
+                <Button variant="outline" onClick={() => setShowAllocationsDialog(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    View All Allocations
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -340,6 +366,60 @@ export function StudentAllocation({ onUpdate }) {
                             <Button type="submit">Allocate Student</Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* View All Allocations Dialog */}
+            <Dialog open={showAllocationsDialog} onOpenChange={setShowAllocationsDialog}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>All Allocated Students</DialogTitle>
+                        <DialogDescription>
+                            List of all students currently assigned to transport routes
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="rounded-md border">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50">
+                                <tr className="border-b">
+                                    <th className="h-10 px-4 text-left align-middle font-medium">Student</th>
+                                    <th className="h-10 px-4 text-left align-middle font-medium">Route</th>
+                                    <th className="h-10 px-4 text-left align-middle font-medium">Stop</th>
+                                    <th className="h-10 px-4 text-right align-middle font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {registrations.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                                            No allocations found
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    registrations.map((reg) => (
+                                        <tr key={reg.id} className="border-b last:border-0 hover:bg-muted/50">
+                                            <td className="p-4 align-middle">
+                                                <div className="font-medium">{getStudentName(reg.student_id)}</div>
+                                            </td>
+                                            <td className="p-4 align-middle">{getRouteName(reg.route_id)}</td>
+                                            <td className="p-4 align-middle">{reg.pickup_stop_name || '-'}</td>
+                                            <td className="p-4 align-middle text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleRemove(reg.id)}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

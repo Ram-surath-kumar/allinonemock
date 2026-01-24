@@ -311,7 +311,7 @@ router.get('/routes/:id/stops', async (req, res) => {
         const { supabaseAdmin } = await import('../common.js');
 
         const { data: stops, error } = await supabaseAdmin
-            .from('route_stops')
+            .from('transport_stops')
             .select('*')
             .eq('route_id', req.params.id)
             .order('stop_order', { ascending: true });
