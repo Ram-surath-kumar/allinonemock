@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Sidebar } from './Sidebar';
-import { Header } from './Header';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { AIAssistantChat } from '@/components/ai/AIAssistantChat';
+import { useState } from "react";
+import { Sidebar } from "./Sidebar";
+import { Header } from "./Header";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AIAssistantChat } from "@/components/ai/AIAssistantChat";
 
 export function AppLayout({ children, title, subtitle, currentPath, onNavigate }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,23 +20,29 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate }
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="w-64 p-0 bg-sidebar text-sidebar-foreground">
-            <Sidebar currentPath={currentPath} onNavigate={(path) => {
-              onNavigate(path);
-              setSidebarOpen(false);
-            }} />
+            <Sidebar
+              currentPath={currentPath}
+              onNavigate={(path) => {
+                onNavigate(path);
+                setSidebarOpen(false);
+              }}
+            />
           </SheetContent>
         </Sheet>
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden w-full md:w-auto">
-        <Header title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(true)} onNavigate={onNavigate} />
+        <Header
+          title={title}
+          subtitle={subtitle}
+          onMenuClick={() => setSidebarOpen(true)}
+          onNavigate={onNavigate}
+        />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-4 lg:p-5" role="main">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+          <div className="max-w-7xl mx-auto h-full">{children}</div>
         </main>
       </div>
-      
+
       {/* Floating AI Chat Assistant */}
       <AIAssistantChat onNavigate={onNavigate} />
     </div>

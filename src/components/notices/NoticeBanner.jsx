@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from "react";
+import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/services/api";
+import { cn } from "@/lib/utils";
 
 export function NoticeBanner() {
   const { currentUser } = useAuth();
@@ -16,13 +16,17 @@ export function NoticeBanner() {
     if (!currentUser) return;
 
     try {
-      const response = await api.getNotifications({ 
-        user_id: currentUser.id, 
-        read: false, 
-        limit: 1 
+      const response = await api.getNotifications({
+        user_id: currentUser.id,
+        read: false,
+        limit: 1,
       });
 
-      if (response.error && !response.error.includes('not found') && !response.error.includes('PGRST116')) {
+      if (
+        response.error &&
+        !response.error.includes("not found") &&
+        !response.error.includes("PGRST116")
+      ) {
         throw new Error(response.error);
       }
 
@@ -42,7 +46,7 @@ export function NoticeBanner() {
         setUnreadNotice(null);
       }
     } catch (error) {
-      console.error('Error fetching notice:', error);
+      console.error("Error fetching notice:", error);
       setUnreadNotice(null);
     }
   }, [currentUser, dismissedNoticeIds]);
@@ -51,7 +55,7 @@ export function NoticeBanner() {
     if (!currentUser) return;
 
     fetchLatestUnreadNotice();
-    
+
     // Poll for new notices every 60 seconds (reduced frequency)
     const interval = setInterval(() => {
       fetchLatestUnreadNotice();
@@ -62,13 +66,13 @@ export function NoticeBanner() {
       fetchLatestUnreadNotice();
     };
 
-    window.addEventListener('notification-sent', handleRefresh);
-    window.addEventListener('notification-read', handleRefresh);
+    window.addEventListener("notification-sent", handleRefresh);
+    window.addEventListener("notification-read", handleRefresh);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('notification-sent', handleRefresh);
-      window.removeEventListener('notification-read', handleRefresh);
+      window.removeEventListener("notification-sent", handleRefresh);
+      window.removeEventListener("notification-read", handleRefresh);
     };
   }, [currentUser, fetchLatestUnreadNotice]);
 
@@ -80,10 +84,10 @@ export function NoticeBanner() {
       if (response.error) throw new Error(response.error);
 
       // Add to dismissed set
-      setDismissedNoticeIds(prev => new Set(prev).add(unreadNotice.id));
-      
+      setDismissedNoticeIds((prev) => new Set(prev).add(unreadNotice.id));
+
       // Trigger refresh event
-      window.dispatchEvent(new CustomEvent('notification-read'));
+      window.dispatchEvent(new CustomEvent("notification-read"));
 
       setDismissed(true);
       // Clear notice after animation
@@ -93,17 +97,17 @@ export function NoticeBanner() {
         // Don't fetch immediately - let polling handle it
       }, 300);
     } catch (error) {
-      console.error('Error marking notice:', error);
+      console.error("Error marking notice:", error);
     }
   };
 
   const dismiss = () => {
     if (!unreadNotice) return;
-    
+
     // Add to dismissed set so it won't show again
-    setDismissedNoticeIds(prev => new Set(prev).add(unreadNotice.id));
+    setDismissedNoticeIds((prev) => new Set(prev).add(unreadNotice.id));
     setDismissed(true);
-    
+
     // After animation, clear the notice
     setTimeout(() => {
       setUnreadNotice(null);
@@ -116,11 +120,11 @@ export function NoticeBanner() {
 
   const getIcon = () => {
     switch (unreadNotice.type) {
-      case 'success':
+      case "success":
         return <CheckCircle className="h-5 w-5" />;
-      case 'warning':
+      case "warning":
         return <AlertTriangle className="h-5 w-5" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="h-5 w-5" />;
       default:
         return <Info className="h-5 w-5" />;
@@ -129,40 +133,42 @@ export function NoticeBanner() {
 
   const getVariant = () => {
     switch (unreadNotice.type) {
-      case 'success':
-        return 'default';
-      case 'warning':
-        return 'default';
-      case 'error':
-        return 'destructive';
+      case "success":
+        return "default";
+      case "warning":
+        return "default";
+      case "error":
+        return "destructive";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const getAlertClassName = () => {
     switch (unreadNotice.type) {
-      case 'success':
-        return 'border-success/50 bg-success/10';
-      case 'warning':
-        return 'border-warning/50 bg-warning/10';
-      case 'error':
-        return 'border-destructive/50 bg-destructive/10';
+      case "success":
+        return "border-success/50 bg-success/10";
+      case "warning":
+        return "border-warning/50 bg-warning/10";
+      case "error":
+        return "border-destructive/50 bg-destructive/10";
       default:
-        return 'border-primary/50 bg-primary/10';
+        return "border-primary/50 bg-primary/10";
     }
   };
 
   return (
-    <Alert className={cn('mb-4 sm:mb-6 animate-fade-in-up border-2', getAlertClassName())}>
+    <Alert className={cn("mb-4 sm:mb-6 animate-fade-in-up border-2", getAlertClassName())}>
       <div className="flex items-start gap-2 sm:gap-3">
-        <div className={cn(
-          'mt-0.5 shrink-0',
-          unreadNotice.type === 'success' && 'text-success',
-          unreadNotice.type === 'warning' && 'text-warning',
-          unreadNotice.type === 'error' && 'text-destructive',
-          unreadNotice.type === 'info' && 'text-primary'
-        )}>
+        <div
+          className={cn(
+            "mt-0.5 shrink-0",
+            unreadNotice.type === "success" && "text-success",
+            unreadNotice.type === "warning" && "text-warning",
+            unreadNotice.type === "error" && "text-destructive",
+            unreadNotice.type === "info" && "text-primary"
+          )}
+        >
           {getIcon()}
         </div>
         <div className="flex-1 min-w-0">
@@ -174,20 +180,10 @@ export function NoticeBanner() {
           </AlertDescription>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={markAsRead}
-            className="h-8 px-2 text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={markAsRead} className="h-8 px-2 text-xs">
             Mark as Read
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={dismiss}
-            className="h-8 w-8"
-          >
+          <Button variant="ghost" size="icon" onClick={dismiss} className="h-8 w-8">
             <X className="h-4 w-4" />
           </Button>
         </div>

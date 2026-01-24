@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,8 +32,10 @@ export function VehicleInventory() {
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
             const response = await fetch(`${baseUrl}/transport/vehicles`);
             const result = await response.json();
-            if (result.success) {
+            if (result.data) {
                 setVehicles(result.data);
+            } else if (result.error) {
+                toast.error(result.error);
             }
         } catch (error) {
             console.error(error);
@@ -47,7 +49,7 @@ export function VehicleInventory() {
         const matchesSearch = (v.registration_number?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
             (v.vehicle_id?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
             (v.make_model?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-        const matchesFilter = filterType === 'all' || v.vehicle_type?.toLowerCase() === filterType.toLowerCase();
+        const matchesFilter = filterType === 'all' || (v.vehicle_type?.toLowerCase() || '') === filterType.toLowerCase();
         return matchesSearch && matchesFilter;
     });
 
@@ -83,7 +85,7 @@ export function VehicleInventory() {
     }
 
     return (
-        <div className="flex-1 flex flex-col gap-6 p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col gap-6 p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold tracking-tight">Vehicle Inventory</h2>

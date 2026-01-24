@@ -36,12 +36,37 @@ const writeData = (data) => {
 };
 
 router.get('/', (req, res) => {
-    const { department_id } = req.query;
+    const { department_id, role } = req.query;
+    console.log(`[GET /events] Filtering params - Role: ${role}, Dept: ${department_id}`);
+
     let events = readData();
 
-    if (department_id) {
-        events = events.filter(e => e.department_id === department_id || !e.department_id || e.department_id === 'all');
+    // Admin sees everything
+    if (role && role.toLowerCase() === 'admin') {
+        res.json({ data: events, error: null });
+        return;
     }
+
+    events = events.filter(e => {
+        // Filter by Department
+        const deptMatch = !department_id ||
+            !e.department_id ||
+            e.department_id === 'all' ||
+            e.department_id === department_id;
+
+        // Filter by Role
+        // If event has recipient_roles, user's role MUST be in it (case-insensitive).
+        // If event has NO recipient_roles, assume public/all.
+        let roleMatch = true;
+
+        if (role && e.recipient_roles && Array.isArray(e.recipient_roles) && e.recipient_roles.length > 0) {
+            const normalizedUserRole = role.toLowerCase();
+            const normalizedEventRoles = e.recipient_roles.map(r => r.toLowerCase());
+            roleMatch = normalizedEventRoles.includes(normalizedUserRole);
+        }
+
+        return deptMatch && roleMatch;
+    });
 
     res.json({ data: events, error: null });
 });
@@ -63,7 +88,7 @@ router.post('/', async (req, res) => {
     if (req.body.facility_id && req.body.date && req.body.time) {
         const logMsg = (msg) => {
             const logLine = `[${new Date().toISOString()}] ${msg}\n`;
-            try { fs.appendFileSync(path.join(__dirname, '../debug_events.log'), logLine); } catch (e) { }
+            try { fs.appendFileSync(path.join(__dirname, '../debug_events.log'), logLine); } catch (_e) { /* Ignore file write errors */ }
             console.log(logLine.trim());
         };
 

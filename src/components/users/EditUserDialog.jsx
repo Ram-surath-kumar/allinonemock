@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
-import { ROLE_LABELS, PERMISSIONS, ROLE_DEFAULT_PERMISSIONS, ROLE_ALLOWED_PERMISSIONS } from '@/types/erp';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import {
+  ROLE_LABELS,
+  PERMISSIONS,
+  ROLE_DEFAULT_PERMISSIONS,
+  ROLE_ALLOWED_PERMISSIONS,
+} from "@/types/erp";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -12,24 +17,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { fetchDepartments, fetchTeacherDepartments } from '@/services/departments';
-import { supabase } from '@/lib/supabase';
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { fetchDepartments, fetchTeacherDepartments } from "@/services/departments";
+import { supabase } from "@/lib/supabase";
 
 export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
   const { currentUser, canManageRole } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
-  const [departmentId, setDepartmentId] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState([]);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -48,19 +53,19 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       setName(user.name);
       setEmail(user.email);
       setRole(user.role);
-      
+
       // Filter permissions to only include allowed ones for the role
       // Note: We'll update this after custom roles are loaded
       const userPerms = user.permissions || [];
       setSelectedPermissions(userPerms);
-      
+
       // Load department for student or teacher departments
-      if (user.role === 'student') {
+      if (user.role === "student") {
         loadStudentDepartment(user.id);
-      } else if (user.role === 'teacher') {
+      } else if (user.role === "teacher") {
         loadTeacherDepartments(user.id);
       } else {
-        setDepartmentId('');
+        setDepartmentId("");
         setSelectedDepartmentIds([]);
       }
     }
@@ -72,8 +77,8 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       const depts = await fetchDepartments();
       setDepartments(depts);
     } catch (error) {
-      console.error('Error loading departments:', error);
-      toast.error('Failed to load departments');
+      console.error("Error loading departments:", error);
+      toast.error("Failed to load departments");
     } finally {
       setLoadingDepartments(false);
     }
@@ -86,7 +91,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
     if (user) {
       const allowedPerms = ROLE_ALLOWED_PERMISSIONS[user.role] || [];
       const userPerms = user.permissions || [];
-      const filteredPerms = userPerms.filter(p => allowedPerms.includes(p));
+      const filteredPerms = userPerms.filter((p) => allowedPerms.includes(p));
       setSelectedPermissions(filteredPerms);
     }
   };
@@ -94,15 +99,15 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
   const loadStudentDepartment = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('department_id')
-        .eq('id', userId)
+        .from("users")
+        .select("department_id")
+        .eq("id", userId)
         .single();
 
       if (error) throw error;
-      setDepartmentId(data?.department_id || '');
+      setDepartmentId(data?.department_id || "");
     } catch (error) {
-      console.error('Error loading student department:', error);
+      console.error("Error loading student department:", error);
     }
   };
 
@@ -111,12 +116,12 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       const deptIds = await fetchTeacherDepartments(teacherId);
       setSelectedDepartmentIds(deptIds);
     } catch (error) {
-      console.error('Error loading teacher departments:', error);
+      console.error("Error loading teacher departments:", error);
     }
   };
 
-  const builtInRoles = Object.keys(ROLE_LABELS).filter(r => canManageRole(r));
-  const availableRoles = [...builtInRoles, ...customRoles.map(cr => cr.name)];
+  const builtInRoles = Object.keys(ROLE_LABELS).filter((r) => canManageRole(r));
+  const availableRoles = [...builtInRoles, ...customRoles.map((cr) => cr.name)];
 
   const handleRoleChange = (newRole) => {
     const previousRole = role;
@@ -127,18 +132,16 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       const defaultPerms = ROLE_DEFAULT_PERMISSIONS[newRole] || [];
       const allowedPerms = ROLE_ALLOWED_PERMISSIONS[newRole] || [];
       // Filter to only include allowed permissions
-      setSelectedPermissions(defaultPerms.filter(p => allowedPerms.includes(p)));
+      setSelectedPermissions(defaultPerms.filter((p) => allowedPerms.includes(p)));
       // Reset department selections when role changes
-      setDepartmentId('');
+      setDepartmentId("");
       setSelectedDepartmentIds([]);
     }
   };
 
   const toggleDepartment = (deptId) => {
-    setSelectedDepartmentIds(prev =>
-      prev.includes(deptId)
-        ? prev.filter(id => id !== deptId)
-        : [...prev, deptId]
+    setSelectedDepartmentIds((prev) =>
+      prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
     );
   };
 
@@ -149,39 +152,41 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
     if (!allowedPerms.includes(permissionId)) {
       return; // Don't allow toggling disallowed permissions
     }
-    
-    setSelectedPermissions(prev => {
-      const filtered = prev.filter(p => allowedPerms.includes(p)); // Remove any disallowed permissions
+
+    setSelectedPermissions((prev) => {
+      const filtered = prev.filter((p) => allowedPerms.includes(p)); // Remove any disallowed permissions
       return filtered.includes(permissionId)
-        ? filtered.filter(p => p !== permissionId)
+        ? filtered.filter((p) => p !== permissionId)
         : [...filtered, permissionId];
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!name || !email || !role || !user) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
     // Check if user can manage this role
     if (!canManageRole(role)) {
       const roleLabel = role in ROLE_LABELS ? ROLE_LABELS[role] : role;
-      toast.error(`You cannot assign the ${roleLabel} role. You can only manage roles below yours in the hierarchy.`);
+      toast.error(
+        `You cannot assign the ${roleLabel} role. You can only manage roles below yours in the hierarchy.`
+      );
       return;
     }
 
     // For students, department is required
-    if (role === 'student' && !departmentId) {
-      toast.error('Please select a department for the student');
+    if (role === "student" && !departmentId) {
+      toast.error("Please select a department for the student");
       return;
     }
 
     // For teachers, at least one department is required
-    if (role === 'teacher' && selectedDepartmentIds.length === 0) {
-      toast.error('Please select at least one department for the teacher');
+    if (role === "teacher" && selectedDepartmentIds.length === 0) {
+      toast.error("Please select at least one department for the teacher");
       return;
     }
 
@@ -190,8 +195,8 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       email,
       role,
       permissions: selectedPermissions,
-      ...(role === 'student' ? { department_id: departmentId } : {}),
-      ...(role === 'teacher' ? { department_ids: selectedDepartmentIds } : {}),
+      ...(role === "student" ? { department_id: departmentId } : {}),
+      ...(role === "teacher" ? { department_ids: selectedDepartmentIds } : {}),
     });
 
     onOpenChange(false);
@@ -201,7 +206,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
   const getAllowedPermissions = (role) => {
     if (!role) return [];
     const allowedPermissionIds = ROLE_ALLOWED_PERMISSIONS[role] || [];
-    return PERMISSIONS.filter(p => allowedPermissionIds.includes(p.id));
+    return PERMISSIONS.filter((p) => allowedPermissionIds.includes(p.id));
   };
 
   const groupedPermissions = (() => {
@@ -216,11 +221,11 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
   })();
 
   const categoryLabels = {
-    student: 'Student Data',
-    staff: 'Staff Management',
-    finance: 'Finance',
-    academic: 'Academics',
-    facility: 'Facilities',
+    student: "Student Data",
+    staff: "Staff Management",
+    finance: "Finance",
+    academic: "Academics",
+    facility: "Facilities",
   };
 
   if (!user) return null;
@@ -230,9 +235,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>
-            Update user information, role, and permissions.
-          </DialogDescription>
+          <DialogDescription>Update user information, role, and permissions.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -281,11 +284,11 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
               </Select>
             </div>
 
-            {role === 'student' && (
+            {role === "student" && (
               <div className="space-y-2">
                 <Label htmlFor="edit-department">Department *</Label>
-                <Select 
-                  value={departmentId} 
+                <Select
+                  value={departmentId}
                   onValueChange={setDepartmentId}
                   disabled={loadingDepartments}
                 >
@@ -302,7 +305,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
                 </Select>
               </div>
             )}
-            {role === 'teacher' && (
+            {role === "teacher" && (
               <div className="space-y-2">
                 <Label>Departments *</Label>
                 <div className="rounded-lg border border-border p-3 min-h-[80px] max-h-[200px] overflow-y-auto">
@@ -334,7 +337,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
             )}
           </div>
 
-          {role && role !== 'student' && Object.keys(groupedPermissions).length > 0 && (
+          {role && role !== "student" && Object.keys(groupedPermissions).length > 0 && (
             <div className="space-y-4">
               <Label>Permissions</Label>
               <div className="rounded-lg border border-border p-4 space-y-6">
@@ -370,7 +373,7 @@ export function EditUserDialog({ open, onOpenChange, user, onUpdate }) {
               </div>
             </div>
           )}
-          {role === 'student' && (
+          {role === "student" && (
             <div className="rounded-lg border border-border bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">
                 Students can only view their own data. No additional permissions are required.

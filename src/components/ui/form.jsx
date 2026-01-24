@@ -10,9 +10,7 @@ const Form = FormProvider;
 
 const FormFieldContext = React.createContext({});
 
-const FormField = ({
-  ...props
-}) => {
+const FormField = ({ ...props }) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
@@ -45,23 +43,28 @@ const useFormField = () => {
 
 const FormItemContext = React.createContext({});
 
-const FormItem = React.forwardRef(
-  ({ className, ...props }, ref) => {
-    const id = React.useId();
+const FormItem = React.forwardRef(({ className, ...props }, ref) => {
+  const id = React.useId();
 
-    return (
-      <FormItemContext.Provider value={{ id }}>
-        <div ref={ref} className={cn("space-y-2", className)} {...props} />
-      </FormItemContext.Provider>
-    );
-  },
-);
+  return (
+    <FormItemContext.Provider value={{ id }}>
+      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+    </FormItemContext.Provider>
+  );
+});
 FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField();
 
-  return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />;
+  return (
+    <Label
+      ref={ref}
+      className={cn(error && "text-destructive", className)}
+      htmlFor={formItemId}
+      {...props}
+    />
+  );
 });
 FormLabel.displayName = "FormLabel";
 
@@ -83,7 +86,14 @@ FormControl.displayName = "FormControl";
 const FormDescription = React.forwardRef(({ className, ...props }, ref) => {
   const { formDescriptionId } = useFormField();
 
-  return <p ref={ref} id={formDescriptionId} className={cn("text-sm text-muted-foreground", className)} {...props} />;
+  return (
+    <p
+      ref={ref}
+      id={formDescriptionId}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
 });
 FormDescription.displayName = "FormDescription";
 
@@ -96,11 +106,25 @@ const FormMessage = React.forwardRef(({ className, children, ...props }, ref) =>
   }
 
   return (
-    <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive", className)} {...props}>
+    <p
+      ref={ref}
+      id={formMessageId}
+      className={cn("text-sm font-medium text-destructive", className)}
+      {...props}
+    >
       {body}
     </p>
   );
 });
 FormMessage.displayName = "FormMessage";
 
-export { useFormField, Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField };
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+};

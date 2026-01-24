@@ -117,7 +117,7 @@ async function testExamLogic() {
     console.log('\n--- Testing Exam Fee Assignment ---');
     try {
         // 1. Setup: Ensure Exam exists
-        let exams = await secureDb.get('exams', q => q.limit(1));
+        const exams = await secureDb.get('exams', q => q.limit(1));
         let examId;
         if (!exams.length) {
             const newExam = await secureDb.create('exams', {

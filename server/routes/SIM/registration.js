@@ -10,7 +10,7 @@ router.get('/offerings/:semester_id', async (req, res) => {
         const { semester_id } = req.params;
         const { department_id } = req.query;
 
-        let query = supabase
+        const query = supabase
             .from('course_offerings')
             .select(`
                 id,

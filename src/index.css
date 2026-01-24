@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +22,7 @@
     --secondary-foreground: 222 47% 11%;
 
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 16% 40%;
 
     --accent: 210 40% 96%;
     --accent-foreground: 222 47% 11%;
@@ -57,7 +57,7 @@
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 20% 98%));
     --gradient-subtle: linear-gradient(135deg, hsl(210 20% 98%), hsl(210 40% 96%));
     --gradient-glow: linear-gradient(135deg, hsl(226 71% 50% / 0.3), hsl(226 71% 60% / 0.1));
-    
+
     /* Enhanced depth shadows - 2025 style */
     --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
     --shadow-card: 0 2px 8px 0 hsl(222 47% 11% / 0.08), 0 1px 3px 0 hsl(222 47% 11% / 0.06);
@@ -67,7 +67,7 @@
     --shadow-xl: 0 20px 48px 0 hsl(222 47% 11% / 0.18), 0 8px 16px 0 hsl(222 47% 11% / 0.12);
     --shadow-2xl: 0 24px 64px 0 hsl(222 47% 11% / 0.2), 0 12px 24px 0 hsl(222 47% 11% / 0.15);
     --shadow-glow: 0 0 24px 0 hsl(226 71% 50% / 0.2);
-    
+
     --glass-bg: rgba(255, 255, 255, 0.9);
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-bg-dark: rgba(15, 23, 42, 0.75);
@@ -142,8 +142,10 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: "Inter", "Poppins", system-ui, sans-serif;
+    transition:
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -261,7 +263,9 @@
 
   /* Micro-interactions */
   .hover-lift {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .hover-lift:hover {
@@ -384,7 +388,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -403,15 +408,20 @@
 
 /* Smooth transitions for interactive elements */
 @layer base {
-  button, a, [role="button"] {
+  button,
+  a,
+  [role="button"] {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .card, [class*="card"] {
+  .card,
+  [class*="card"] {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 

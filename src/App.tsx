@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { I18nProvider } from "./lib/i18n";
 import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -19,8 +20,7 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
 
-  // Debug logging
-  console.log('App Render:', { currentUser, loading, path: window.location.pathname });
+  // Debug logging removed to prevent console spam
 
   // Optional: Redirect logic if needed at App level, but usually handled in protected routes or Index.jsx
   // if (!currentUser && !loading && window.location.pathname !== '/login') {
@@ -61,19 +61,21 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <I18nProvider defaultLocale="en">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </I18nProvider>
 );
 
 export default App;

@@ -12,20 +12,32 @@ router.get('/routes', async (req, res) => {
     try {
         const { org_id } = req.query;
         // Fetch detailed routes
-        let routes = await secureDb.get('transport_routes', q => {
+        const routes = await secureDb.get('transport_routes', q => {
             if (org_id) return q.eq('org_id', org_id);
             return q.order('route_name');
         });
 
-        // Loop through routes to attach stops and vehicle
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Loop through routes to attach stops and vehicles
         const enrichedRoutes = await Promise.all(routes.map(async (route) => {
             const stops = await secureDb.get('transport_stops', q => q.eq('route_id', route.id).order('stop_order'));
-            let vehicle = null;
-            if (route.vehicle_id) {
-                const vehicles = await secureDb.get('transport_vehicles', q => q.eq('id', route.vehicle_id));
-                vehicle = vehicles[0] || null;
+
+            // New: Fetch multiple vehicles via junction table
+            const { data: routeVehicles } = await supabaseAdmin
+                .from('transport_route_vehicles')
+                .select('vehicle_id, vehicles(*)')
+                .eq('route_id', route.id);
+
+            const vehicles = routeVehicles ? routeVehicles.map(rv => rv.vehicles) : [];
+
+            // Fallback for backward compatibility if data exists in old column
+            if (vehicles.length === 0 && route.vehicle_id) {
+                const oldVehicles = await secureDb.get('transport_vehicles', q => q.eq('id', route.vehicle_id));
+                if (oldVehicles[0]) vehicles.push(oldVehicles[0]);
             }
-            return { ...route, stops, vehicle };
+
+            return { ...route, stops, vehicles, vehicle: vehicles[0] || null }; // vehicle kept for legacy UI compat if needed
         }));
 
         sendSuccess(res, enrichedRoutes);
@@ -63,6 +75,17 @@ router.post('/routes', async (req, res) => {
 
         // Create Route
         const newRoute = await secureDb.create('transport_routes', cleanRouteData, context);
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Handle Multiple Vehicles
+        if (routeData.vehicle_ids && Array.isArray(routeData.vehicle_ids)) {
+            for (const vid of routeData.vehicle_ids) {
+                await supabaseAdmin.from('transport_route_vehicles').insert({
+                    route_id: newRoute.id,
+                    vehicle_id: vid
+                });
+            }
+        }
 
         // Create Stops
         if (stops && Array.isArray(stops)) {
@@ -109,22 +132,36 @@ router.post('/register', async (req, res) => {
             ...data,
             reg_id: regId,
             status: 'active',
-            reg_date: new Date().toISOString()
+            reg_date: new Date().toISOString(),
+            vehicle_id: data.vehicle_id || null // Save allocated vehicle
         };
 
         // 3. Create Registration
         const registration = await secureDb.create('transport_registrations', payload, context);
 
-        // 4. Generate Fees via Service
+        // 4. Create Fee Installments (Example Logic)
         if (data.fee_annual > 0) {
-            try {
-                // Import feeService dynamically if not at top, or ensure it's imported
-                const { feeService } = await import('../services/feeService.js');
-                await feeService.assignTransportFee(data.student_id, registration.id, context);
-            } catch (err) {
-                console.error('Failed to generate transport fee:', err);
-                // Non-blocking for registration success, but logged
-            }
+            const semFee = data.fee_annual / 2;
+
+            // Installment 1
+            await secureDb.create('transport_fee_payments', {
+                registration_id: registration.id,
+                installment_no: 1,
+                amount_due: semFee,
+                due_date: new Date().toISOString(), // Immediate
+                status: 'Pending'
+            }, context);
+
+            // Installment 2 (6 months later)
+            const date2 = new Date();
+            date2.setMonth(date2.getMonth() + 6);
+            await secureDb.create('transport_fee_payments', {
+                registration_id: registration.id,
+                installment_no: 2,
+                amount_due: semFee,
+                due_date: date2.toISOString(),
+                status: 'Pending'
+            }, context);
         }
 
         sendSuccess(res, registration);
@@ -138,9 +175,8 @@ router.post('/register', async (req, res) => {
  */
 router.get('/vehicles', async (req, res) => {
     try {
-        // Query the same table that POST inserts into (vehicles, not transport_vehicles)
         const vehicles = await secureDb.get('vehicles');
-        res.json({ success: true, data: vehicles });
+        sendSuccess(res, vehicles);
     } catch (error) {
         handleError(error, res, 'Failed to fetch vehicles');
     }
@@ -151,41 +187,93 @@ router.get('/vehicles', async (req, res) => {
  */
 router.post('/vehicles', async (req, res) => {
     try {
-        // Import supabase client
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
-
-        console.log('Creating vehicle via RPC:', req.body.vehicle_id);
-        const { data, error } = await supabase
-            .rpc('create_vehicle', { vehicle_data: req.body });
-
-        if (error) {
-            // Check for duplicate key error
-            if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
-                if (error.message.includes('vehicles_vehicle_id_key')) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Vehicle ID "${req.body.vehicle_id}" already exists. Please use a different Vehicle ID.`
-                    });
-                }
-                if (error.message.includes('vehicles_registration_number_key')) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Registration Number "${req.body.registration_number}" already exists. Please use a different Registration Number.`
-                    });
-                }
-            }
-            throw error;
-        }
-        res.status(201).json({ success: true, data });
+        const context = { user: req.user };
+        const newVehicle = await secureDb.create('vehicles', req.body, context);
+        sendSuccess(res, newVehicle);
     } catch (error) {
         handleError(error, res, 'Failed to add vehicle');
     }
 });
 
+/**
+ * @route GET /api/transport/vehicles/:id
+ * @desc Get vehicle details including route, passengers, notes, and tasks
+ */
+router.get('/vehicles/:id', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+
+        // 1. Fetch Vehicle (using supabaseAdmin to bypass RLS if needed)
+        const { data: vehicle, error: vehicleError } = await supabaseAdmin
+            .from('vehicles')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (vehicleError) {
+            console.error('Error fetching vehicle:', req.params.id, vehicleError);
+            if (vehicleError.code === 'PGRST116') {
+                return res.status(404).json({ data: null, error: 'Vehicle not found' });
+            }
+            throw vehicleError;
+        }
+
+        // 2. Fetch Linked Route (using maybeSingle)
+        const { data: routeData } = await supabaseAdmin
+            .from('transport_routes')
+            .select('*')
+            .eq('vehicle_id', req.params.id)
+            .maybeSingle();
+
+        let passengers = [];
+        let routeStops = [];
+
+        if (routeData) {
+            // 3. Fetch Passengers (Students)
+            const { data: students } = await supabaseAdmin
+                .from('transport_registrations')
+                .select('*, student:users(*)')
+                .eq('route_id', routeData.id)
+                .eq('status', 'active');
+
+            if (students) passengers = students;
+
+            // 4. Fetch Route Stops
+            const { data: stops } = await supabaseAdmin
+                .from('route_stops')
+                .select('*')
+                .eq('route_id', routeData.id)
+                .order('stop_order', { ascending: true });
+
+            if (stops) routeStops = stops;
+        }
+
+        // 5. Fetch Notes
+        const { data: notes } = await supabaseAdmin
+            .from('vehicle_notes')
+            .select('*')
+            .eq('vehicle_id', req.params.id)
+            .order('created_at', { ascending: false });
+
+        // 6. Fetch Tasks
+        const { data: tasks } = await supabaseAdmin
+            .from('vehicle_tasks')
+            .select('*')
+            .eq('vehicle_id', req.params.id)
+            .order('due_date', { ascending: true });
+
+        sendSuccess(res, {
+            ...vehicle,
+            route: routeData ? { ...routeData, stops: routeStops } : null,
+            passengers: passengers || [],
+            notes: notes || [],
+            tasks: tasks || []
+        });
+
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch vehicle details');
+    }
+});
 
 /**
  * @route GET /api/transport/student/:studentId
@@ -211,6 +299,277 @@ router.get('/student/:studentId', async (req, res) => {
 
     } catch (error) {
         handleError(error, res, 'Failed to fetch student transport details');
+    }
+});
+
+/**
+ * @route GET /api/transport/routes/:id/stops
+ * @desc Get stops for a specific route
+ */
+router.get('/routes/:id/stops', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+
+        const { data: stops, error } = await supabaseAdmin
+            .from('transport_stops')
+            .select('*')
+            .eq('route_id', req.params.id)
+            .order('stop_order', { ascending: true });
+
+        if (error) throw error;
+        sendSuccess(res, stops || []);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch route stops');
+    }
+});
+
+/**
+ * @route PUT /api/transport/routes/:id
+ * @desc Update a transport route
+ */
+router.put('/routes/:id', async (req, res) => {
+    try {
+        const context = { user: req.user };
+        const { id } = req.params;
+        const cleanStr = (val) => (val === '' || val === 'null' || val === null || val === undefined) ? null : val;
+
+        const { vehicle_ids, stops, ...routeData } = req.body;
+
+        const updateData = {
+            ...routeData,
+            vehicle_id: cleanStr(req.body.vehicle_id)
+        };
+
+        const updatedRoute = await secureDb.update('transport_routes', id, updateData, context);
+
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Update Vehicles (Delete all and re-insert)
+        if (vehicle_ids && Array.isArray(vehicle_ids)) {
+            // Delete existing
+            await supabaseAdmin.from('transport_route_vehicles').delete().eq('route_id', id);
+
+            // Insert new
+            for (const vid of vehicle_ids) {
+                await supabaseAdmin.from('transport_route_vehicles').insert({
+                    route_id: id,
+                    vehicle_id: vid
+                });
+            }
+        }
+
+        // Update Stops (if provided)
+        if (stops && Array.isArray(stops)) {
+            // Basic implementation: Delete all and re-create (simplest for ordering)
+            await supabaseAdmin.from('transport_stops').delete().eq('route_id', id);
+            let order = 1;
+            for (const stop of stops) {
+                await secureDb.create('transport_stops', {
+                    route_id: id,
+                    stop_name: stop.stop_name,
+                    stop_order: order++,
+                    arrival_time: stop.arrival_time,
+                    stop_id: stop.stop_id,
+                    latitude: stop.latitude,
+                    longitude: stop.longitude,
+                    stop_duration_mins: stop.stop_duration_mins || 1,
+                    avg_boarding_count: stop.avg_boarding_count || 0,
+                    address: stop.address
+                }, context);
+            }
+        }
+
+        sendSuccess(res, updatedRoute);
+    } catch (error) {
+        handleError(error, res, 'Failed to update route');
+    }
+});
+
+/**
+ * @route DELETE /api/transport/routes/:id
+ * @desc Delete a transport route
+ */
+router.delete('/routes/:id', async (req, res) => {
+    try {
+        const context = { user: req.user };
+        const { id } = req.params;
+
+        await secureDb.delete('transport_routes', id, context);
+        sendSuccess(res, { message: 'Route deleted successfully' });
+    } catch (error) {
+        handleError(error, res, 'Failed to delete route');
+    }
+});
+
+/**
+ * @route GET /api/transport/registrations
+ * @desc Get all transport registrations
+ */
+router.get('/registrations', async (req, res) => {
+    try {
+        const registrations = await secureDb.get('transport_registrations');
+        sendSuccess(res, registrations);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch registrations');
+    }
+});
+
+/**
+ * @route GET /api/transport/route/:routeId/students
+ * @desc Get all students registered for a specific route
+ */
+router.get('/route/:routeId/students', async (req, res) => {
+    try {
+        const { routeId } = req.params;
+        const registrations = await secureDb.get('transport_registrations', q =>
+            q.eq('route_id', routeId).eq('status', 'active')
+        );
+        sendSuccess(res, registrations);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch route students');
+    }
+});
+
+/**
+ * @route DELETE /api/transport/registrations/:id
+ * @desc Delete a transport registration (remove student from route)
+ */
+router.delete('/registrations/:id', async (req, res) => {
+    try {
+        const context = { user: req.user };
+        const { id } = req.params;
+
+        await secureDb.delete('transport_registrations', id, context);
+        sendSuccess(res, { message: 'Student removed from route successfully' });
+    } catch (error) {
+        handleError(error, res, 'Failed to remove student from route');
+    }
+});
+
+/**
+ * @route POST /api/transport/vehicles/:id/notes
+ * @desc Add a note to a vehicle
+ */
+router.post('/vehicles/:id/notes', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+        const context = { user: req.user };
+
+        const { data, error } = await supabaseAdmin
+            .from('vehicle_notes')
+            .insert([{
+                vehicle_id: req.params.id,
+                ...req.body
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, data);
+    } catch (error) {
+        handleError(error, res, 'Failed to add note');
+    }
+});
+
+/**
+ * @route POST /api/transport/vehicles/:id/tasks
+ * @desc Add a task to a vehicle
+ */
+router.post('/vehicles/:id/tasks', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+        const context = { user: req.user };
+
+        const { data, error } = await supabaseAdmin
+            .from('vehicle_tasks')
+            .insert([{
+                vehicle_id: req.params.id,
+                status: 'Pending',
+                ...req.body
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, data);
+    } catch (error) {
+        handleError(error, res, 'Failed to add task');
+    }
+});
+
+/**
+ * @route DELETE /api/transport/vehicles/:id
+ * @desc Delete a vehicle
+ */
+router.delete('/vehicles/:id', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+        const context = { user: req.user };
+
+        const { error } = await supabaseAdmin
+            .from('vehicles')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+        sendSuccess(res, { message: 'Vehicle deleted successfully' });
+    } catch (error) {
+        handleError(error, res, 'Failed to delete vehicle');
+    }
+});
+
+/**
+ * @route GET /api/transport/crew
+ * @desc Get all drivers and conductors for crew assignment
+ */
+router.get('/crew', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Fetch all users with driver or conductor role
+        const { data: crew, error } = await supabaseAdmin
+            .from('users')
+            .select('id, user_id, name, role, status')
+            .in('role', ['driver', 'conductor'])
+            .eq('status', 'active')
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        // Separate into drivers and conductors
+        const drivers = crew.filter(c => c.role === 'driver');
+        const conductors = crew.filter(c => c.role === 'conductor');
+
+        sendSuccess(res, { drivers, conductors });
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch crew');
+    }
+});
+
+/**
+ * @route PUT /api/transport/vehicles/:id/crew
+ * @desc Assign driver and/or conductor to a vehicle
+ */
+router.put('/vehicles/:id/crew', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+        const { driver_id, conductor_id } = req.body;
+
+        const updateData = {};
+        if (driver_id !== undefined) updateData.current_driver_assigned = driver_id;
+        if (conductor_id !== undefined) updateData.conductor_assigned = conductor_id;
+
+        const { data, error } = await supabaseAdmin
+            .from('vehicles')
+            .update(updateData)
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, data);
+    } catch (error) {
+        handleError(error, res, 'Failed to assign crew to vehicle');
     }
 });
 

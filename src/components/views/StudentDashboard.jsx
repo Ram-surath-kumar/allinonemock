@@ -1,23 +1,23 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, Clock, Award, CheckCircle, Circle } from 'lucide-react';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { api } from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { BookOpen, Calendar, Clock, Award, CheckCircle, Circle } from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { api } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const grades = [
-  { subject: 'Mathematics', grade: 'A', score: 92 },
-  { subject: 'Physics', grade: 'B+', score: 87 },
-  { subject: 'English', grade: 'A-', score: 90 },
-  { subject: 'Chemistry', grade: 'B', score: 83 },
+  { subject: "Mathematics", grade: "A", score: 92 },
+  { subject: "Physics", grade: "B+", score: 87 },
+  { subject: "English", grade: "A-", score: 90 },
+  { subject: "Chemistry", grade: "B", score: 83 },
 ];
 
 const announcements = [
-  { id: 1, title: 'Annual Sports Day', date: 'Mar 15', type: 'event' },
-  { id: 2, title: 'Midterm exams schedule released', date: 'Mar 10', type: 'academic' },
-  { id: 3, title: 'Science fair registration open', date: 'Mar 8', type: 'event' },
+  { id: 1, title: "Annual Sports Day", date: "Mar 15", type: "event" },
+  { id: 2, title: "Midterm exams schedule released", date: "Mar 10", type: "academic" },
+  { id: 3, title: "Science fair registration open", date: "Mar 8", type: "event" },
 ];
 
 export function StudentDashboard() {
@@ -44,13 +44,15 @@ export function StudentDashboard() {
         }
 
         // Load Events
-        const eventsResponse = await api.getEvents({ department_id: currentUser?.department });
+        const eventsResponse = await api.getEvents({
+          department_id: currentUser?.department,
+          role: (currentUser?.role || 'student').toLowerCase()
+        });
         if (eventsResponse.data) {
           setEvents(eventsResponse.data);
         }
-
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error("Failed to load data:", error);
       } finally {
         setLoading(false);
       }
@@ -61,14 +63,14 @@ export function StudentDashboard() {
 
   const handleToggleStatus = async (task) => {
     try {
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const newStatus = task.status === "completed" ? "pending" : "completed";
       // Optimistic update
-      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+      setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)));
 
       await api.updateTask(task.id, { status: newStatus });
     } catch (error) {
       console.error("Failed to update status", error);
-      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+      setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: task.status } : t)));
     }
   };
 
@@ -98,7 +100,7 @@ export function StudentDashboard() {
         />
         <StatsCard
           title="Pending Assignments"
-          value={tasks.filter(t => t.status === 'pending').length.toString()}
+          value={tasks.filter((t) => t.status === "pending").length.toString()}
           change="Due soon"
           icon={Clock}
         />
@@ -115,7 +117,9 @@ export function StudentDashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {schedules.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No classes scheduled.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No classes scheduled.
+              </p>
             ) : (
               schedules.map((classItem, index) => (
                 <div
@@ -125,10 +129,12 @@ export function StudentDashboard() {
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-foreground">{classItem.subject}</p>
-                    <Badge variant="outline" className="text-xs">{classItem.time}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {classItem.time}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {classItem.teacher_name || 'Teacher'} • {classItem.room}
+                    {classItem.teacher_name || "Teacher"} • {classItem.room}
                   </p>
                 </div>
               ))
@@ -174,7 +180,9 @@ export function StudentDashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {tasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No pending assignments.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No pending assignments.
+              </p>
             ) : (
               tasks.map((task, index) => (
                 <div
@@ -186,7 +194,7 @@ export function StudentDashboard() {
                     onClick={() => handleToggleStatus(task)}
                     className="mt-0.5 text-muted-foreground hover:text-primary transition-colors focus:outline-none"
                   >
-                    {task.status === 'completed' ? (
+                    {task.status === "completed" ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
                       <Circle className="h-5 w-5" />
@@ -194,11 +202,15 @@ export function StudentDashboard() {
                   </button>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <p className={`font-medium text-sm ${task.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                      <p
+                        className={`font-medium text-sm ${task.status === "completed" ? "text-muted-foreground line-through" : "text-foreground"}`}
+                      >
                         {task.title}
                       </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Due: {task.due_date} • By: {task.assigned_by_name || 'Teacher'}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Due: {task.due_date} • By: {task.assigned_by_name || "Teacher"}
+                    </p>
                   </div>
                 </div>
               ))
@@ -226,7 +238,9 @@ export function StudentDashboard() {
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-foreground">{event.title}</p>
-                    <Badge variant="secondary" className="text-xs">{event.date}</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {event.date}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {event.time} @ {event.location}

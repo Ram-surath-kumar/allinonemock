@@ -183,7 +183,7 @@ router.get('/', async (req, res) => {
       .from('placements')
       .select('package_lpa, status');
 
-    let placementStats = { totalOffers: 0, avgPackage: 0, highestPackage: 0 };
+    const placementStats = { totalOffers: 0, avgPackage: 0, highestPackage: 0 };
     if (!placementError && placementData) {
       const offers = placementData.filter(p => ['Selected', 'Offer Received'].includes(p.status));
       placementStats.totalOffers = offers.length;
@@ -199,7 +199,7 @@ router.get('/', async (req, res) => {
       .from('compliance_records')
       .select('status, category');
 
-    let complianceStats = { compliant: 0, nonCompliant: 0, pending: 0 };
+    const complianceStats = { compliant: 0, nonCompliant: 0, pending: 0 };
     if (!complianceError && complianceData) {
       complianceStats.compliant = complianceData.filter(c => c.status === 'Compliant').length;
       complianceStats.nonCompliant = complianceData.filter(c => c.status === 'Non-Compliant').length;

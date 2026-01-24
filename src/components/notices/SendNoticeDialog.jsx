@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -24,24 +24,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { Search } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { Search } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  message: z.string().min(10, 'Message must be at least 10 characters'),
-  type: z.enum(['info', 'success', 'warning', 'error']),
-  recipientType: z.enum(['all', 'role', 'specific']),
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  message: z.string().min(10, "Message must be at least 10 characters"),
+  type: z.enum(["info", "success", "warning", "error"]),
+  recipientType: z.enum(["all", "role", "specific"]),
   role: z.string().optional(),
   userIds: z.array(z.string()).optional(),
 });
@@ -49,24 +49,24 @@ const formSchema = z.object({
 export function SendNoticeDialog({ open, onOpenChange }) {
   const { currentUser } = useAuth();
   const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      message: '',
-      type: 'info',
-      recipientType: 'all',
-      role: '',
+      title: "",
+      message: "",
+      type: "info",
+      recipientType: "all",
+      role: "",
       userIds: [],
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
-  const watchedRecipientType = form.watch('recipientType');
-  const watchedUserIds = form.watch('userIds') || [];
+  const watchedRecipientType = form.watch("recipientType");
+  const watchedUserIds = form.watch("userIds") || [];
 
   useEffect(() => {
     if (open) {
@@ -79,10 +79,10 @@ export function SendNoticeDialog({ open, onOpenChange }) {
     try {
       setLoadingUsers(true);
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('status', 'active')
-        .order('name', { ascending: true });
+        .from("users")
+        .select("*")
+        .eq("status", "active")
+        .order("name", { ascending: true });
 
       if (error) throw error;
 
@@ -104,8 +104,8 @@ export function SendNoticeDialog({ open, onOpenChange }) {
         setUsers(mappedUsers);
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
+      console.error("Error loading users:", error);
+      toast.error("Failed to load users");
     } finally {
       setLoadingUsers(false);
     }
@@ -114,16 +114,17 @@ export function SendNoticeDialog({ open, onOpenChange }) {
   const toggleUser = (userId) => {
     const currentIds = watchedUserIds;
     const newIds = currentIds.includes(userId)
-      ? currentIds.filter(id => id !== userId)
+      ? currentIds.filter((id) => id !== userId)
       : [...currentIds, userId];
-    form.setValue('userIds', newIds);
+    form.setValue("userIds", newIds);
   };
 
-  const filteredUsers = users.filter(user => {
-    if (watchedRecipientType === 'role' && form.watch('role')) {
-      return user.role === form.watch('role');
+  const filteredUsers = users.filter((user) => {
+    if (watchedRecipientType === "role" && form.watch("role")) {
+      return user.role === form.watch("role");
     }
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
@@ -132,24 +133,24 @@ export function SendNoticeDialog({ open, onOpenChange }) {
     try {
       let targetUserIds = [];
 
-      if (values.recipientType === 'all') {
+      if (values.recipientType === "all") {
         // Get all active users
-        targetUserIds = users.map(u => u.id);
-      } else if (values.recipientType === 'role' && values.role) {
+        targetUserIds = users.map((u) => u.id);
+      } else if (values.recipientType === "role" && values.role) {
         // Get users with specific role
-        targetUserIds = users.filter(u => u.role === values.role).map(u => u.id);
-      } else if (values.recipientType === 'specific' && values.userIds) {
+        targetUserIds = users.filter((u) => u.role === values.role).map((u) => u.id);
+      } else if (values.recipientType === "specific" && values.userIds) {
         // Get selected users
         targetUserIds = values.userIds;
       }
 
       if (targetUserIds.length === 0) {
-        toast.error('Please select at least one recipient');
+        toast.error("Please select at least one recipient");
         return;
       }
 
       // Create notifications for all target users
-      const notifications = targetUserIds.map(userId => ({
+      const notifications = targetUserIds.map((userId) => ({
         user_id: userId,
         title: values.title,
         message: values.message,
@@ -157,21 +158,19 @@ export function SendNoticeDialog({ open, onOpenChange }) {
         read: false,
       }));
 
-      const { error } = await supabase
-        .from('notifications')
-        .insert(notifications);
+      const { error } = await supabase.from("notifications").insert(notifications);
 
       if (error) throw error;
 
       // Trigger refresh event for all users who received the notice
-      window.dispatchEvent(new CustomEvent('notification-sent'));
+      window.dispatchEvent(new CustomEvent("notification-sent"));
 
       toast.success(`Notice sent to ${targetUserIds.length} user(s) successfully`);
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error sending notice:', error);
-      toast.error(error.message || 'Failed to send notice');
+      console.error("Error sending notice:", error);
+      toast.error(error.message || "Failed to send notice");
     }
   };
 
@@ -197,7 +196,11 @@ export function SendNoticeDialog({ open, onOpenChange }) {
                     <Input
                       placeholder="Enter notice title"
                       {...field}
-                      className={form.formState.errors.title ? 'border-destructive focus-visible:ring-destructive' : ''}
+                      className={
+                        form.formState.errors.title
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -216,7 +219,11 @@ export function SendNoticeDialog({ open, onOpenChange }) {
                       placeholder="Enter notice message"
                       rows={4}
                       {...field}
-                      className={form.formState.errors.message ? 'border-destructive focus-visible:ring-destructive' : ''}
+                      className={
+                        form.formState.errors.message
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -271,7 +278,7 @@ export function SendNoticeDialog({ open, onOpenChange }) {
               )}
             />
 
-            {watchedRecipientType === 'role' && (
+            {watchedRecipientType === "role" && (
               <FormField
                 control={form.control}
                 name="role"
@@ -300,7 +307,7 @@ export function SendNoticeDialog({ open, onOpenChange }) {
               />
             )}
 
-            {watchedRecipientType === 'specific' && (
+            {watchedRecipientType === "specific" && (
               <FormField
                 control={form.control}
                 name="userIds"
@@ -319,9 +326,13 @@ export function SendNoticeDialog({ open, onOpenChange }) {
                       </div>
                       <ScrollArea className="h-64 rounded-lg border border-border p-3">
                         {loadingUsers ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">Loading users...</p>
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Loading users...
+                          </p>
                         ) : filteredUsers.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No users found
+                          </p>
                         ) : (
                           <div className="space-y-2">
                             {filteredUsers.map((user) => (
@@ -337,7 +348,10 @@ export function SendNoticeDialog({ open, onOpenChange }) {
                                 >
                                   <div className="flex items-center gap-2">
                                     <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-xs font-medium text-primary">
-                                      {user.name.split(' ').map(n => n[0]).join('')}
+                                      {user.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
                                     </div>
                                     <div>
                                       <p className="text-sm">{user.name}</p>
@@ -361,10 +375,14 @@ export function SendNoticeDialog({ open, onOpenChange }) {
             )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => {
-                form.reset();
-                onOpenChange(false);
-              }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  onOpenChange(false);
+                }}
+              >
                 Cancel
               </Button>
               <Button type="submit">Send Notice</Button>

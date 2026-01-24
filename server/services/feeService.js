@@ -11,7 +11,7 @@ export const feeService = {
 
             // 1. Get student admission data & extended profile
             let users;
-            try { users = await db.get('users', q => q.eq('id', studentId)); } catch (e) { throw e; }
+            users = await db.get('users', q => q.eq('id', studentId));
             if (!users || users.length === 0) throw new Error('Student not found');
             const student = users[0];
 
@@ -66,9 +66,9 @@ export const feeService = {
             const structure = structures[0];
 
             // 3. Calculate Amounts
-            let totalAmount = structure.total_amount;
+            const totalAmount = structure.total_amount;
             let discountAmount = 0;
-            let concessionalAmount = 0;
+            const concessionalAmount = 0;
             let appliedScholarshipId = null;
 
             // check for scholarships with Rule Engine
@@ -247,7 +247,9 @@ export const feeService = {
             const room = rooms[0];
 
             // 2. Find or Create Hostel Fee Structure
-            let structures = await db.get('fee_structures', q =>
+            // Look for a fee structure specifically for this Hostel/Room Type
+            // For simplicity, we'll look for a generic "Hostel Fee" structure or one named after the room type
+            const structures = await db.get('fee_structures', q =>
                 q.ilike('name', `%Hostel%`).eq('batch_year', new Date().getFullYear())
             );
 
@@ -261,13 +263,14 @@ export const feeService = {
                     name: `Hostel Fee - ${new Date().getFullYear()}`,
                     batch_year: new Date().getFullYear(),
                     semester: 'Annual',
-                    due_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
-                    total_amount: 50000,
+                    due_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0], // Due next month
+                    total_amount: 50000, // Default amount, logical to make this configurable
                     items: []
                 }, context);
             }
 
-            // 3. Prevent Duplicates
+            // 3. Assign to Student (using simplified direct matching logic)
+            // We want to avoid duplicate assignments for the same year
             const existingAssignments = await db.get('student_fee_assignments', q =>
                 q.eq('student_id', studentId).eq('structure_id', structure.id)
             );
@@ -292,6 +295,7 @@ export const feeService = {
 
         } catch (error) {
             console.error('[feeService] Failed to assign hostel fee:', error);
+            // Non-blocking: We don't want to fail the allocation if fee assignment fails, but we should log it
             return null;
         }
     },
@@ -317,19 +321,32 @@ export const feeService = {
             // Calculate Fine
             const diffTime = Math.abs(actualReturnDate - dueDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const finePerDay = 10;
+            const finePerDay = 10; // Configurable ideally
             const fineAmount = diffDays * finePerDay;
 
             console.log(`[feeService] Book Overdue by ${diffDays} days. Fine: ${fineAmount}`);
 
-            // SIMPLIFICATION: Look for most recent pending fee assignment OR Create a standalone Invoice
+            // Find an active fee assignment to attach this fine to (as an adjustment)
+            // Ideally, we'd have a specific "Library Dues" assignments, or we attach to the main Tuition fee
+            // For now, let's create a standalone Fine Adjustment linked to *any* pending assignment or create a debit note
+            // SIMPLIFICATION: We will look for the most recent pending fee assignment
             const assignments = await db.get('student_fee_assignments', q =>
                 q.eq('student_id', issue.member_id).eq('status', 'pending').order('created_at', { ascending: false })
             );
 
             if (assignments && assignments.length > 0) {
                 const assignment = assignments[0];
-                // Try to find an installment
+                const adjust = await db.create('fee_adjustments', {
+                    installment_id: null, // General adjustment on the assignment
+                    // We might need to handle assignment-level adjustments if schema allows, otherwise pick first installment
+                    type: 'fine',
+                    amount: fineAmount,
+                    reason: `Library Late Fine (${diffDays} days)`,
+                    status: 'applied'
+                }, context);
+                // Note: Schema might require installment_id. If so, we need to fetch installments. 
+                // Let's assume for now we need an installment.
+                // Fetch first pending installment
                 const installments = await db.get('fee_installments', q =>
                     q.eq('assignment_id', assignment.id).eq('status', 'pending')
                 );
@@ -342,192 +359,18 @@ export const feeService = {
                         reason: `Library Late Fine (${diffDays} days)`,
                         status: 'applied'
                     }, context);
-                    console.log('[feeService] Fine applied to existing installment.');
-                    return;
+                    console.log('[feeService] Fine applied to installment.');
+                } else {
+                    console.warn('[feeService] No pending installment to attach fine to.');
                 }
-            }
 
-            // If no pending assignment/installment, create a specific "Library Dues" invoice
-            console.log('[feeService] Creating standalone Library Fine Invoice.');
-
-            // Checks if a Library Fine structure exists
-            let fineStructs = await db.get('fee_structures', q => q.eq('name', 'Library Fines').eq('batch_year', new Date().getFullYear()));
-            let fineStruct;
-
-            if (fineStructs && fineStructs.length > 0) {
-                fineStruct = fineStructs[0];
             } else {
-                fineStruct = await db.create('fee_structures', {
-                    name: 'Library Fines',
-                    batch_year: new Date().getFullYear(),
-                    semester: 'Adhoc',
-                    due_date: new Date().toISOString().split('T')[0], // Immediate
-                    total_amount: 0, // Placeholder
-                    items: []
-                }, context);
+                console.warn('[feeService] No pending fee assignment found for student. Cannot attach fine automatically.');
+                // In real app, create a new "Library Due" invoice.
             }
-
-            // Create assignment with exact fine amount
-            const invoice = await db.create('student_fee_assignments', {
-                student_id: issue.member_id,
-                structure_id: fineStruct.id,
-                total_amount: fineAmount,
-                net_amount: fineAmount,
-                status: 'pending',
-                assigned_by: context.user?.id || 'system',
-                assigned_date: new Date().toISOString().split('T')[0]
-            }, context);
-
-            // Create single installment
-            await db.create('fee_installments', {
-                assignment_id: invoice.id,
-                installment_number: 1,
-                amount: fineAmount,
-                due_date: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                paid_amount: 0
-            }, context);
-
-            console.log(`[feeService] Created Library Invoice: ${invoice.id}`);
 
         } catch (error) {
             console.error('[feeService] Failed to assess library fine:', error);
-        }
-    },
-
-    /**
-     * Assigns Transport Fee
-     */
-    async assignTransportFee(studentId, registrationId, context, db = secureDb) {
-        console.log(`[feeService] Assigning Transport Fee: Student ${studentId}`);
-        try {
-            // Get Registration for fee details
-            const regs = await db.get('transport_registrations', q => q.eq('id', registrationId));
-            if (!regs || regs.length === 0) throw new Error('Transport Registration not found');
-            const reg = regs[0];
-
-            const amount = reg.fee_annual || 0;
-            if (amount <= 0) return null;
-
-            // Find/Create Transport Structure
-            let structs = await db.get('fee_structures', q =>
-                q.ilike('name', `%Transport Fee%`).eq('batch_year', new Date().getFullYear())
-            );
-
-            let structure;
-            if (structs && structs.length > 0) {
-                structure = structs[0];
-            } else {
-                structure = await db.create('fee_structures', {
-                    name: `Transport Fee - ${new Date().getFullYear()}`,
-                    batch_year: new Date().getFullYear(),
-                    semester: 'Annual',
-                    due_date: new Date().toISOString().split('T')[0],
-                    total_amount: 0, // Dynamic
-                    items: []
-                }, context);
-            }
-
-            // Create Assignment
-            const assignment = await db.create('student_fee_assignments', {
-                student_id: studentId,
-                structure_id: structure.id,
-                total_amount: amount,
-                net_amount: amount,
-                status: 'pending',
-                assigned_by: context.user?.id || 'system',
-                assigned_date: new Date().toISOString().split('T')[0]
-            }, context);
-
-            // Create 2 Installments (Standard Transport Practice)
-            const inst1 = amount / 2;
-            const inst2 = amount - inst1;
-
-            await db.create('fee_installments', {
-                assignment_id: assignment.id,
-                installment_number: 1,
-                amount: inst1,
-                due_date: new Date().toISOString().split('T')[0], // Immediate
-                status: 'pending',
-                paid_amount: 0
-            }, context);
-
-            const date2 = new Date();
-            date2.setMonth(date2.getMonth() + 6);
-
-            await db.create('fee_installments', {
-                assignment_id: assignment.id,
-                installment_number: 2,
-                amount: inst2,
-                due_date: date2.toISOString().split('T')[0],
-                status: 'pending',
-                paid_amount: 0
-            }, context);
-
-            console.log(`[feeService] Transport Fee Assigned: ${assignment.id}`);
-            return assignment;
-
-        } catch (error) {
-            console.error('[feeService] Failed to assign transport fee:', error);
-            throw error;
-        }
-    },
-
-    /**
-     * Assigns Exam Fee
-     */
-    async assignExamFee(studentId, examId, context, db = secureDb) {
-        console.log(`[feeService] Assigning Exam Fee: Student ${studentId}, Exam ${examId}`);
-        try {
-            const exams = await db.get('exams', q => q.eq('id', examId));
-            if (!exams || exams.length === 0) throw new Error('Exam not found');
-            // const exam = exams[0]; // Not used yet, maybe for name
-
-            const feeAmount = 500; // Standard Exam Fee (Should be configurable per exam)
-
-            // Find/Create Exam Structure
-            let structs = await db.get('fee_structures', q => q.eq('name', 'Exam Fees'));
-            let structure;
-            if (structs && structs.length > 0) {
-                structure = structs[0];
-            } else {
-                structure = await db.create('fee_structures', {
-                    name: 'Exam Fees',
-                    batch_year: new Date().getFullYear(),
-                    semester: 'Adhoc',
-                    due_date: new Date().toISOString().split('T')[0],
-                    total_amount: 0,
-                    items: []
-                }, context);
-            }
-
-            // Create Assignment
-            const assignment = await db.create('student_fee_assignments', {
-                student_id: studentId,
-                structure_id: structure.id,
-                total_amount: feeAmount,
-                net_amount: feeAmount,
-                status: 'pending',
-                assigned_by: context.user?.id || 'system',
-                assigned_date: new Date().toISOString().split('T')[0]
-            }, context);
-
-            // Single Installment
-            await db.create('fee_installments', {
-                assignment_id: assignment.id,
-                installment_number: 1,
-                amount: feeAmount,
-                due_date: new Date().toISOString().split('T')[0],
-                status: 'pending',
-                paid_amount: 0
-            }, context);
-
-            console.log(`[feeService] Exam Fee Assigned: ${assignment.id}`);
-            return assignment;
-
-        } catch (error) {
-            console.error('[feeService] Failed to assign exam fee:', error);
-            // Don't throw to avoid blocking registration, just log
         }
     }
 };

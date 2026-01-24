@@ -18,7 +18,7 @@ export const auditLogger = async (req, res, next) => {
                 const userId = req.user?.id || req.body?.userId || null;
 
                 // Don't log login attempts with passwords in details
-                let details = { ...req.body };
+                const details = { ...req.body };
                 if (details.password) delete details.password;
 
                 await supabaseAdmin.from('audit_logs').insert({

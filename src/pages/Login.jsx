@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GraduationCap, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export function Login() {
-  const [loopEmailOrId, setLoopEmailOrId] = useState('');
-  const [password, setPassword] = useState('');
+  const [loopEmailOrId, setLoopEmailOrId] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { loginWithCredentials, currentUser, loading: authLoading } = useAuth();
@@ -21,7 +21,7 @@ export function Login() {
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (currentUser && !authLoading) {
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     }
   }, [currentUser, authLoading, navigate]);
 
@@ -30,9 +30,9 @@ export function Login() {
 
     if (!loopEmailOrId.trim() || !password.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter both Loop Email/Loop ID and Password',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please enter both Loop Email/Loop ID and Password",
+        variant: "destructive",
       });
       return;
     }
@@ -47,9 +47,9 @@ export function Login() {
 
       // Try to find by loopid
       const { data: loopidData, error: loopidError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('loopid', loopEmailOrId.trim())
+        .from("users")
+        .select("*")
+        .eq("loopid", loopEmailOrId.trim())
         .maybeSingle();
 
       if (loopidData) {
@@ -57,9 +57,9 @@ export function Login() {
       } else {
         // If not found by loopid, try email
         const { data: emailData, error: emailError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', loopEmailOrId.trim())
+          .from("users")
+          .select("*")
+          .eq("email", loopEmailOrId.trim())
           .maybeSingle();
 
         if (emailData) {
@@ -71,9 +71,9 @@ export function Login() {
 
       if (userError || !userData) {
         toast({
-          title: 'Login Failed',
-          description: 'Invalid Loop Email/Loop ID or Password',
-          variant: 'destructive',
+          title: "Login Failed",
+          description: "Invalid Loop Email/Loop ID or Password",
+          variant: "destructive",
         });
         setLoading(false);
         return;
@@ -85,21 +85,21 @@ export function Login() {
       await loginWithCredentials(userData.email, password.trim());
 
       toast({
-        title: 'Login Successful',
+        title: "Login Successful",
         description: `Welcome back, ${userData.name}!`,
       });
 
       // Wait a moment for the user to be loaded in context, then navigate
       setTimeout(() => {
         // Navigate to dashboard - Index component will handle routing based on user data
-        navigate('/');
+        navigate("/");
       }, 100);
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       toast({
-        title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -117,9 +117,7 @@ export function Login() {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-            <CardDescription className="mt-2">
-              Sign in to LoopVerse ERP
-            </CardDescription>
+            <CardDescription className="mt-2">Sign in to LoopVerse ERP</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -165,11 +163,7 @@ export function Login() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   tabIndex={-1}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -185,7 +179,7 @@ export function Login() {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </form>

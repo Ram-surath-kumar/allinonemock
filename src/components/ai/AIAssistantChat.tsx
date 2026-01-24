@@ -1,16 +1,29 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Sparkles, Loader2, Send, X, Minimize2, Maximize2, AlertTriangle, Paperclip, FileText, Image as ImageIcon, Camera } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { toast } from 'sonner';
-import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent } from '@/services/gemini';
-import { api } from '@/services/api';
-import { format } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import {
+  Sparkles,
+  Loader2,
+  Send,
+  X,
+  Minimize2,
+  Maximize2,
+  AlertTriangle,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  Camera,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+import { callGeminiAPI, callGeminiAnalytics, parseDataQueryIntent } from "@/services/gemini";
+import { api } from "@/services/api";
+import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,34 +33,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-
-
-
-
+} from "@/components/ui/alert-dialog";
 
 export function AIAssistantChat({ onNavigate }) {
   const { currentUser, hasPermission } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [messages, setMessages] = useState([
     {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your AI assistant. I can help you with actions like marking attendance, or answer questions about your data. How can I help you today?',
+      id: "1",
+      role: "assistant",
+      content: t("aiAssistant.hello"),
       timestamp: new Date(),
     },
   ]);
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     action: null,
-    title: '',
-    description: '',
+    title: "",
+    description: "",
   });
 
   const fileInputRef = useRef(null);
@@ -63,19 +73,19 @@ export function AIAssistantChat({ onNavigate }) {
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      setAttachments(prev => [...prev, ...newFiles]);
+      setAttachments((prev) => [...prev, ...newFiles]);
     }
   };
 
   const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Camera Functions
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { facingMode: "environment" },
       });
       setCameraStream(stream);
       setIsCameraOpen(true);
@@ -93,7 +103,7 @@ export function AIAssistantChat({ onNavigate }) {
 
   const stopCamera = () => {
     if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream.getTracks().forEach((track) => track.stop());
       setCameraStream(null);
     }
     setIsCameraOpen(false);
@@ -107,14 +117,17 @@ export function AIAssistantChat({ onNavigate }) {
       }
     };
     if (showAttachMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showAttachMenu]);
   useEffect(() => {
-    console.log('AIAssistantChat component mounted/updated', { isOpen, document: typeof document !== 'undefined' });
+    console.log("AIAssistantChat component mounted/updated", {
+      isOpen,
+      document: typeof document !== "undefined",
+    });
   }, []);
 
   useEffect(() => {
@@ -125,19 +138,21 @@ export function AIAssistantChat({ onNavigate }) {
 
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
   const loadData = async () => {
     try {
       // Load students
-      const studentsResponse = await api.getUsers({ role: 'student', status: 'active' });
+      const studentsResponse = await api.getUsers({ role: "student", status: "active" });
       if (studentsResponse.error) throw new Error(studentsResponse.error);
       const studentsData = studentsResponse.data;
 
       if (studentsData) {
-        const departmentIds = [...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id))];
+        const departmentIds = [
+          ...new Set(studentsData.filter((u) => u.department_id).map((u) => u.department_id)),
+        ];
         let deptMap = new Map();
 
         if (departmentIds.length > 0) {
@@ -161,7 +176,7 @@ export function AIAssistantChat({ onNavigate }) {
         setStudents(studentsWithDept);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("Error loading data:", error);
     }
   };
 
@@ -175,15 +190,17 @@ export function AIAssistantChat({ onNavigate }) {
     try {
       const response = await api.getChatHistory(currentUser.id);
       if (response.data && response.data.length > 0) {
-        setMessages(response.data.map(msg => ({
+        setMessages(
+          response.data.map((msg) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
-          timestamp: new Date(msg.timestamp) // Ensure timestamp is a Date object
-        })));
+            timestamp: new Date(msg.timestamp), // Ensure timestamp is a Date object
+          }))
+        );
       }
     } catch (error) {
-      console.error('Failed to load chat history:', error);
+      console.error("Failed to load chat history:", error);
     }
   };
 
@@ -196,7 +213,7 @@ export function AIAssistantChat({ onNavigate }) {
     };
 
     // Optimistic update
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
 
     // Save to backend
     if (currentUser?.id) {
@@ -205,18 +222,18 @@ export function AIAssistantChat({ onNavigate }) {
           userId: currentUser.id,
           role,
           content,
-          metadata: { timestamp: new Date() }
+          metadata: { timestamp: new Date() },
         });
       } catch (error) {
-        console.error('Failed to save chat message:', error);
+        console.error("Failed to save chat message:", error);
       }
     }
   };
 
   // Check if action is risky and requires confirmation
   const isRiskyAction = (action) => {
-    const riskyActions = ['delete_students', 'delete_all_students', 'remove_all_students'];
-    return riskyActions.includes(action.action) || (action.delete_all === true);
+    const riskyActions = ["delete_students", "delete_all_students", "remove_all_students"];
+    return riskyActions.includes(action.action) || action.delete_all === true;
   };
 
   const executeAction = async (action, skipConfirmation = false) => {
@@ -226,41 +243,46 @@ export function AIAssistantChat({ onNavigate }) {
       setConfirmDialog({
         open: true,
         action: action,
-        title: '⚠️ Risky Action - Delete All Students',
-        description: `This action will permanently delete ALL ${studentCount} student${studentCount !== 1 ? 's' : ''} from the system. This cannot be undone. Are you sure you want to proceed?`,
+        title: "⚠️ Risky Action - Delete All Students",
+        description: `This action will permanently delete ALL ${studentCount} student${studentCount !== 1 ? "s" : ""} from the system. This cannot be undone. Are you sure you want to proceed?`,
       });
       return;
     }
 
-    if (action.action === 'mark_attendance') {
+    if (action.action === "mark_attendance") {
       if (!action.student_id || !action.status) {
-        addMessage('assistant', 'I couldn\'t identify the student or status. Please try again with more details.');
+        addMessage("assistant", t("aiAssistant.couldNotIdentifyStudent"));
         return;
       }
 
-      if (!hasPermission('manage_attendance')) {
-        addMessage('assistant', 'You don\'t have permission to manage attendance.');
+      if (!hasPermission("manage_attendance")) {
+        addMessage("assistant", t("aiAssistant.noPermissionAttendance"));
         return;
       }
 
       try {
-        const dateStr = action.date || format(new Date(), 'yyyy-MM-dd');
-        const response = await api.markAttendance([{
+        const dateStr = action.date || format(new Date(), "yyyy-MM-dd");
+        const response = await api.markAttendance([
+          {
           student_id: action.student_id,
           date: dateStr,
           status: action.status,
           marked_by: currentUser?.id || null,
-        }]);
+          },
+        ]);
 
         if (response.error) throw new Error(response.error);
 
-        addMessage('assistant', `✅ Successfully marked ${action.student_name} as ${action.status}.`);
+        addMessage(
+          "assistant",
+          `✅ ${t("aiAssistant.successfullyMarked", { name: action.student_name, status: action.status })}`
+        );
 
         // Navigate to attendance page
         if (onNavigate) {
-          onNavigate('/attendance');
+          onNavigate("/attendance");
         } else {
-          navigate('/attendance');
+          navigate("/attendance");
         }
 
         // Close chat after action
@@ -268,55 +290,61 @@ export function AIAssistantChat({ onNavigate }) {
           setIsOpen(false);
         }, 1000);
 
-        window.dispatchEvent(new CustomEvent('attendance-updated'));
+        window.dispatchEvent(new CustomEvent("attendance-updated"));
       } catch (error) {
-        console.error('Error marking attendance:', error);
-        addMessage('assistant', `❌ Error: ${error.message || 'Failed to mark attendance'}`);
+        console.error("Error marking attendance:", error);
+        addMessage(
+          "assistant",
+          `❌ ${t("common.error")}: ${error.message || "Failed to mark attendance"}`
+        );
       }
-    } else if (action.action === 'edit_student') {
+    } else if (action.action === "edit_student") {
       if (onNavigate) {
-        onNavigate('/students');
+        onNavigate("/students");
       } else {
-        navigate('/students');
+        navigate("/students");
       }
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-    } else if (action.action === 'view_student') {
+    } else if (action.action === "view_student") {
       if (onNavigate) {
-        onNavigate('/students');
+        onNavigate("/students");
       } else {
-        navigate('/students');
+        navigate("/students");
       }
       setTimeout(() => {
         setIsOpen(false);
       }, 500);
-    } else if (action.action === 'add_department') {
+    } else if (action.action === "add_department") {
       if (!action.department_name) {
-        addMessage('assistant', 'I couldn\'t identify the department name. Please specify it clearly, e.g., "add new department with name Computer Science"');
+        addMessage("assistant", t("aiAssistant.couldNotIdentifyStudent"));
         return;
       }
 
-      if (!hasPermission('manage_staff')) {
-        addMessage('assistant', 'You don\'t have permission to create departments.');
+      if (!hasPermission("manage_staff")) {
+        addMessage("assistant", t("aiAssistant.noPermissionStaff"));
         return;
       }
 
       try {
         const response = await api.createDepartment({
           name: action.department_name,
-          created_by: currentUser?.id || '',
+          created_by: currentUser?.id || "",
         });
 
         if (response.error) throw new Error(response.error);
 
-        addMessage('assistant', `✅ Successfully created department "${action.department_name}".`);
+        addMessage(
+          "assistant",
+          `✅ ${t("aiAssistant.successfullyCreatedDepartment", { name: action.department_name })}`
+        );
 
         // Navigate to tools page
         if (onNavigate) {
-          onNavigate('/tools');
+          onNavigate("/tools");
         } else {
-          navigate('/tools');
+          navigate("/tools");
         }
 
         // Close chat after action
@@ -324,31 +352,37 @@ export function AIAssistantChat({ onNavigate }) {
           setIsOpen(false);
         }, 1000);
       } catch (error) {
-        console.error('Error creating department:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
+        console.error("Error creating department:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to create department";
 
         // Check if it's a service role key error
-        if (errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMessage.includes('row-level security')) {
-          addMessage('assistant', `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`);
+        if (
+          errorMessage.includes("SUPABASE_SERVICE_ROLE_KEY") ||
+          errorMessage.includes("row-level security")
+        ) {
+          addMessage(
+            "assistant",
+            `❌ Error: Server configuration issue. The Service Role Key is required for creating departments. Please check SETUP_SERVICE_ROLE_KEY.md for setup instructions.`
+          );
         } else {
-          addMessage('assistant', `❌ Error: ${errorMessage}`);
+          addMessage("assistant", `❌ Error: ${errorMessage}`);
         }
       }
-    } else if (action.action === 'delete_students') {
+    } else if (action.action === "delete_students") {
       if (!action.delete_all) {
-        addMessage('assistant', 'I couldn\'t understand the delete command. Please specify "delete all students" to delete all students.');
+        addMessage("assistant", t("aiAssistant.couldNotUnderstand"));
         return;
       }
 
-      if (!hasPermission('manage_staff')) {
-        addMessage('assistant', 'You don\'t have permission to delete students.');
+      if (!hasPermission("manage_staff")) {
+        addMessage("assistant", t("aiAssistant.noPermissionDelete"));
         return;
       }
 
       try {
         // Delete all students
         const totalStudents = students.length;
-        const studentIds = students.map(s => s.id);
+        const studentIds = students.map((s) => s.id);
         let deletedCount = 0;
         let errorCount = 0;
 
@@ -373,27 +407,30 @@ export function AIAssistantChat({ onNavigate }) {
         // Show completion status
         if (errorCount > 0 && deletedCount === 0) {
           // Get more details about the first error
-          let errorDetails = '';
+          let errorDetails = "";
           if (errorCount > 0) {
-            errorDetails = ' This may be due to foreign key constraints or missing permissions.';
+            errorDetails = " This may be due to foreign key constraints or missing permissions.";
           }
-          throw new Error(`Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`);
+          throw new Error(
+            `Failed to delete students. ${errorCount} error(s) occurred.${errorDetails}`
+          );
         }
 
-        const message = deletedCount > 0
-          ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? 's' : ''}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ''}`
+        const message =
+          deletedCount > 0
+            ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? "s" : ""}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ""}`
           : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
 
-        addMessage('assistant', message);
+        addMessage("assistant", message);
 
         // Reload students list
         await loadData();
 
         // Navigate to students page
         if (onNavigate) {
-          onNavigate('/students');
+          onNavigate("/students");
         } else {
-          navigate('/students');
+          navigate("/students");
         }
 
         // Close chat after action
@@ -401,29 +438,30 @@ export function AIAssistantChat({ onNavigate }) {
           setIsOpen(false);
         }, 2000);
       } catch (error) {
-        console.error('Error deleting students:', error);
-        let errorMessage = error.message || 'Failed to delete students';
+        console.error("Error deleting students:", error);
+        let errorMessage = error.message || "Failed to delete students";
 
         // Provide more helpful error messages
-        if (errorMessage.includes('foreign key') || errorMessage.includes('constraint')) {
-          errorMessage = 'Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.';
+        if (errorMessage.includes("foreign key") || errorMessage.includes("constraint")) {
+          errorMessage =
+            "Some students could not be deleted because they have related records (hall tickets, attendance, fees, etc.). The backend should handle this automatically. Please try again or contact support.";
         }
 
-        addMessage('assistant', `❌ Error: ${errorMessage}`);
+        addMessage("assistant", `❌ Error: ${errorMessage}`);
       }
-    } else if (action.action === 'add_applicant') {
-      addMessage('assistant', '📝 Opening Admission Portal...');
+    } else if (action.action === "add_applicant") {
+      addMessage("assistant", "📝 Opening Admission Portal...");
       if (onNavigate) {
-        onNavigate('/students');
+        onNavigate("/students");
       } else {
-        navigate('/students');
+        navigate("/students");
       }
       setTimeout(() => {
         setIsOpen(false);
       }, 1000);
-    } else if (action.action === 'analyze_system') {
+    } else if (action.action === "analyze_system") {
       try {
-        addMessage('assistant', '📊 Gathering real-time data from dashboard...');
+        addMessage("assistant", "📊 Gathering real-time data from dashboard...");
 
         const response = await api.getDashboardData(currentUser?.id, currentUser?.role);
 
@@ -432,17 +470,23 @@ export function AIAssistantChat({ onNavigate }) {
         const dashboardData = response.data;
 
         // Analyze using the analytics service but with REAL data
-        const analysis = await callGeminiAnalytics("Analyze the entire ERP system based on this data", dashboardData);
+        const analysis = await callGeminiAnalytics(
+          "Analyze the entire ERP system based on this data",
+          dashboardData
+        );
 
-        addMessage('assistant', analysis);
+        addMessage("assistant", analysis);
       } catch (error) {
-        console.error('Error analyzing system:', error);
-        addMessage('assistant', '❌ Failed to analyze system data. Please try again.');
+        console.error("Error analyzing system:", error);
+        addMessage("assistant", "❌ Failed to analyze system data. Please try again.");
       }
-    } else if (action.action === 'chat') {
-      addMessage('assistant', action.message || 'Hello! How can I help you?');
+    } else if (action.action === "chat") {
+      addMessage("assistant", action.message || "Hello! How can I help you?");
     } else {
-      addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", "add applicant", "analyze system", or just say "hi"!');
+      addMessage(
+        "assistant",
+        'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", "delete all students", "add applicant", "analyze system", or just say "hi"!'
+      );
     }
   };
 
@@ -455,17 +499,17 @@ export function AIAssistantChat({ onNavigate }) {
 
   const capturePhoto = () => {
     if (videoRef.current) {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       ctx.drawImage(videoRef.current, 0, 0);
 
       canvas.toBlob((blob) => {
-        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        setAttachments(prev => [...prev, file]);
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+        setAttachments((prev) => [...prev, file]);
         stopCamera();
-      }, 'image/jpeg');
+      }, "image/jpeg");
     }
   };
 
@@ -473,37 +517,46 @@ export function AIAssistantChat({ onNavigate }) {
     try {
       // Loading state is managed by parent component, no need to add processing message
 
-      const currentDate = format(new Date(), 'yyyy-MM-dd');
+      const currentDate = format(new Date(), "yyyy-MM-dd");
 
       // Parse the query intent
       const intent = await parseDataQueryIntent(query, students, currentDate);
 
       if (intent.confidence < 0.5) {
-        addMessage('assistant', 'I\'m not sure I understood your question. Could you rephrase it?');
+        addMessage("assistant", "I'm not sure I understood your question. Could you rephrase it?");
         return;
       }
 
-      let response = '';
+      let response = "";
 
       switch (intent.queryType) {
-        case 'attendance_check': {
+        case "attendance_check": {
           if (!intent.student_name) {
-            addMessage('assistant', 'I couldn\'t identify which student you\'re asking about. Please specify the student name.');
+            addMessage(
+              "assistant",
+              "I couldn't identify which student you're asking about. Please specify the student name."
+            );
             return;
           }
 
           // Find student
-          const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
+          const matchingStudents = students.filter((s) =>
+            s.name.toLowerCase().includes(intent.student_name.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
-            addMessage('assistant', `I couldn't find a student named "${intent.student_name}". Please check the spelling.`);
+            addMessage(
+              "assistant",
+              `I couldn't find a student named "${intent.student_name}". Please check the spelling.`
+            );
             return;
           }
 
           if (matchingStudents.length > 1) {
-            addMessage('assistant', `I found multiple students with that name: ${matchingStudents.map(s => s.name).join(', ')}. Please be more specific.`);
+            addMessage(
+              "assistant",
+              `I found multiple students with that name: ${matchingStudents.map((s) => s.name).join(", ")}. Please be more specific.`
+            );
             return;
           }
 
@@ -516,72 +569,82 @@ export function AIAssistantChat({ onNavigate }) {
           });
 
           if (attendanceResponse.error) {
-            addMessage('assistant', `Error fetching attendance: ${attendanceResponse.error}`);
+            addMessage("assistant", `Error fetching attendance: ${attendanceResponse.error}`);
             return;
           }
 
           const attendanceData = attendanceResponse.data;
 
           if (!attendanceData || attendanceData.length === 0) {
-            response = `${student.name} has no attendance record for ${intent.date === currentDate ? 'today' : intent.date}.`;
+            response = `${student.name} has no attendance record for ${intent.date === currentDate ? "today" : intent.date}.`;
           } else {
             const record = attendanceData[0];
             const status = record.status;
-            const statusEmoji = status === 'present' ? '✅' : status === 'absent' ? '❌' : status === 'late' ? '⏰' : '📝';
-            response = `${statusEmoji} ${student.name} is ${status} ${intent.date === currentDate ? 'today' : `on ${intent.date}`}.`;
+            const statusEmoji =
+              status === "present"
+                ? "✅"
+                : status === "absent"
+                  ? "❌"
+                  : status === "late"
+                    ? "⏰"
+                    : "📝";
+            response = `${statusEmoji} ${student.name} is ${status} ${intent.date === currentDate ? "today" : `on ${intent.date}`}.`;
           }
           break;
         }
 
-        case 'student_count': {
+        case "student_count": {
           let filteredStudents = students;
 
           if (intent.department) {
             // Find matching department
-            const matchingDepts = departments.filter(
-              d => d.name.toLowerCase().includes(intent.department.toLowerCase())
+            const matchingDepts = departments.filter((d) =>
+              d.name.toLowerCase().includes(intent.department.toLowerCase())
             );
 
             if (matchingDepts.length > 0) {
               const deptId = matchingDepts[0].id;
-              filteredStudents = students.filter(s => s.department_id === deptId);
+              filteredStudents = students.filter((s) => s.department_id === deptId);
             } else {
               // Try fuzzy match
-              filteredStudents = students.filter(
-                s => s.department?.toLowerCase().includes(intent.department.toLowerCase())
+              filteredStudents = students.filter((s) =>
+                s.department?.toLowerCase().includes(intent.department.toLowerCase())
               );
             }
           }
 
           const count = filteredStudents.length;
           if (intent.department) {
-            response = `There are ${count} student${count !== 1 ? 's' : ''} in ${intent.department}.`;
+            response = `There are ${count} student${count !== 1 ? "s" : ""} in ${intent.department}.`;
           } else {
-            response = `There are ${count} active student${count !== 1 ? 's' : ''} in total.`;
+            response = `There are ${count} active student${count !== 1 ? "s" : ""} in total.`;
           }
           break;
         }
 
-        case 'student_info': {
+        case "student_info": {
           if (!intent.student_name) {
-            addMessage('assistant', 'I couldn\'t identify which student you\'re asking about. Please specify the student name.');
+            addMessage(
+              "assistant",
+              "I couldn't identify which student you're asking about. Please specify the student name."
+            );
             return;
           }
 
-          const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(intent.student_name.toLowerCase())
+          const matchingStudents = students.filter((s) =>
+            s.name.toLowerCase().includes(intent.student_name.toLowerCase())
           );
 
           if (matchingStudents.length === 0) {
-            addMessage('assistant', `I couldn't find a student named "${intent.student_name}".`);
+            addMessage("assistant", `I couldn't find a student named "${intent.student_name}".`);
             return;
           }
 
           if (matchingStudents.length > 1) {
-            response = `I found multiple students: ${matchingStudents.map(s => `${s.name} (${s.department || 'No department'})`).join(', ')}.`;
+            response = `I found multiple students: ${matchingStudents.map((s) => `${s.name} (${s.department || "No department"})`).join(", ")}.`;
           } else {
             const student = matchingStudents[0];
-            response = `Student: ${student.name}\nEmail: ${student.email}\nDepartment: ${student.department || 'Not assigned'}`;
+            response = `Student: ${student.name}\nEmail: ${student.email}\nDepartment: ${student.department || "Not assigned"}`;
           }
           break;
         }
@@ -615,10 +678,13 @@ export function AIAssistantChat({ onNavigate }) {
         }
       }
 
-      addMessage('assistant', response);
+      addMessage("assistant", response);
     } catch (error) {
-      console.error('Error processing data query:', error);
-      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your query'}`);
+      console.error("Error processing data query:", error);
+      addMessage(
+        "assistant",
+        `Sorry, I encountered an error: ${error.message || "Failed to process your query"}`
+      );
     }
   };
 
@@ -630,8 +696,8 @@ export function AIAssistantChat({ onNavigate }) {
     }
 
     const userPrompt = prompt.trim();
-    setPrompt('');
-    addMessage('user', userPrompt);
+    setPrompt("");
+    addMessage("user", userPrompt);
     setLoading(true);
 
     try {
@@ -641,14 +707,20 @@ export function AIAssistantChat({ onNavigate }) {
       }
 
       // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(userPrompt);
-
-      const isDataQuery = !isAnalyzeCommand && (
-        /^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(userPrompt) ||
-        /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(userPrompt) ||
-        userPrompt.includes('?') ||
-        /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt)
+      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(
+        userPrompt
       );
+
+      const isDataQuery =
+        !isAnalyzeCommand &&
+        (/^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(
+          userPrompt
+        ) ||
+          /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(
+            userPrompt
+          ) ||
+          userPrompt.includes("?") ||
+          /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt));
 
       if (isDataQuery) {
         // Handle data query
@@ -657,8 +729,16 @@ export function AIAssistantChat({ onNavigate }) {
         // Handle action - loading state is already set, no need to add processing message
         const context = {
           students,
-          currentDate: format(new Date(), 'yyyy-MM-dd'),
-          availableActions: ['mark_attendance', 'edit_student', 'view_student', 'delete_students', 'add_department', 'add_applicant', 'analyze_system'],
+          currentDate: format(new Date(), "yyyy-MM-dd"),
+          availableActions: [
+            "mark_attendance",
+            "edit_student",
+            "view_student",
+            "delete_students",
+            "add_department",
+            "add_applicant",
+            "analyze_system",
+          ],
         };
 
         const action = await callGeminiAPI(userPrompt, context);
@@ -666,19 +746,24 @@ export function AIAssistantChat({ onNavigate }) {
         if (action.confidence >= 0.7) {
           await executeAction(action);
         } else {
-          addMessage('assistant', 'I couldn\'t understand that command. Try: "mark [student name] as [present/absent]", "add new department with name [name]", or ask me a question about your data.');
+          addMessage("assistant", t("aiAssistant.couldNotUnderstand"));
         }
       }
     } catch (error) {
-      console.error('Error processing message:', error);
-      addMessage('assistant', `Sorry, I encountered an error: ${error.message || 'Failed to process your message'}`);
+      console.error("Error processing message:", error);
+      addMessage(
+        "assistant",
+        t("aiAssistant.failedToProcess", {
+          error: error.message || "Failed to process your message",
+        })
+      );
     } finally {
       setLoading(false);
     }
   };
 
   // Ensure we have document available (client-side only)
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
+  if (typeof window === "undefined" || typeof document === "undefined") {
     return null; // SSR safety check
   }
 
@@ -709,13 +794,13 @@ export function AIAssistantChat({ onNavigate }) {
           )}
           style={{
             zIndex: 99999,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '56px',
-            height: '56px'
+            pointerEvents: "auto",
+            cursor: "pointer",
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            width: "56px",
+            height: "56px",
           }}
           aria-label="Open AI Assistant"
         >
@@ -726,43 +811,45 @@ export function AIAssistantChat({ onNavigate }) {
 
       {/* Chat Widget - Positioned at bottom-right corner */}
       {isOpen && (
-        <div className={cn(
+        <div
+          className={cn(
           "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
           "flex flex-col overflow-hidden transition-all duration-300",
           isMinimized ? "h-14" : "h-[600px]"
         )}
           style={{
             zIndex: 99999,
-            pointerEvents: 'auto',
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px'
+            pointerEvents: "auto",
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
           }}
-          role="dialog" aria-label="AI Assistant Chat" aria-modal="true">
+          role="dialog"
+          aria-label="AI Assistant Chat"
+          aria-modal="true"
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               {!isMinimized && (
                 <div>
-                  <h3 className="text-sm font-semibold">AI Assistant</h3>
-                  <p className="text-xs text-muted-foreground">Ask me anything</p>
+                  <h3 className="text-sm font-semibold">{t("aiAssistant.title")}</h3>
+                  <p className="text-xs text-muted-foreground">{t("aiAssistant.subtitle")}</p>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+              {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+              <Button variant="ghost" size="icon" onClick={() => setIsMinimized(!isMinimized)}>
+                {isMinimized ? (
+                  <Maximize2 className="h-4 w-4" />
+                ) : (
+                  <Minimize2 className="h-4 w-4" />
+                )}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-              >
+              {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -771,6 +858,7 @@ export function AIAssistantChat({ onNavigate }) {
           {!isMinimized && (
             <>
               {/* Messages */}
+              {/* @ts-expect-error - ScrollArea accepts children but TypeScript doesn't recognize it from JSX component */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
@@ -778,18 +866,20 @@ export function AIAssistantChat({ onNavigate }) {
                       key={message.id}
                       className={cn(
                         "flex",
-                        message.role === 'user' ? "justify-end" : "justify-start"
+                        message.role === "user" ? "justify-end" : "justify-start"
                       )}
                     >
-                      <div className={cn(
+                      <div
+                        className={cn(
                         "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                        message.role === 'user'
+                          message.role === "user"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
-                      )}>
+                        )}
+                      >
                         {message.content}
                         <div className="text-xs opacity-70 mt-1">
-                          {format(message.timestamp, 'HH:mm')}
+                          {format(message.timestamp, "HH:mm")}
                         </div>
                       </div>
                     </div>
@@ -809,22 +899,19 @@ export function AIAssistantChat({ onNavigate }) {
               {attachments.length > 0 && (
                 <div className="px-4 py-2 border-t border-border bg-muted/20">
                   <div className="flex gap-1.5 flex-wrap">
-                    {attachments.map((file, index) => (
-                      <div 
-                        key={index} 
-                        className="group relative"
-                      >
-                        {file.type.startsWith('image/') ? (
+                  {attachments.map((file, index) => (
+                      <div key={index} className="group relative">
+                        {file.type.startsWith("image/") ? (
                           <div className="relative h-10 w-10 rounded-[6px] overflow-hidden bg-muted border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow aspect-square">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={file.name}
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
                               className="h-full w-full object-cover aspect-square"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedImage({
                                   url: URL.createObjectURL(file),
-                                  name: file.name
+                                  name: file.name,
                                 });
                               }}
                             />
@@ -834,33 +921,37 @@ export function AIAssistantChat({ onNavigate }) {
                                 removeAttachment(index);
                               }}
                               className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
-                              title="Remove attachment"
+                              title={t("aiAssistant.removeAttachment")}
                             >
                               <X className="h-2.5 w-2.5" />
                             </button>
-                          </div>
-                        ) : (
+                        </div>
+                      ) : (
                           <div className="relative h-10 w-10 rounded-[6px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow flex items-center justify-center aspect-square">
                             <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            <button
-                              onClick={() => removeAttachment(index)}
+                      <button
+                        onClick={() => removeAttachment(index)}
                               className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
-                              title="Remove attachment"
-                            >
+                              title={t("aiAssistant.removeAttachment")}
+                      >
                               <X className="h-2.5 w-2.5" />
-                            </button>
+                      </button>
                           </div>
                         )}
                         {/* Hover Tooltip with Details */}
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-popover border border-border rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] whitespace-nowrap max-w-[200px]">
-                          <div className="text-xs font-medium text-foreground truncate">{file.name}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(1)} KB</div>
+                          <div className="text-xs font-medium text-foreground truncate">
+                            {file.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </div>
                           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
                             <div className="h-1.5 w-1.5 bg-popover border-r border-b border-border rotate-45"></div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                    </div>
+                  ))}
                   </div>
                 </div>
               )}
@@ -878,6 +969,7 @@ export function AIAssistantChat({ onNavigate }) {
                   />
 
                   <div className="relative flex gap-2 items-center" ref={attachMenuRef}>
+                    {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                     <Button
                       type="button"
                       variant="ghost"
@@ -905,7 +997,9 @@ export function AIAssistantChat({ onNavigate }) {
                             </div>
                             <div className="flex flex-col">
                               <span className="font-medium">Files</span>
-                              <span className="text-[10px] text-muted-foreground">Upload documents</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                Upload documents
+                              </span>
                             </div>
                           </button>
 
@@ -922,7 +1016,9 @@ export function AIAssistantChat({ onNavigate }) {
                             </div>
                             <div className="flex flex-col">
                               <span className="font-medium">Camera</span>
-                              <span className="text-[10px] text-muted-foreground">Take a photo</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                Take a photo
+                              </span>
                             </div>
                           </button>
                         </div>
@@ -934,15 +1030,20 @@ export function AIAssistantChat({ onNavigate }) {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
-                    placeholder={attachments.length > 0 ? "Describe these files..." : "Ask AI or type commands..."}
+                    placeholder={
+                      attachments.length > 0
+                        ? t("aiAssistant.describeFiles")
+                        : t("aiAssistant.askAIOrCommands")
+                    }
                     className="flex-1 rounded-full"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleSubmit(e);
                       }
                     }}
                   />
+                  {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                   <Button
                     type="submit"
                     disabled={loading || (!prompt.trim() && attachments.length === 0)}
@@ -961,19 +1062,29 @@ export function AIAssistantChat({ onNavigate }) {
         </div>
       )}
       {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+      >
+        {/* @ts-expect-error - AlertDialogContent accepts children but TypeScript doesn't recognize it from JSX component */}
         <AlertDialogContent>
+          {/* @ts-expect-error - AlertDialogHeader accepts children but TypeScript doesn't recognize it from JSX component */}
           <AlertDialogHeader>
+            {/* @ts-expect-error - AlertDialogTitle accepts children but TypeScript doesn't recognize it from JSX component */}
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               {confirmDialog.title}
             </AlertDialogTitle>
+            {/* @ts-expect-error - AlertDialogDescription accepts children but TypeScript doesn't recognize it from JSX component */}
             <AlertDialogDescription className="pt-2">
               {confirmDialog.description}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {/* @ts-expect-error - AlertDialogFooter accepts children but TypeScript doesn't recognize it from JSX component */}
           <AlertDialogFooter>
+            {/* @ts-expect-error - AlertDialogCancel accepts children but TypeScript doesn't recognize it from JSX component */}
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {/* @ts-expect-error - AlertDialogAction accepts children but TypeScript doesn't recognize it from JSX component */}
             <AlertDialogAction
               onClick={handleConfirmAction}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -985,7 +1096,7 @@ export function AIAssistantChat({ onNavigate }) {
       </AlertDialog>
       {/* Expanded Image Modal */}
       {expandedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4"
           onClick={() => setExpandedImage(null)}
         >
@@ -1003,7 +1114,7 @@ export function AIAssistantChat({ onNavigate }) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             {/* Image Container */}
             <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg">
               <img
@@ -1018,8 +1129,7 @@ export function AIAssistantChat({ onNavigate }) {
       )}
 
       {/* Camera Modal */}
-      {
-        isCameraOpen && (
+      {isCameraOpen && (
           <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
             <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
               <video
@@ -1049,9 +1159,7 @@ export function AIAssistantChat({ onNavigate }) {
               </div>
             </div>
           </div>
-        )
-      }
-
+      )}
     </>,
     document.body
   );
