@@ -205,7 +205,7 @@ export function VehicleDetails({ vehicleId, onBack }) {
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-background">
+    <div className="flex-1 flex flex-col h-full bg-background">
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
@@ -236,7 +236,7 @@ export function VehicleDetails({ vehicleId, onBack }) {
         </div>
       </div>
 
-      <Tabs defaultValue="identification" className="flex-1 flex flex-col overflow-hidden">
+      <Tabs defaultValue="identification" className="flex-1 flex flex-col">
         <div className="px-4 border-b bg-muted/20">
           <TabsList className="h-12 bg-transparent gap-6">
             {sections.map((s) => (
@@ -252,7 +252,7 @@ export function VehicleDetails({ vehicleId, onBack }) {
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-6">
           <TabsContent value="identification" className="mt-0 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card>

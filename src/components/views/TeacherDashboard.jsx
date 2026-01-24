@@ -133,7 +133,7 @@ export function TeacherDashboard() {
 
   const loadEvents = async () => {
     try {
-      const response = await api.getEvents();
+      const response = await api.getEvents({ role: (currentUser?.role || 'teacher').toLowerCase() });
       if (response.data) {
         setEvents(response.data);
       }

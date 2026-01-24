@@ -41,7 +41,7 @@ export default function Facilities() {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+    <div className="flex flex-col gap-4 h-full">
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
@@ -92,7 +92,7 @@ export default function Facilities() {
 
       {/* Content Logic */}
       {view === "infrastructure" ? (
-        <div className="grid grid-cols-12 gap-6 h-full min-h-0">
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-12rem)] min-h-[500px]">
           {/* Left Sidebar - Tree View */}
           <Card className="col-span-3 h-full overflow-hidden flex flex-col">
             <div className="p-4 border-b bg-muted/40">
@@ -128,7 +128,7 @@ export default function Facilities() {
           </Card>
         </div>
       ) : (
-        <Card className="flex-1 overflow-hidden shadow-sm border-border/50">
+        <Card className="flex-1 shadow-sm border-border/50 flex flex-col min-h-0">
           <VehicleInventory />
         </Card>
       )}

@@ -866,6 +866,52 @@ class ApiClient {
     const query = queryParams.toString();
     return this.request(`/finance/reports/collection${query ? `?${query}` : ""}`);
   }
+
+  // Facilities
+  async getFacilities(): Promise<ApiResponse<any[]>> {
+    return this.request("/facilities");
+  }
+
+  // Schedules
+  async getSchedules(params?: any): Promise<ApiResponse<any[]>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, String(value));
+      });
+    }
+    const query = queryParams.toString();
+    return this.request(`/schedules${query ? `?${query}` : ""}`);
+  }
+
+  async createSchedule(data: any): Promise<ApiResponse<any>> {
+    return this.request("/schedules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSchedule(id: string, data: any): Promise<ApiResponse<any>> {
+    return this.request(`/schedules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSchedule(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/schedules/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Tasks (Update and Delete were missing)
+  async updateTask(id: string, data: any): Promise<ApiResponse<any>> {
+    return this.request(`/tasks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
   // AI Chat History
   async getChatHistory(userId: string): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(`/ai/history?userId=${userId}`);
@@ -878,6 +924,23 @@ class ApiClient {
     metadata?: any;
   }): Promise<ApiResponse<any>> {
     return this.request("/ai/history", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+  async getEvents(params?: any): Promise<ApiResponse<any[]>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, String(value));
+      });
+    }
+    const query = queryParams.toString();
+    return this.request(`/events${query ? `?${query}` : ""}`);
+  }
+
+  async createEvent(data: any): Promise<ApiResponse<any>> {
+    return this.request("/events", {
       method: "POST",
       body: JSON.stringify(data),
     });

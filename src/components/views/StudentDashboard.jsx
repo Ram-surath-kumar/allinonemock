@@ -44,7 +44,10 @@ export function StudentDashboard() {
         }
 
         // Load Events
-        const eventsResponse = await api.getEvents({ department_id: currentUser?.department });
+        const eventsResponse = await api.getEvents({
+          department_id: currentUser?.department,
+          role: (currentUser?.role || 'student').toLowerCase()
+        });
         if (eventsResponse.data) {
           setEvents(eventsResponse.data);
         }

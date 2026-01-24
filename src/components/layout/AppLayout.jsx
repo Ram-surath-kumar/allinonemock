@@ -39,7 +39,7 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate }
           onNavigate={onNavigate}
         />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-4 lg:p-5" role="main">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div className="max-w-7xl mx-auto h-full">{children}</div>
         </main>
       </div>
 
