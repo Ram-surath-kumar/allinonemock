@@ -17,15 +17,27 @@ router.get('/routes', async (req, res) => {
             return q.order('route_name');
         });
 
-        // Loop through routes to attach stops and vehicle
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Loop through routes to attach stops and vehicles
         const enrichedRoutes = await Promise.all(routes.map(async (route) => {
             const stops = await secureDb.get('transport_stops', q => q.eq('route_id', route.id).order('stop_order'));
-            let vehicle = null;
-            if (route.vehicle_id) {
-                const vehicles = await secureDb.get('transport_vehicles', q => q.eq('id', route.vehicle_id));
-                vehicle = vehicles[0] || null;
+
+            // New: Fetch multiple vehicles via junction table
+            const { data: routeVehicles } = await supabaseAdmin
+                .from('transport_route_vehicles')
+                .select('vehicle_id, vehicles(*)')
+                .eq('route_id', route.id);
+
+            const vehicles = routeVehicles ? routeVehicles.map(rv => rv.vehicles) : [];
+
+            // Fallback for backward compatibility if data exists in old column
+            if (vehicles.length === 0 && route.vehicle_id) {
+                const oldVehicles = await secureDb.get('transport_vehicles', q => q.eq('id', route.vehicle_id));
+                if (oldVehicles[0]) vehicles.push(oldVehicles[0]);
             }
-            return { ...route, stops, vehicle };
+
+            return { ...route, stops, vehicles, vehicle: vehicles[0] || null }; // vehicle kept for legacy UI compat if needed
         }));
 
         sendSuccess(res, enrichedRoutes);
@@ -63,6 +75,17 @@ router.post('/routes', async (req, res) => {
 
         // Create Route
         const newRoute = await secureDb.create('transport_routes', cleanRouteData, context);
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Handle Multiple Vehicles
+        if (routeData.vehicle_ids && Array.isArray(routeData.vehicle_ids)) {
+            for (const vid of routeData.vehicle_ids) {
+                await supabaseAdmin.from('transport_route_vehicles').insert({
+                    route_id: newRoute.id,
+                    vehicle_id: vid
+                });
+            }
+        }
 
         // Create Stops
         if (stops && Array.isArray(stops)) {
@@ -109,7 +132,8 @@ router.post('/register', async (req, res) => {
             ...data,
             reg_id: regId,
             status: 'active',
-            reg_date: new Date().toISOString()
+            reg_date: new Date().toISOString(),
+            vehicle_id: data.vehicle_id || null // Save allocated vehicle
         };
 
         // 3. Create Registration
@@ -309,12 +333,52 @@ router.put('/routes/:id', async (req, res) => {
         const { id } = req.params;
         const cleanStr = (val) => (val === '' || val === 'null' || val === null || val === undefined) ? null : val;
 
+        const { vehicle_ids, stops, ...routeData } = req.body;
+
         const updateData = {
-            ...req.body,
+            ...routeData,
             vehicle_id: cleanStr(req.body.vehicle_id)
         };
 
         const updatedRoute = await secureDb.update('transport_routes', id, updateData, context);
+
+        const { supabaseAdmin } = await import('../common.js');
+
+        // Update Vehicles (Delete all and re-insert)
+        if (vehicle_ids && Array.isArray(vehicle_ids)) {
+            // Delete existing
+            await supabaseAdmin.from('transport_route_vehicles').delete().eq('route_id', id);
+
+            // Insert new
+            for (const vid of vehicle_ids) {
+                await supabaseAdmin.from('transport_route_vehicles').insert({
+                    route_id: id,
+                    vehicle_id: vid
+                });
+            }
+        }
+
+        // Update Stops (if provided)
+        if (stops && Array.isArray(stops)) {
+            // Basic implementation: Delete all and re-create (simplest for ordering)
+            await supabaseAdmin.from('transport_stops').delete().eq('route_id', id);
+            let order = 1;
+            for (const stop of stops) {
+                await secureDb.create('transport_stops', {
+                    route_id: id,
+                    stop_name: stop.stop_name,
+                    stop_order: order++,
+                    arrival_time: stop.arrival_time,
+                    stop_id: stop.stop_id,
+                    latitude: stop.latitude,
+                    longitude: stop.longitude,
+                    stop_duration_mins: stop.stop_duration_mins || 1,
+                    avg_boarding_count: stop.avg_boarding_count || 0,
+                    address: stop.address
+                }, context);
+            }
+        }
+
         sendSuccess(res, updatedRoute);
     } catch (error) {
         handleError(error, res, 'Failed to update route');

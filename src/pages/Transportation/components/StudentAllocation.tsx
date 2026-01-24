@@ -27,6 +27,7 @@ export function StudentAllocation({ onUpdate }) {
     const [formData, setFormData] = useState({
         student_id: '',
         route_id: '',
+        vehicle_id: '', // New field
         pickup_stop_name: '',
         fee_annual: 0
     });
@@ -78,6 +79,7 @@ export function StudentAllocation({ onUpdate }) {
         setFormData({
             student_id: '',
             route_id: route.id,
+            vehicle_id: '', // Reset
             pickup_stop_name: '',
             fee_annual: 0
         });
@@ -196,11 +198,12 @@ export function StudentAllocation({ onUpdate }) {
                                                         <p className="text-sm font-medium">
                                                             {getStudentName(registration.student_id)}
                                                         </p>
-                                                        {registration.pickup_stop_name && (
-                                                            <p className="text-xs text-muted-foreground">
-                                                                Stop: {registration.pickup_stop_name}
-                                                            </p>
-                                                        )}
+                                                        <div className="flex gap-2 text-xs text-muted-foreground">
+                                                            {registration.pickup_stop_name && (
+                                                                <span>Stop: {registration.pickup_stop_name}</span>
+                                                            )}
+                                                            {/* Optionally show vehicle if available in data */}
+                                                        </div>
                                                     </div>
                                                     <Button
                                                         size="sm"
@@ -267,6 +270,30 @@ export function StudentAllocation({ onUpdate }) {
                                         {student.name} ({student.email})
                                     </option>
                                 ))}
+                            </select>
+                        </div>
+
+                        {/* Vehicle Selection - Only show vehicles for this route */}
+                        <div className="space-y-2">
+                            <Label htmlFor="vehicle">Select Vehicle</Label>
+                            <select
+                                id="vehicle"
+                                className="w-full p-2 border rounded-md"
+                                value={formData.vehicle_id}
+                                onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })}
+                            >
+                                <option value="">Any / Not Assigned</option>
+                                {selectedRoute?.vehicles?.map((vehicle) => (
+                                    <option key={vehicle.id} value={vehicle.id}>
+                                        {vehicle.registration_number} ({vehicle.vehicle_type})
+                                    </option>
+                                ))}
+                                {/* Backward compatibility check */}
+                                {!selectedRoute?.vehicles?.length && selectedRoute?.vehicle && (
+                                    <option value={selectedRoute.vehicle.id}>
+                                        {selectedRoute.vehicle.registration_number}
+                                    </option>
+                                )}
                             </select>
                         </div>
 

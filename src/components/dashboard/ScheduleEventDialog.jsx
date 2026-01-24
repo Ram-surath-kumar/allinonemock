@@ -402,9 +402,10 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                         </Select>
 
                         {selectValue === "custom" && (
-                          <div className="mt-2 animate-fade-in-up">
+                          <div className="mt-2 animate-fade-in-up" aria-live="polite">
                             <Input
                               placeholder="Enter custom location..."
+                              aria-label="Custom location"
                               value={field.value}
                               onChange={field.onChange}
                             />

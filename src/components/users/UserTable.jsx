@@ -24,13 +24,14 @@ export function UserTable({ users, onEdit, onDelete, onResendEmail }) {
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
+          <caption className="sr-only">List of registered users</caption>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">User</TableHead>
-              <TableHead className="font-semibold">Role</TableHead>
-              <TableHead className="font-semibold">Department</TableHead>
-              <TableHead className="font-semibold">Permissions</TableHead>
-              <TableHead className="text-right font-semibold">Actions</TableHead>
+              <TableHead scope="col" className="font-semibold">User</TableHead>
+              <TableHead scope="col" className="font-semibold">Role</TableHead>
+              <TableHead scope="col" className="font-semibold">Department</TableHead>
+              <TableHead scope="col" className="font-semibold">Permissions</TableHead>
+              <TableHead scope="col" className="text-right font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

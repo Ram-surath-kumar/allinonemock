@@ -153,11 +153,11 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
             avatar: row.avatar,
             organization: org
               ? {
-                  id: org.id,
-                  org_id: String(org.org_id),
-                  org_code: org.org_code,
-                  org_name: org.org_name,
-                }
+                id: org.id,
+                org_id: String(org.org_id),
+                org_code: org.org_code,
+                org_name: org.org_name,
+              }
               : undefined,
           };
         });
@@ -216,9 +216,24 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
         href: "/facilities",
         permission: "manage_facilities",
       },
-      { icon: BedDouble, label: t("sidebar.hostel"), href: "/hostel" },
-      { icon: Library, label: t("sidebar.library"), href: "/library" },
-      { icon: Bus, label: t("sidebar.transportation"), href: "/transport" },
+      {
+        icon: BedDouble,
+        label: t("sidebar.hostel"),
+        href: "/hostel",
+        roles: ["admin", "vice_head"],
+      },
+      {
+        icon: Library,
+        label: t("sidebar.library"),
+        href: "/library",
+        permission: "manage_library",
+      },
+      {
+        icon: Bus,
+        label: t("sidebar.transportation"),
+        href: "/transport",
+        permission: "view_transport",
+      },
       {
         icon: FileText,
         label: t("sidebar.examinations"),

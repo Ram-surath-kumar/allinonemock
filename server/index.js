@@ -647,10 +647,31 @@ export default app;
 // Only start the server if not running in Vercel environment
 // Vercel will handle the serverless function execution
 if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
-  app.listen(PORT, () => {
+  const checkDatabaseHealth = async () => {
+    try {
+      console.log('🔍 Checking database connection...');
+      const { data, error } = await supabaseAdmin.from('audit_logs').select('id').limit(1);
+
+      if (error) {
+        console.error('❌ Database Check Failed:', error.message);
+        if (error.code === '42P01') {
+          console.error('CRITICAL: "audit_logs" table is missing. Write operations will fail.');
+          console.error('Please run the migration "create_audit_logs.sql" in your Supabase dashboard.');
+        }
+      } else {
+        console.log('✅ Database connected & audit_logs table found.');
+      }
+    } catch (err) {
+      console.error('❌ Database connection error:', err.message);
+    }
+  };
+
+  app.listen(PORT, async () => {
     console.log(`🚀 Backend server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
     console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
+
+    await checkDatabaseHealth();
   }).on('error', (err) => {
     console.error('❌ Server failed to start:', err);
     process.exit(1);

@@ -149,9 +149,9 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         const updateData =
           newUser.role === "student"
             ? {
-                email: generatedEmail,
-                loopid: `${currentUser.organization.org_id}${data.user_id}`,
-              }
+              email: generatedEmail,
+              loopid: `${currentUser.organization.org_id}${data.user_id}`,
+            }
             : { email: generatedEmail };
 
         // Update the user with generated email (and loopid for students)
@@ -563,6 +563,7 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
+                aria-label="Search users"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 w-full"

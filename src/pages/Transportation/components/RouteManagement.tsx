@@ -11,9 +11,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Bus, LayoutList, Clock, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
+import { Badge } from '@/components/ui/badge';
 
 export function RouteManagement({ onUpdate }) {
     const [routes, setRoutes] = useState([]);
@@ -24,10 +25,11 @@ export function RouteManagement({ onUpdate }) {
     const [formData, setFormData] = useState({
         route_name: '',
         route_code: '',
-        vehicle_id: '',
+        vehicle_ids: [],
         departure_time_start: '',
         arrival_time_campus: '',
-        status: 'active'
+        status: 'active',
+        stops: []
     });
 
     useEffect(() => {
@@ -88,10 +90,11 @@ export function RouteManagement({ onUpdate }) {
         setFormData({
             route_name: route.route_name || '',
             route_code: route.route_code || '',
-            vehicle_id: route.vehicle_id || '',
+            vehicle_ids: route.vehicles ? route.vehicles.map(v => v.id) : (route.vehicle_id ? [route.vehicle_id] : []),
             departure_time_start: route.departure_time_start || '',
             arrival_time_campus: route.arrival_time_campus || '',
-            status: route.status || 'active'
+            status: route.status || 'active',
+            stops: route.stops || []
         });
         setIsDialogOpen(true);
     };
@@ -118,17 +121,49 @@ export function RouteManagement({ onUpdate }) {
         setFormData({
             route_name: '',
             route_code: '',
-            vehicle_id: '',
+            vehicle_ids: [],
             departure_time_start: '',
             arrival_time_campus: '',
-            status: 'active'
+            status: 'active',
+            stops: []
         });
         setEditingRoute(null);
     };
 
-    const getVehicleName = (vehicleId) => {
-        const vehicle = vehicles.find(v => v.id === vehicleId);
-        return vehicle ? vehicle.registration_number : 'Not Assigned';
+    const toggleVehicle = (vehicleId) => {
+        setFormData(prev => {
+            const current = [...prev.vehicle_ids];
+            if (current.includes(vehicleId)) {
+                return { ...prev, vehicle_ids: current.filter(id => id !== vehicleId) };
+            } else {
+                return { ...prev, vehicle_ids: [...current, vehicleId] };
+            }
+        });
+    };
+
+    const addStop = () => {
+        setFormData(prev => ({
+            ...prev,
+            stops: [...prev.stops, { stop_name: '', arrival_time: '' }]
+        }));
+    };
+
+    const updateStop = (index, field, value) => {
+        const newStops = [...formData.stops];
+        newStops[index] = { ...newStops[index], [field]: value };
+        setFormData({ ...formData, stops: newStops });
+    };
+
+    const removeStop = (index) => {
+        const newStops = [...formData.stops];
+        newStops.splice(index, 1);
+        setFormData({ ...formData, stops: newStops });
+    };
+
+    const getAssignedVehicles = (route) => {
+        if (route.vehicles && route.vehicles.length > 0) return route.vehicles;
+        if (route.vehicle) return [route.vehicle]; // Backward compat
+        return [];
     };
 
     if (loading) {
@@ -149,46 +184,71 @@ export function RouteManagement({ onUpdate }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {routes.map((route) => (
-                    <Card key={route.id}>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex items-center justify-between">
-                                <span>{route.route_name}</span>
-                                <span className={`text-xs px-2 py-1 rounded ${route.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                                    }`}>
-                                    {route.status}
-                                </span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <div className="text-sm">
-                                <span className="font-medium">Code:</span> {route.route_code || 'N/A'}
-                            </div>
-                            <div className="text-sm">
-                                <span className="font-medium">Vehicle:</span> {getVehicleName(route.vehicle_id)}
-                            </div>
-                            <div className="text-sm">
-                                <span className="font-medium">Departure:</span> {route.departure_time_start || 'N/A'}
-                            </div>
-                            <div className="text-sm">
-                                <span className="font-medium">Arrival:</span> {route.arrival_time_campus || 'N/A'}
-                            </div>
-                            <div className="flex gap-2 pt-2">
-                                <Button size="sm" variant="outline" onClick={() => handleEdit(route)}>
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleDelete(route.id)}>
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Delete
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                {routes.map((route) => {
+                    const assignedVehicles = getAssignedVehicles(route);
+                    const stopCount = route.stops ? route.stops.length : 0;
+
+                    return (
+                        <Card key={route.id} className="group">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base flex items-center justify-between">
+                                    <span className="truncate pr-2">{route.route_name}</span>
+                                    <span className={`text-xs px-2 py-1 rounded shrink-0 ${route.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                                        }`}>
+                                        {route.status}
+                                    </span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex items-center text-sm gap-2">
+                                    <span className="font-medium min-w-[60px]">Code:</span>
+                                    <span className="bg-muted px-2 py-0.5 rounded text-xs font-mono">{route.route_code || 'N/A'}</span>
+                                </div>
+
+                                <div className="group/v">
+                                    <div className="flex items-center text-sm gap-2 mb-1">
+                                        <span className="font-medium min-w-[60px]">Vehicles:</span>
+                                        <Badge variant="outline" className="font-normal cursor-help">
+                                            {assignedVehicles.length} {assignedVehicles.length === 1 ? 'Bus' : 'Buses'}
+                                        </Badge>
+                                    </div>
+                                    {assignedVehicles.length > 0 && (
+                                        <div className="pl-[68px] text-xs text-muted-foreground hidden group-hover/v:block animate-fade-in">
+                                            {assignedVehicles.map(v => v.registration_number).join(', ')}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-between text-sm pt-1">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3 text-muted-foreground" />
+                                        <span>{route.departure_time_start || '--:--'}</span>
+                                        <span className="text-muted-foreground mx-1">→</span>
+                                        <span>{route.arrival_time_campus || '--:--'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                        <MapPin className="h-3 w-3" />
+                                        <span>{stopCount} Stops</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 pt-2 border-t mt-2">
+                                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(route)}>
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        Edit
+                                    </Button>
+                                    <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleDelete(route.id)}>
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Delete
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
 
                 {routes.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <div className="col-span-full text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
                         <MapPin className="h-12 w-12 mx-auto mb-4 opacity-20" />
                         <p>No routes found. Create your first transport route.</p>
                     </div>
@@ -197,51 +257,35 @@ export function RouteManagement({ onUpdate }) {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingRoute ? 'Edit Route' : 'Add New Route'}</DialogTitle>
                         <DialogDescription>
-                            {editingRoute ? 'Update route details' : 'Create a new transport route'}
+                            {editingRoute ? 'Update route details, vehicles, and stops' : 'Create a new transport route'}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="route_name">Route Name *</Label>
-                            <Input
-                                id="route_name"
-                                required
-                                value={formData.route_name}
-                                onChange={(e) => setFormData({ ...formData, route_name: e.target.value })}
-                                placeholder="e.g., North Campus Route"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="route_code">Route Code</Label>
-                            <Input
-                                id="route_code"
-                                value={formData.route_code}
-                                onChange={(e) => setFormData({ ...formData, route_code: e.target.value })}
-                                placeholder="e.g., RT-001"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="vehicle_id">Assign Vehicle</Label>
-                            <select
-                                id="vehicle_id"
-                                className="w-full p-2 border rounded-md"
-                                value={formData.vehicle_id}
-                                onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })}
-                            >
-                                <option value="">No Vehicle Assigned</option>
-                                {vehicles.map((vehicle) => (
-                                    <option key={vehicle.id} value={vehicle.id}>
-                                        {vehicle.registration_number} - {vehicle.vehicle_type}
-                                    </option>
-                                ))}
-                            </select>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="route_name">Route Name *</Label>
+                                <Input
+                                    id="route_name"
+                                    required
+                                    value={formData.route_name}
+                                    onChange={(e) => setFormData({ ...formData, route_name: e.target.value })}
+                                    placeholder="e.g., North Campus Route"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="route_code">Route Code</Label>
+                                <Input
+                                    id="route_code"
+                                    value={formData.route_code}
+                                    onChange={(e) => setFormData({ ...formData, route_code: e.target.value })}
+                                    placeholder="e.g., RT-001"
+                                />
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -254,7 +298,6 @@ export function RouteManagement({ onUpdate }) {
                                     onChange={(e) => setFormData({ ...formData, departure_time_start: e.target.value })}
                                 />
                             </div>
-
                             <div className="space-y-2">
                                 <Label htmlFor="arrival_time_campus">Arrival Time</Label>
                                 <Input
@@ -266,11 +309,91 @@ export function RouteManagement({ onUpdate }) {
                             </div>
                         </div>
 
+                        {/* Vehicle Assignment */}
+                        <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+                            <Label className="flex items-center gap-2">
+                                <Bus className="h-4 w-4" />
+                                Assigned Vehicles
+                            </Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                                {vehicles.map((vehicle) => {
+                                    const isSelected = formData.vehicle_ids.includes(vehicle.id);
+                                    return (
+                                        <div
+                                            key={vehicle.id}
+                                            onClick={() => toggleVehicle(vehicle.id)}
+                                            className={`
+                                                cursor-pointer border rounded px-3 py-2 text-sm flex items-center justify-between transition-colors
+                                                ${isSelected ? 'bg-primary/10 border-primary text-primary font-medium' : 'bg-background hover:bg-muted'}
+                                            `}
+                                        >
+                                            <span>{vehicle.registration_number}</span>
+                                            {isSelected && <Check className="h-3 w-3" />}
+                                        </div>
+                                    );
+                                })}
+                                {vehicles.length === 0 && <p className="text-xs text-muted-foreground col-span-3">No vehicles available. Add vehicles first.</p>}
+                            </div>
+                        </div>
+
+                        {/* Stops Management */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2">
+                                    <LayoutList className="h-4 w-4" />
+                                    Pickup Points / Stops
+                                </Label>
+                                <Button type="button" size="sm" variant="ghost" onClick={addStop}>
+                                    <Plus className="h-3 w-3 mr-1" /> Add Stop
+                                </Button>
+                            </div>
+
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                {formData.stops.map((stop, idx) => (
+                                    <div key={idx} className="flex gap-2 items-start animate-fade-in-up">
+                                        <div className="flex-none pt-2 text-xs text-muted-foreground w-6 font-mono text-center">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <Input
+                                                placeholder="Stop Name (e.g. Central Plaza)"
+                                                value={stop.stop_name}
+                                                onChange={(e) => updateStop(idx, 'stop_name', e.target.value)}
+                                                className="h-8"
+                                            />
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    type="time"
+                                                    value={stop.arrival_time || ''}
+                                                    onChange={(e) => updateStop(idx, 'arrival_time', e.target.value)}
+                                                    className="h-8 w-32"
+                                                />
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                            onClick={() => removeStop(idx)}
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {formData.stops.length === 0 && (
+                                    <div className="text-center py-4 border border-dashed rounded-lg text-xs text-muted-foreground">
+                                        No stops added. Add stops to enable detailed tracking.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit">{editingRoute ? 'Update' : 'Create'} Route</Button>
+                            <Button type="submit">{editingRoute ? 'Update Route' : 'Create Route'}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
