@@ -52,99 +52,6 @@ export default function Facilities() {
             </p>
           </div>
 
-<<<<<<< HEAD
-                    <div className="flex bg-muted/50 p-1 rounded-lg border">
-                        <Button
-                            variant={view === 'infrastructure' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            onClick={() => setView('infrastructure')}
-                            className="rounded-md"
-                        >
-                            <Building className="h-4 w-4 mr-2" />
-                            Infrastructure
-                        </Button>
-                        <Button
-                            variant={view === 'vehicles' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            onClick={() => setView('vehicles')}
-                            className="rounded-md"
-                        >
-                            <Bus className="h-4 w-4 mr-2" />
-                            Vehicles
-                        </Button>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => fetchHierarchy(false)}>Refresh</Button>
-                    {view === 'infrastructure' && (
-                        <>
-                            <Button size="sm" variant="secondary" onClick={() => setIsAddRoomOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" /> Add Room
-                            </Button>
-                            <Button size="sm" onClick={() => setIsAddBuildingOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" /> Add Building
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            {/* Content Logic */}
-            {view === 'infrastructure' ? (
-                <div className="grid grid-cols-12 gap-6 h-full min-h-0">
-                    {/* Left Sidebar - Tree View */}
-                    <Card className="col-span-3 h-full overflow-hidden flex flex-col">
-                        <div className="p-4 border-b bg-muted/40">
-                            <h3 className="font-semibold flex items-center gap-2">
-                                <LayoutDashboard className="h-4 w-4" /> Structure
-                            </h3>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-2">
-                            <FacilitiesTree
-                                data={hierarchy}
-                                onSelectRoom={setSelectedRoomId}
-                                selectedRoomId={selectedRoomId}
-                            />
-                        </div>
-                    </Card>
-
-                    {/* Right Content - Room Details or Dashboard */}
-                    <Card className="col-span-9 h-full overflow-hidden flex flex-col shadow-sm border-border/50">
-                        {selectedRoomId ? (
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <RoomForm
-                                    roomId={selectedRoomId}
-                                    onSaved={() => {
-                                        toast.success("Room updated");
-                                        fetchHierarchy(true);
-                                    }}
-                                    onAddRoom={() => setIsAddRoomOpen(true)}
-                                />
-                            </div>
-                        ) : (
-                            <FacilitiesDashboard hierarchy={hierarchy} />
-                        )}
-                    </Card>
-                </div>
-            ) : (
-                <div className="flex-1 min-h-0">
-                    <VehicleInventory />
-                </div>
-            )}
-
-            <AddBuildingDialog
-                open={isAddBuildingOpen}
-                onOpenChange={setIsAddBuildingOpen}
-                onSaved={() => fetchHierarchy(true)}
-            />
-
-            <AddRoomDialog
-                open={isAddRoomOpen}
-                onOpenChange={setIsAddRoomOpen}
-                buildings={hierarchy}
-                onSaved={() => fetchHierarchy(true)}
-            />
-=======
           <div className="flex bg-muted/50 p-1 rounded-lg border">
             <Button
               variant={view === "infrastructure" ? "secondary" : "ghost"}
@@ -165,7 +72,6 @@ export default function Facilities() {
               Vehicles
             </Button>
           </div>
->>>>>>> origin/release
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fetchHierarchy(false)}>
