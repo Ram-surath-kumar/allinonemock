@@ -705,6 +705,17 @@ class ApiClient {
     });
   }
 
+  async assignFeeStructureBulk(data: {
+    student_ids: string[];
+    structure_id: string;
+    scholarship_id?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/finance/assign-bulk", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   async recordPayment(data: any): Promise<ApiResponse<any>> {
     return this.request("/finance/pay/manual", {
       method: "POST",
@@ -796,6 +807,22 @@ class ApiClient {
     if (params?.academic_calendar_id) queryParams.append("academic_calendar_id", params.academic_calendar_id);
     const query = queryParams.toString();
     return this.request<any[]>(`/exam/list${query ? `?${query}` : ""}`);
+  }
+
+  // Transport Fees
+  async getStudentTransportFees(studentId: string): Promise<ApiResponse<any>> {
+    return this.request(`/transport/student/${studentId}`);
+  }
+
+  async payTransportFee(data: any): Promise<ApiResponse<any>> {
+    return this.request("/transport/pay", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async syncTransportFees(): Promise<ApiResponse<any>> {
+    return this.request("/transport/fix-fees", { method: "POST" });
   }
 
   async getChartOfAccounts(): Promise<ApiResponse<any[]>> {

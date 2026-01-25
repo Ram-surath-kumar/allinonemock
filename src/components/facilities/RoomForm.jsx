@@ -511,7 +511,7 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="secondary"
-                    className="justify-start bg-white hover:bg-blue-100"
+                    className="justify-start bg-background hover:bg-accent"
                     onClick={onAddRoom}
                   >
                     <Plus className="mr-2 h-4 w-4" /> Add Another Room
@@ -521,7 +521,7 @@ export default function RoomForm({ roomId, onSaved, onAddRoom }) {
                     <DialogTrigger asChild>
                       <Button
                         variant="secondary"
-                        className="justify-start bg-white hover:bg-blue-100"
+                        className="justify-start bg-background hover:bg-accent"
                       >
                         <Plus className="mr-2 h-4 w-4" /> Book this Room
                       </Button>

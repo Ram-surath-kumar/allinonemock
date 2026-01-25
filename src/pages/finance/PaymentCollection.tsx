@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,15 +27,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, CreditCard } from "lucide-react";
+import { Search, CreditCard, Check, ChevronsUpDown } from "lucide-react";
 import { PaymentGatewayMock } from "@/components/finance/PaymentGatewayMock";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 export function PaymentCollection() {
   const { currentUser } = useAuth();
-  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [fees, setFees] = useState<any[]>([]);
@@ -49,44 +63,89 @@ export function PaymentCollection() {
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [manageAssignment, setManageAssignment] = useState<any>(null); // For adjustments/installments
 
-  const handleSearch = async () => {
-    if (!search) return;
+  useEffect(() => {
+    // Fetch all students on mount for the combobox
+    const fetchStudents = async () => {
+      try {
+        const res = await api.getUsers({ role: "student" });
+        if (res.data) setStudents(res.data);
+      } catch (e) {
+        console.error("Failed to load students", e);
+      }
+    };
+    fetchStudents();
+  }, []);
+
+  const handleSelectStudent = (student: any) => {
+    if (!student) return;
+    setSelectedStudent(student);
+    setOpen(false);
+    loadFees(student.id);
+  };
+
+  const loadFees = async (studentId: string) => {
     setLoading(true);
     try {
-      // Search by email or name (generic user search)
-      // Ideally backend supports 'search' param, here using email/name filter if possible
-      // Or just fetching all students and filtering (not scalable but ok for now)
-      // Using email param as proxy for search query for now, or just getUsers
-      const res = await api.getUsers({ role: "student" }); // Fetch all students, filter client side for demo
-      if (res.data) {
-        const filtered = res.data.filter(
-          (s) =>
-            s.name?.toLowerCase().includes(search.toLowerCase()) ||
-            s.email?.toLowerCase().includes(search.toLowerCase()) ||
-            s.loopid?.toLowerCase().includes(search.toLowerCase())
-        );
-        setStudents(filtered);
+      const [res, transportRes] = await Promise.all([
+        api.getStudentFees(studentId),
+        api.getStudentTransportFees(studentId)
+      ]);
+
+      let allFees = res.data || [];
+
+      // Merge Transport Fees if available
+      if (transportRes.data && transportRes.data.payments) {
+        const transportFees = transportRes.data.payments.map((p: any) => ({
+          id: p.id,
+          net_amount: p.amount_due,
+          paid_amount: p.amount_paid || 0,
+          status: p.status?.toLowerCase() || 'pending',
+          structure: {
+            name: `Transport Fee (Term ${p.installment_no})`,
+            semester: 'Annual',
+            batch_year: new Date().getFullYear()
+          },
+          type: 'transport' // tag to identify source
+        }));
+        allFees = [...allFees, ...transportFees];
       }
+
+      setFees(allFees);
     } catch (e) {
-      toast.error("Search failed");
+      toast.error("Failed to load fees");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectStudent = async (student: any) => {
-    setSelectedStudent(student);
-    setStudents([]); // valid UX? Maybe keep list. Clearing for focus.
-    loadFees(student.id);
-  };
-
-  const loadFees = async (studentId: string) => {
-    const res = await api.getStudentFees(studentId);
-    if (res.data) setFees(res.data);
-  };
-
   const handlePayment = async () => {
     if (!assignId) return;
+
+    // Check if it's a transport payment (based on selected fee type)
+    const selectedFee = fees.find(f => f.id === assignId);
+    if (selectedFee?.type === 'transport') {
+      try {
+        const res = await api.payTransportFee({
+          payment_id: assignId,
+          amount: parseFloat(amount),
+          payment_method: method,
+          remarks: remarks,
+          paid_by: currentUser?.id
+        });
+        if (res.data) {
+          toast.success("Transport Fee Payment Recorded");
+          setIsPayOpen(false);
+          setAmount("");
+          setRemarks("");
+          loadFees(selectedStudent.id);
+        } else {
+          toast.error(res.error || "Payment failed");
+        }
+      } catch (e) {
+        toast.error("Payment error");
+      }
+      return;
+    }
 
     // If Online, show mock gateway
     if (method === "online") {
@@ -141,49 +200,52 @@ export function PaymentCollection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4">
-        <Input
-          placeholder="Search student by Name, Email or ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-        />
-        <Button onClick={handleSearch} disabled={loading}>
-          <Search className="mr-2 h-4 w-4" /> Search
-        </Button>
+      <div className="flex flex-col space-y-2">
+        <Label>Select Student to Collect Fees</Label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-[400px] justify-between"
+            >
+              {selectedStudent
+                ? students.find((s) => s.id === selectedStudent.id)?.name || selectedStudent.name
+                : "Search student by name..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[400px] p-0">
+            <Command>
+              <CommandInput placeholder="Type to search..." />
+              <CommandList>
+                <CommandEmpty>No student found.</CommandEmpty>
+                <CommandGroup>
+                  {students.map((student) => (
+                    <CommandItem
+                      key={student.id}
+                      value={student.name}
+                      onSelect={() => handleSelectStudent(student)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedStudent?.id === student.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex flex-col">
+                        <span>{student.name}</span>
+                        <span className="text-xs text-muted-foreground">{student.loopid}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
-
-      {students.length > 0 && !selectedStudent && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>{s.name}</TableCell>
-                    <TableCell>{s.email}</TableCell>
-                    <TableCell>
-                      <Button size="sm" onClick={() => selectStudent(s)}>
-                        View Fees
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
 
       {selectedStudent && (
         <div className="space-y-6">

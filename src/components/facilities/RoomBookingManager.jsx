@@ -147,10 +147,10 @@ export function RoomBookingManager({ roomId, onUpdate }) {
                     className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded-full border",
                       booking.status === "Approved"
-                        ? "bg-green-50 text-green-700 border-green-200"
+                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
                         : booking.status === "Pending"
-                          ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                          : "bg-gray-100 text-gray-700"
+                          ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
                     )}
                   >
                     {booking.status}

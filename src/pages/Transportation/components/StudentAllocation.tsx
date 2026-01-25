@@ -183,10 +183,20 @@ export function StudentAllocation({ onUpdate }) {
                         Assign students to transport routes
                     </p>
                 </div>
-                <Button variant="outline" onClick={() => setShowAllocationsDialog(true)}>
-                    <Users className="h-4 w-4 mr-2" />
-                    View All Allocations
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={async () => {
+                        if (!confirm("This will calculate and assign fees to all currently allocated students who have no fee records. Continue?")) return;
+                        const res = await api.syncTransportFees();
+                        if (res.data) toast.success(res.data.message);
+                        else toast.error("Failed to sync fees");
+                    }}>
+                        Sync Fees
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAllocationsDialog(true)}>
+                        <Users className="h-4 w-4 mr-2" />
+                        View All Allocations
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -299,6 +309,7 @@ export function StudentAllocation({ onUpdate }) {
                             </select>
                         </div>
 
+
                         {/* Vehicle Selection - Only show vehicles for this route */}
                         <div className="space-y-2">
                             <Label htmlFor="vehicle">Select Vehicle</Label>
@@ -306,7 +317,28 @@ export function StudentAllocation({ onUpdate }) {
                                 id="vehicle"
                                 className="w-full p-2 border rounded-md"
                                 value={formData.vehicle_id}
-                                onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })}
+                                onChange={(e) => {
+                                    const vehicleId = e.target.value;
+                                    let fee = 0;
+
+                                    // Find selected vehicle to get type
+                                    const vehicle = selectedRoute?.vehicles?.find(v => v.id === vehicleId) ||
+                                        (selectedRoute?.vehicle?.id === vehicleId ? selectedRoute.vehicle : null);
+
+                                    if (vehicle) {
+                                        const type = vehicle.vehicle_type?.toLowerCase() || '';
+                                        if (type.includes('bus')) fee = 50000;
+                                        else if (type.includes('van')) fee = 40000;
+                                        else if (type.includes('tempo')) fee = 30000;
+                                        else if (type.includes('car')) fee = 20000;
+                                    }
+
+                                    setFormData({
+                                        ...formData,
+                                        vehicle_id: vehicleId,
+                                        fee_annual: fee
+                                    });
+                                }}
                             >
                                 <option value="">Any / Not Assigned</option>
                                 {selectedRoute?.vehicles?.map((vehicle) => (

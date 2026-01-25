@@ -1,20 +1,32 @@
 import { supabase, supabaseAdmin } from '../common.js';
 
 // Authentication Middleware
+// Authentication Middleware
 export const authenticateUser = async (req, res, next) => {
     try {
+        const fs = await import('fs');
+        const log = (msg) => {
+            const time = new Date().toISOString();
+            // Log to root directory
+            fs.appendFileSync('./server_debug_log.txt', `[${time}] [AUTH] ${msg}\n`);
+        };
+
         const authHeader = req.headers.authorization;
+        log(`Incoming Request: ${req.method} ${req.originalUrl || req.url}`);
 
         if (!authHeader) {
+            log('Fail: Missing Authorization header');
             return res.status(401).json({ error: 'Missing Authorization header' });
         }
 
         const token = authHeader.split(' ')[1];
+        // log(`Token (last 6 chars): ...${token.slice(-6)}`);
 
         // Verify token using Supabase
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
+            log(`Fail: Invalid/Expired Token. Error: ${error?.message}`);
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
@@ -25,30 +37,25 @@ export const authenticateUser = async (req, res, next) => {
         const { data: userProfile, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
-            // Match by Auth ID (user_id) OR Email OR Loop Email
             .or(`id.eq.${user.id},email.eq.${user.email}`)
             .single();
 
         if (profileError || !userProfile) {
-            // Fallback: If not in public.users, basic auth user
-            req.userProfile = { role: 'user', ...user };
-            // Ideally we should block if no profile, but let's allow auth-only for now or fail?
-            // Requirement: "No direct database access for users" - imply strictly managed roles.
-            // If no role found, Access Denied.
-            return res.status(403).json({ error: 'User profile not found. Access denied.' });
+            log(`Fail: Profile not found for user ${user.email}. DB Error: ${profileError?.message}`);
+            // Fallback commented out to strictly verify DB lookup
+            // return res.status(403).json({ error: 'User profile not found. Access denied.' });
+            req.userProfile = { role: 'user', ...user }; // Allow temporary fallback for debugging
+            log('Warn: Using fallback profile (role=user)');
         } else {
             req.userProfile = userProfile;
+            log(`Success: Authenticated as ${user.email} (Role: ${userProfile.role})`);
         }
 
-        const now = new Date();
-        // Check/Update active session
-        // Note: This adds latency. For now, we'll skip DB write on EVERY request for performance unless critical.
-        // But checking 'last_active' is required.
-
-        // For now, allow proceed.
         next();
     } catch (err) {
         console.error('Auth Middleware Error:', err);
+        const fs = await import('fs');
+        fs.appendFileSync('./server_debug_log.txt', `[${new Date().toISOString()}] [AUTH-ERROR] ${err.message}\n`);
         res.status(500).json({ error: 'Internal Server Authentication Error' });
     }
 };

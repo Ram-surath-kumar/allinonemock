@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AddHostelDialog } from "./AddHostelDialog";
 import { AllocationDialog } from "./AllocationDialog";
 import { EditHostelDialog } from "./EditHostelDialog";
+import { HostelFees } from "@/pages/finance/HostelFees";
 
 export default function HostelDashboard() {
   const [loading, setLoading] = useState(true);
@@ -176,11 +177,10 @@ export default function HostelDashboard() {
                             {allocation.user?.name || "Unknown Student"}
                           </p>
                           <span
-                            className={`text-xs px-2 py-0.5 rounded-full ${
-                              allocation.status === "active"
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
-                                : "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400"
-                            }`}
+                            className={`text-xs px-2 py-0.5 rounded-full ${allocation.status === "active"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
+                              : "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400"
+                              }`}
                           >
                             {allocation.status || "N/A"}
                           </span>
@@ -216,10 +216,10 @@ export default function HostelDashboard() {
                           Allocated:{" "}
                           {allocation.allocated_date
                             ? new Date(allocation.allocated_date).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })
                             : "Date not available"}
                         </p>
                       </div>
@@ -296,14 +296,7 @@ export default function HostelDashboard() {
         </TabsContent>
 
         <TabsContent value="finance">
-          <Card className="shad-card">
-            <CardHeader>
-              <CardTitle>Fee Collection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">No fee records found.</p>
-            </CardContent>
-          </Card>
+          <HostelFees />
         </TabsContent>
       </Tabs>
 

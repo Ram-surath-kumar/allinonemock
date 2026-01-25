@@ -10,6 +10,9 @@ import { Reports } from "./finance/Reports";
 import { TaxCompliance } from "./finance/TaxCompliance";
 import { Reconciliation } from "./finance/Reconciliation";
 
+
+
+
 export function Finance() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -33,7 +36,9 @@ export function Finance() {
           <TabsTrigger value="refunds">Refunds</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="tax">Tax & Compliance</TabsTrigger>
+
           <TabsTrigger value="reconciliation">Reconciliation</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -68,9 +73,12 @@ export function Finance() {
           <TaxCompliance />
         </TabsContent>
 
+
         <TabsContent value="reconciliation" className="space-y-4">
           <Reconciliation />
         </TabsContent>
+
+
       </Tabs>
     </div>
   );

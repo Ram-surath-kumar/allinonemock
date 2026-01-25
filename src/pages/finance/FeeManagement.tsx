@@ -36,6 +36,7 @@ export function FeeManagement() {
   const [heads, setHeads] = useState<any[]>([]);
   const [structures, setStructures] = useState<any[]>([]);
   const [scholarships, setScholarships] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,14 +46,16 @@ export function FeeManagement() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [catRes, headRes, structRes] = await Promise.all([
+      const [catRes, headRes, structRes, deptRes] = await Promise.all([
         api.getFeeCategories(),
         api.getFeeHeads(),
         api.getFeeStructures(),
+        api.getDepartments(),
       ]);
       if (catRes.data) setCategories(catRes.data);
       if (headRes.data) setHeads(headRes.data);
       if (structRes.data) setStructures(structRes.data);
+      if (deptRes.data) setDepartments(deptRes.data);
       const scholRes = await api.getScholarships();
       if (scholRes.data) setScholarships(scholRes.data);
     } catch (e) {
@@ -93,7 +96,12 @@ export function FeeManagement() {
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-4">
-          <AssignmentsTab structures={structures} scholarships={scholarships} refresh={loadData} />
+          <AssignmentsTab
+            structures={structures}
+            scholarships={scholarships}
+            departments={departments}
+            refresh={loadData}
+          />
         </TabsContent>
 
         <TabsContent value="rules" className="space-y-4">
@@ -377,14 +385,17 @@ function FeeStructuresTab({
 function AssignmentsTab({
   structures,
   scholarships,
+  departments,
   refresh,
 }: {
   structures: any[];
   scholarships: any[];
+  departments: any[];
   refresh: () => void;
 }) {
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedStructure, setSelectedStructure] = useState("");
   const [selectedScholarship, setSelectedScholarship] = useState("none");
   const [loading, setLoading] = useState(false);
@@ -410,6 +421,49 @@ function AssignmentsTab({
     else toast.error(res.error || "Assignment failed");
   };
 
+  const handleBulkAssign = async () => {
+    if (!selectedDepartment || !selectedStructure) {
+      toast.error("Select department and structure");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Fetch students in department
+      const usersRes = await api.getUsers({
+        role: "student",
+        department_id: selectedDepartment
+      });
+
+      const studentsInDept = usersRes.data || [];
+      if (studentsInDept.length === 0) {
+        toast.error("No students found in selected department");
+        setLoading(false);
+        return;
+      }
+
+      const studentIds = studentsInDept.map(s => s.id);
+
+      // 2. Bulk Assign
+      const res = await api.assignFeeStructureBulk({
+        student_ids: studentIds,
+        structure_id: selectedStructure,
+        scholarship_id: selectedScholarship === "none" ? null : selectedScholarship,
+      });
+
+      if (res.data) {
+        toast.success(`Fees assigned to ${res.data.length} students`);
+        // Optional: refresh data or show success details
+      } else {
+        toast.error(res.error || "Bulk assignment failed");
+      }
+    } catch (e) {
+      toast.error("An error occurred during bulk assignment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -417,7 +471,7 @@ function AssignmentsTab({
       </CardHeader>
       <CardContent className="space-y-4 max-w-xl">
         <div className="space-y-2">
-          <Label>Select Student</Label>
+          <Label>Select Student (Single Assignment)</Label>
           <Select value={selectedStudent} onValueChange={setSelectedStudent}>
             <SelectTrigger>
               <SelectValue placeholder="Search student..." />
@@ -432,6 +486,31 @@ function AssignmentsTab({
                   </SelectItem>
                 )
               )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or Bulk Assign by Department</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Select Department (Bulk Assignment)</Label>
+          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select department..." />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -487,9 +566,18 @@ function AssignmentsTab({
           >
             Auto-Assign Best Match
           </Button>
+
+          <Button
+            variant="destructive"
+            onClick={handleBulkAssign}
+            disabled={loading || !selectedDepartment}
+          >
+            Assign to Department
+          </Button>
+
         </div>
       </CardContent>
-    </Card>
+    </Card >
   );
 }
 

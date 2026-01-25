@@ -573,4 +573,134 @@ router.put('/vehicles/:id/crew', async (req, res) => {
     }
 });
 
+
+/**
+ * @route POST /api/transport/pay
+ * @desc Process payment for transportation fee installment
+ */
+router.post('/pay', async (req, res) => {
+    try {
+        const { payment_id, amount, payment_method, remarks, paid_by } = req.body;
+        const context = { user: req.user };
+
+        // 1. Fetch the installment
+        const payment = await secureDb.get('transport_fee_payments', q => q.eq('id', payment_id).single());
+        if (!payment) return res.status(404).json({ error: 'Payment installment not found' });
+
+        // 2. Validate amount (Basic check)
+        const newPaidAmount = (payment.amount_paid || 0) + parseFloat(amount);
+
+        // 3. Update Installment
+        const status = newPaidAmount >= payment.amount_due ? 'Paid' : 'Partial';
+
+        await secureDb.update('transport_fee_payments', payment_id, {
+            amount_paid: newPaidAmount,
+            status: status,
+            paid_date: new Date().toISOString()
+        }, context);
+
+        // 4. Create Transaction Record (Optional but good for history)
+        // Check if transactions table exists or if we should just log it
+        // For now, we update the payment record directly.
+
+        sendSuccess(res, { message: 'Payment recorded successfully', status, amount_paid: newPaidAmount });
+    } catch (error) {
+        handleError(error, res, 'Failed to process payment');
+    }
+});
+
+/**
+ * @route POST /api/transport/fix-fees
+ * @desc Backfill fees for existing allocations
+ */
+router.post('/fix-fees', async (req, res) => {
+    try {
+        const { supabaseAdmin } = await import('../common.js');
+        const context = { user: req.user };
+
+        // 1. Fetch all active registrations linked to students
+        const registrations = await secureDb.get('transport_registrations', q => q.eq('status', 'active'));
+
+        let updatedCount = 0;
+
+        for (const reg of registrations) {
+            // Check if payments already exist
+            const existingPayments = await secureDb.get('transport_fee_payments', q => q.eq('registration_id', reg.id));
+            if (existingPayments.length > 0) continue;
+
+            // Determine Fee
+            let fee = 0;
+            let vehicle = null;
+
+            // Try to find vehicle from registration
+            if (reg.vehicle_id) {
+                const vs = await secureDb.get('vehicles', q => q.eq('id', reg.vehicle_id));
+                vehicle = vs[0];
+            }
+
+            // If no vehicle on registration, check route's default vehicle
+            if (!vehicle && reg.route_id) {
+                // Check route_vehicles first
+                const { data: routeVehicles } = await supabaseAdmin
+                    .from('transport_route_vehicles')
+                    .select('vehicle_id, vehicles(*)')
+                    .eq('route_id', reg.route_id);
+
+                if (routeVehicles && routeVehicles.length > 0) {
+                    vehicle = routeVehicles[0].vehicles;
+                } else {
+                    // Check legacy column
+                    const routes = await secureDb.get('transport_routes', q => q.eq('id', reg.route_id));
+                    if (routes[0]?.vehicle_id) {
+                        const vs = await secureDb.get('vehicles', q => q.eq('id', routes[0].vehicle_id));
+                        vehicle = vs[0];
+                    }
+                }
+            }
+
+            if (vehicle) {
+                const type = vehicle.vehicle_type?.toLowerCase() || '';
+                if (type.includes('bus')) fee = 50000;
+                else if (type.includes('van')) fee = 40000;
+                else if (type.includes('tempo')) fee = 30000;
+                else if (type.includes('car')) fee = 20000;
+            }
+
+            if (fee > 0) {
+                // Update registration with annual fee
+                await secureDb.update('transport_registrations', reg.id, { fee_annual: fee }, context);
+
+                // Create Installments
+                const semFee = fee / 2;
+
+                // Installment 1
+                await secureDb.create('transport_fee_payments', {
+                    registration_id: reg.id,
+                    installment_no: 1,
+                    amount_due: semFee,
+                    due_date: new Date().toISOString(),
+                    status: 'Pending'
+                }, context);
+
+                // Installment 2
+                const date2 = new Date();
+                date2.setMonth(date2.getMonth() + 6);
+                await secureDb.create('transport_fee_payments', {
+                    registration_id: reg.id,
+                    installment_no: 2,
+                    amount_due: semFee,
+                    due_date: date2.toISOString(),
+                    status: 'Pending'
+                }, context);
+
+                updatedCount++;
+            }
+        }
+
+        sendSuccess(res, { message: `Fixed fees for ${updatedCount} students`, count: updatedCount });
+    } catch (error) {
+        handleError(error, res, 'Failed to fix fees');
+    }
+});
+
 export default router;

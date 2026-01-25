@@ -166,6 +166,70 @@ router.post('/structures', authorizeRole(['admin', 'finance']), async (req, res)
     }
 });
 
+// Retrieve All Fee Assignments (with search/filters)
+router.get('/assignments', async (req, res) => {
+    try {
+        const fs = await import('fs');
+        const log = (msg) => {
+            const time = new Date().toISOString();
+            fs.appendFileSync('server_debug_log.txt', `[${time}] [API-ASSIGNMENTS] ${msg}\n`);
+        };
+
+        log(`Request by User: ${req.userProfile?.email} (Role: ${req.userProfile?.role})`);
+
+        const { search, type, status, limit = 50 } = req.query;
+        log(`Params: search=${search}, type=${type}, status=${status}`);
+
+        const data = await secureDb.get('student_fee_assignments', (query) => {
+            let q = query
+                .select(`
+                    *,
+                    student:users!student_id(name, email, loopid),
+                    structure:fee_structures!structure_id(name, batch_year, semester)
+                `)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (status) q = q.eq('status', status);
+            return q;
+        });
+
+        log(`Raw Fetch Count: ${data?.length}`);
+
+        // Manual filtering
+        let filtered = data || [];
+
+        if (type) {
+            filtered = filtered.filter(a => {
+                const sName = a.structure?.name;
+                if (!sName) return false;
+                return sName.toLowerCase().includes(type.toLowerCase());
+            });
+        }
+
+        if (search) {
+            const s = search.toLowerCase();
+            filtered = filtered.filter(a => {
+                const studentName = a.student?.name?.toLowerCase() || '';
+                const studentId = a.student?.loopid?.toLowerCase() || '';
+                return studentName.includes(s) || studentId.includes(s);
+            });
+        }
+
+        log(`Returned Count: ${filtered.length}`);
+        if (filtered.length === 0 && data.length > 0) {
+            log('Filtering removed all records. Sample structure names: ' + data.map(d => d.structure?.name).join(', '));
+        }
+
+        res.json({ data: filtered, error: null });
+    } catch (error) {
+        // Log error
+        const fs = await import('fs');
+        fs.appendFileSync('server_debug_log.txt', `[${new Date().toISOString()}] [API-ERROR] ${error.message}\n`);
+        res.status(500).json({ data: null, error: error.message });
+    }
+});
+
 // Retrieve Student's Assigned Fees
 router.get('/student/:studentId/fees', async (req, res) => {
     try {
@@ -238,6 +302,32 @@ router.post('/assign', authorizeRole(['admin', 'finance', 'registrar']), async (
 
         // if (error) throw error;
         res.status(201).json({ data, error: null });
+    } catch (error) {
+        res.status(500).json({ data: null, error: error.message });
+    }
+});
+
+// Update Fee Assignment Status (Manual Override)
+router.patch('/assignments/:id/status', authorizeRole(['admin', 'finance']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, paid_amount, notes } = req.body;
+        const context = getContext(req, 'Manual Status Update');
+
+        const updateData = { status, updated_at: new Date() };
+        if (paid_amount !== undefined) updateData.paid_amount = paid_amount;
+
+        // If status is paid, ensure paid_amount = net_amount if not provided?
+        // Let's trust the frontend or user input for now to be flexible (e.g. waiving off)
+
+        const data = await secureDb.update('student_fee_assignments', id, updateData, context);
+
+        // Log to debug
+        const fs = await import('fs');
+        const time = new Date().toISOString();
+        fs.appendFileSync('server_debug_log.txt', `[${time}] [FEE-UPDATE] Updated ${id} to ${status} (Paid: ${paid_amount})\n`);
+
+        res.json({ data, error: null });
     } catch (error) {
         res.status(500).json({ data: null, error: error.message });
     }
@@ -950,5 +1040,70 @@ router.post('/reconciliation/match', async (req, res) => {
 
 
 
+
+// ==========================================
+// 3.8 Repair & Utilities
+// ==========================================
+
+// Repair Hostel Fees (Backfill missing assignments)
+router.post('/repair-hostel-fees', authorizeRole(['admin', 'finance']), async (req, res) => {
+    try {
+        const fs = await import('fs');
+        const log = (msg) => {
+            const time = new Date().toISOString();
+            fs.appendFileSync('server_debug_log.txt', `[${time}] [REPAIR-HOSTEL] ${msg}\n`);
+        };
+
+        log(`Starting Hostel Fee Repair... requested by ${req.user.email}`);
+
+        // 1. Get all active hostel allocations
+        const allocations = await secureDb.get('hostel_allocations', q =>
+            q.eq('status', 'active')
+        );
+
+        if (!allocations || allocations.length === 0) {
+            log("No active hostel allocations found.");
+            return res.json({ message: "No active allocations found.", processed: 0 });
+        }
+
+        log(`Found ${allocations.length} active allocations. Processing...`);
+
+        const results = {
+            total: allocations.length,
+            success: 0,
+            skipped: 0,
+            failed: 0,
+            details: []
+        };
+
+        const context = getContext(req, 'Repair Hostel Fees');
+
+        for (const alloc of allocations) {
+            try {
+                // Call assignHostelFee for each
+                // Note: assignHostelFee handles "already exists" checks internally
+                const assignment = await feeService.assignHostelFee(alloc.user_id, alloc.room_id, context, secureDb);
+
+                if (assignment) {
+                    results.success++;
+                    results.details.push({ user_id: alloc.user_id, status: 'processed', id: assignment.id });
+                } else {
+                    results.failed++;
+                    results.details.push({ user_id: alloc.user_id, status: 'failed', reason: 'Service returned null' });
+                }
+            } catch (err) {
+                results.failed++;
+                results.details.push({ user_id: alloc.user_id, status: 'error', message: err.message });
+                log(`Error processing user ${alloc.user_id}: ${err.message}`);
+            }
+        }
+
+        log(`Repair Completed. Success: ${results.success}, Failed: ${results.failed}`);
+        res.json({ data: results, error: null });
+
+    } catch (error) {
+        res.status(500).json({ data: null, error: error.message });
+    }
+});
 
 export default router;
