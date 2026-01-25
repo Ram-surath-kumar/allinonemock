@@ -171,8 +171,16 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
   };
 
   // Create navItems inside component to use i18n - memoized to prevent recreation on every render
-  const navItems: NavItem[] = useMemo(
-    () => [
+  const navItems: NavItem[] = useMemo(() => {
+    if (currentUser?.role === 'student') {
+      return [
+        { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
+        { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
+        { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
+      ];
+    }
+
+    return [
       { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/" },
       {
         icon: Users,
@@ -242,9 +250,8 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       },
       { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
       { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
-    ],
-    [t]
-  );
+    ];
+  }, [t, currentUser?.role]);
 
   const filteredNavItems = useMemo(
     () =>
