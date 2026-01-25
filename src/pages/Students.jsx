@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function Students() {
   const { hasPermission, currentUser } = useAuth();
@@ -320,7 +321,7 @@ export function Students() {
                     {departmentFilter === "all"
                       ? t("students.allDepartments")
                       : departments.find((dept) => dept.id === departmentFilter)?.name ||
-                        t("students.selectDepartment")}
+                      t("students.selectDepartment")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -399,23 +400,8 @@ export function Students() {
           )}
 
           {loading ? (
-            <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden animate-fade-in">
-              <div className="p-4 space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 animate-pulse"
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  >
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-48 bg-muted rounded" />
-                      <div className="h-3 w-32 bg-muted rounded" />
-                    </div>
-                    <div className="h-6 w-20 bg-muted rounded" />
-                  </div>
-                ))}
-              </div>
+            <div className="p-8">
+              <RippleLoader className="min-h-[400px]" />
             </div>
           ) : (
             <StudentTable

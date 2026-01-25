@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, CreditCard, Wallet, Smartphone } from "lucide-react";
 import { api } from "@/services/api";
 import { toast } from "sonner";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 interface PaymentGatewayMockProps {
   assignment: any;
@@ -170,9 +171,11 @@ export function PaymentGatewayMock({ assignment, onSuccess, onClose }: PaymentGa
           </div>
         )}
 
+        {/* Removed nested import */}
+
         {step === "processing" && (
           <div className="flex flex-col items-center justify-center py-8 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <RippleLoader className="min-h-[200px]" />
             <p className="text-lg font-medium">Processing Payment...</p>
             <p className="text-sm text-muted-foreground">Please do not close this window.</p>
           </div>

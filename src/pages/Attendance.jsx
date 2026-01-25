@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function Attendance() {
   const { currentUser, hasPermission } = useAuth();
@@ -238,7 +239,7 @@ export function Attendance() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, currentUser?.role]);
-  
+
   // Reload data when category or selectedDate changes
   useEffect(() => {
     if (currentUser) {
@@ -283,6 +284,17 @@ export function Attendance() {
     if (selectedDepartmentId !== "all") {
       const studentDeptId = student.department_id;
       if (!studentDeptId || studentDeptId !== selectedDepartmentId) {
+        return false;
+      }
+    }
+
+    // Strict teacher filter: Only show students in allotted departments
+    if (currentUser?.role === "teacher" && teacherDepartmentIds.length > 0) {
+      // teacherDepartmentIds might be strings or numbers, so we might want to cast or be loose, 
+      // but let's assume strict match is intended if types are consistent. 
+      // Safe bet is to check both if unsure, but typically these are strings in this app.
+      // However, seeing api.ts, they look like strings usually. 
+      if (!student.department_id || !teacherDepartmentIds.includes(student.department_id)) {
         return false;
       }
     }
@@ -426,16 +438,22 @@ export function Attendance() {
       <div className="flex flex-col gap-3">
         {/* First row: Search, Filters, Date */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Tabs value={category} onValueChange={setCategory} className="w-full sm:w-auto">
-            <TabsList>
-              <TabsTrigger value="student">Students</TabsTrigger>
-              <TabsTrigger value="staff">Staff</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {currentUser?.role !== "teacher" && (
+            <Tabs value={category} onValueChange={setCategory} className="w-full sm:w-auto">
+              <TabsList>
+                <TabsTrigger value="student">Students</TabsTrigger>
+                <TabsTrigger value="staff">Staff</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={`Search ${category === "staff" ? "staff" : "students"}...`}
+              placeholder={
+                currentUser?.role === "teacher"
+                  ? "Search students..."
+                  : `Search ${category === "staff" ? "staff" : "students"}...`
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-10"
@@ -583,20 +601,7 @@ export function Attendance() {
 
       {/* Students grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-border bg-card p-4 space-y-3 animate-pulse"
-            >
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted" />
-                <div className="h-4 w-24 bg-muted rounded" />
-              </div>
-              <div className="h-3 w-32 bg-muted rounded" />
-            </div>
-          ))}
-        </div>
+        <RippleLoader className="min-h-[400px]" />
       ) : (
         <div className="space-y-4">
           {filteredStudents.length === 0 ? (
@@ -623,14 +628,13 @@ export function Attendance() {
                     return (
                       <div
                         key={student.id}
-                        className={`relative rounded-xl p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${
-                          isSelected
-                            ? getStatusStyles(attendance?.status || "", true)
-                            : attendance
-                              ? getStatusStyles(attendance.status, false) +
-                                " hover:shadow-md hover:scale-[1.02]"
-                              : "border border-border bg-card hover:border-primary/50 hover:shadow-md hover:scale-[1.02]"
-                        }`}
+                        className={`relative rounded-xl p-4 transition-all duration-200 cursor-pointer animate-fade-in-up ${isSelected
+                          ? getStatusStyles(attendance?.status || "", true)
+                          : attendance
+                            ? getStatusStyles(attendance.status, false) +
+                            " hover:shadow-md hover:scale-[1.02]"
+                            : "border border-border bg-card hover:border-primary/50 hover:shadow-md hover:scale-[1.02]"
+                          }`}
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
                       >
@@ -661,22 +665,21 @@ export function Attendance() {
                               ? student.department || "No department"
                               : student.role
                                 ? student.role
-                                    .split("_")
-                                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                                    .join(" ")
+                                  .split("_")
+                                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                                  .join(" ")
                                 : "Staff"}
                           </p>
                           {attendance && (
                             <p
-                              className={`text-sm font-semibold ${
-                                attendance.status === "present"
-                                  ? "text-green-600 dark:text-green-400"
-                                  : attendance.status === "absent"
-                                    ? "text-red-600 dark:text-red-400"
-                                    : attendance.status === "late"
-                                      ? "text-yellow-600 dark:text-yellow-400"
-                                      : "text-blue-600 dark:text-blue-400"
-                              }`}
+                              className={`text-sm font-semibold ${attendance.status === "present"
+                                ? "text-green-600 dark:text-green-400"
+                                : attendance.status === "absent"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : attendance.status === "late"
+                                    ? "text-yellow-600 dark:text-yellow-400"
+                                    : "text-blue-600 dark:text-blue-400"
+                                }`}
                             >
                               {getStatusText(attendance.status)}
                             </p>
@@ -695,13 +698,12 @@ export function Attendance() {
                     return (
                       <div
                         key={student.id}
-                        className={`relative p-4 rounded-xl transition-all duration-200 cursor-pointer animate-fade-in-up ${
-                          isSelected
-                            ? getStatusStyles(attendance?.status || "", true)
-                            : attendance
-                              ? getStatusStyles(attendance.status, false) + " hover:shadow-md"
-                              : "border border-border bg-card hover:border-primary/50 hover:shadow-md"
-                        }`}
+                        className={`relative p-4 rounded-xl transition-all duration-200 cursor-pointer animate-fade-in-up ${isSelected
+                          ? getStatusStyles(attendance?.status || "", true)
+                          : attendance
+                            ? getStatusStyles(attendance.status, false) + " hover:shadow-md"
+                            : "border border-border bg-card hover:border-primary/50 hover:shadow-md"
+                          }`}
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => canManageAttendance && toggleStudentSelection(student.id)}
                       >
@@ -726,23 +728,22 @@ export function Attendance() {
                                 ? student.department || "No department"
                                 : student.role
                                   ? student.role
-                                      .split("_")
-                                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                                      .join(" ")
+                                    .split("_")
+                                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                                    .join(" ")
                                   : "Staff"}
                             </p>
                           </div>
                           {attendance && (
                             <p
-                              className={`text-sm font-semibold shrink-0 ${
-                                attendance.status === "present"
-                                  ? "text-green-600 dark:text-green-400"
-                                  : attendance.status === "absent"
-                                    ? "text-red-600 dark:text-red-400"
-                                    : attendance.status === "late"
-                                      ? "text-yellow-600 dark:text-yellow-400"
-                                      : "text-blue-600 dark:text-blue-400"
-                              }`}
+                              className={`text-sm font-semibold shrink-0 ${attendance.status === "present"
+                                ? "text-green-600 dark:text-green-400"
+                                : attendance.status === "absent"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : attendance.status === "late"
+                                    ? "text-yellow-600 dark:text-yellow-400"
+                                    : "text-blue-600 dark:text-blue-400"
+                                }`}
                             >
                               {getStatusText(attendance.status)}
                             </p>

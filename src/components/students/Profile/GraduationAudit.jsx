@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { api } from "@/services/api";
 import { Loader2, CheckCircle2, XCircle, AlertTriangle, BookOpen } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { Separator } from "@/components/ui/separator";
 
 export function GraduationAudit({ studentId }) {
@@ -38,8 +39,8 @@ export function GraduationAudit({ studentId }) {
 
   if (loading)
     return (
-      <div className="p-8 flex justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="flex items-center justify-center h-64">
+        <RippleLoader />
       </div>
     );
 

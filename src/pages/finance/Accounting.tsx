@@ -39,6 +39,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Save, FilePlus, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function Accounting() {
   const [coa, setCoa] = useState<any[]>([]);
@@ -61,6 +62,10 @@ export function Accounting() {
     }
     setLoading(false);
   };
+
+  if (loading) {
+    return <RippleLoader />;
+  }
 
   return (
     <div className="space-y-6">

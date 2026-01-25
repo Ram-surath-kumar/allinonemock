@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, FileCheck, Award, Calendar, RefreshCcw } from "lucide-react";
 import { api } from "@/services/api";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { toast } from "sonner";
 
 export default function AdmissionAdmin() {
@@ -110,7 +111,7 @@ export default function AdmissionAdmin() {
             <CardContent>
               {loading ? (
                 <div className="p-8 text-center">
-                  <Loader2 className="animate-spin h-8 w-8 mx-auto" />
+                  <RippleLoader className="min-h-[200px]" />
                 </div>
               ) : (
                 <div className="space-y-4">

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Trash2, Loader2 } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -130,7 +131,11 @@ export function RoomBookingManager({ roomId, onUpdate }) {
       </div>
 
       <div className="space-y-2">
-        {bookings.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <RippleLoader />
+          </div>
+        ) : bookings.length === 0 ? (
           <div className="p-8 text-center border border-dashed rounded-md text-muted-foreground text-sm">
             No upcoming bookings found.
           </div>

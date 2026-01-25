@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { AddVehicleDialog } from './AddVehicleDialog';
 import { VehicleDetails } from './VehicleDetails';
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function VehicleInventory() {
     const [vehicles, setVehicles] = useState([]);
@@ -123,16 +124,8 @@ export function VehicleInventory() {
 
             <div className="flex-1 overflow-y-auto">
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3].map(i => (
-                            <Card key={i} className="animate-pulse">
-                                <div className="h-40 bg-muted rounded-t-lg" />
-                                <CardContent className="p-4 space-y-2">
-                                    <div className="h-4 bg-muted rounded w-3/4" />
-                                    <div className="h-3 bg-muted rounded w-1/2" />
-                                </CardContent>
-                            </Card>
-                        ))}
+                    <div className="flex items-center justify-center h-[400px]">
+                        <RippleLoader />
                     </div>
                 ) : filteredVehicles.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

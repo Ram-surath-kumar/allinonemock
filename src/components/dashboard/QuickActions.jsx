@@ -26,6 +26,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { RippleLoader } from "@/components/ui/RippleLoader";
+
 export function QuickActions({ onAddUser, onAssignTask }) {
   const { hasPermission } = useAuth();
   const { t } = useI18n();
@@ -269,10 +271,12 @@ export function QuickActions({ onAddUser, onAssignTask }) {
           </DialogHeader>
 
           <div className="mt-4">
+            {/* Removed nested import */}
+
             {aiLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-3 text-sm text-muted-foreground">
+              <div className="flex flex-col items-center justify-center py-8">
+                <RippleLoader className="min-h-[150px]" />
+                <span className="mt-4 text-sm text-muted-foreground">
                   {t("dashboard.generatingInsights")}
                 </span>
               </div>

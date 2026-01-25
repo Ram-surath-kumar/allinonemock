@@ -53,12 +53,15 @@ import {
   ChartTooltipContent,
   ChartConfig,
 } from "@/components/ui/chart";
+import { RippleLoader } from "@/components/ui/RippleLoader";
+import { useFinance } from "@/contexts/FinanceContext";
 
 function CollectionReport() {
   const [data, setData] = useState<any>(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
+  const { refreshTrigger } = useFinance();
 
   const loadReport = async () => {
     setLoading(true);
@@ -69,13 +72,13 @@ function CollectionReport() {
 
   useEffect(() => {
     loadReport();
-  }, []);
+  }, [refreshTrigger]);
 
   // Transform data for chart
   const chartData = data
     ? Object.keys(data)
-        .filter((k) => k !== "total" && k !== "transactions")
-        .map((method) => ({ method: method.replace("_", " "), amount: data[method] }))
+      .filter((k) => k !== "total" && k !== "transactions")
+      .map((method) => ({ method: method.replace("_", " "), amount: data[method] }))
     : [];
 
   const chartConfig = {
@@ -100,62 +103,73 @@ function CollectionReport() {
           Generate Report
         </Button>
       </div>
-      {data && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="grid grid-cols-2 gap-4 h-fit">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Total Collection</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
-                    data.total || 0
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            {chartData.map((item) => (
-              <Card key={item.method}>
+
+      {
+        loading ? (
+          <div className="min-h-[400px]">
+            <RippleLoader />
+          </div>
+        ) : data ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4 h-fit">
+              <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm capitalize">{item.method}</CardTitle>
+                  <CardTitle className="text-sm">Total Collection</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg font-semibold">
+                  <div className="text-2xl font-bold">
                     {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
-                      item.amount
+                      data.total || 0
                     )}
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              {chartData.map((item) => (
+                <Card key={item.method}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm capitalize">{item.method}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-lg font-semibold">
+                      {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
+                        item.amount
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Collection by Method</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <BarChart accessibilityLayer data={chartData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="method"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Collection by Method</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                  <BarChart accessibilityLayer data={chartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="method"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="text-center py-10 text-muted-foreground">
+            No data available. Please generate the report.
+          </div>
+        )
+      }
+    </div >
   );
 }
 
@@ -241,16 +255,21 @@ function AdvancedReports() {
 }
 
 function OutstandingReport() {
-  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getOutstandingFees().then((res) => res.data && setData(res.data));
+    api.getOutstandingFees().then((res) => {
+      if (res.data) setData(res.data);
+      setLoading(false);
+    });
   }, []);
 
   const totalOutstanding = data.reduce(
     (sum, item) => sum + (item.net_amount - (item.paid_amount || 0)),
     0
   );
+
+  if (loading) return <RippleLoader />;
 
   return (
     <Card>
@@ -290,13 +309,18 @@ function OutstandingReport() {
 }
 
 function ScholarshipReport() {
-  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getScholarshipReport().then((res) => res.data && setData(res.data));
+    api.getScholarshipReport().then((res) => {
+      if (res.data) setData(res.data);
+      setLoading(false);
+    });
   }, []);
 
   const totalDiscount = data.reduce((sum, item) => sum + (item.discount_amount || 0), 0);
+
+  if (loading) return <RippleLoader />;
 
   return (
     <Card>
@@ -334,7 +358,9 @@ function FinancialStatementReport() {
     api.getFinancialStatements().then((res) => res.data && setData(res.data));
   }, []);
 
-  if (!data) return <div>Loading...</div>;
+  // Removed nested import
+
+  if (!data) return <RippleLoader />;
 
   const assets = data["asset"] || 0;
   const liabilities = data["liability"] || 0;

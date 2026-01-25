@@ -27,6 +27,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function DocumentManager({ roomId }) {
   const [docs, setDocs] = useState([]);
@@ -134,7 +135,11 @@ export function DocumentManager({ roomId }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {docs.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full flex justify-center py-12">
+            <RippleLoader />
+          </div>
+        ) : docs.length === 0 ? (
           <div className="col-span-full py-8 text-center border rounded-md border-dashed text-muted-foreground text-sm">
             No documents attached to this room.
           </div>

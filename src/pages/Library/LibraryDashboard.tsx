@@ -18,6 +18,7 @@ import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle, Upload, Sparkles }
 import { analyzeBookCover } from '@/services/gemini';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export default function LibraryDashboard() {
     const { toast } = useToast();
@@ -385,7 +386,13 @@ export default function LibraryDashboard() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredBooks.length > 0 ? (
+                                        {loading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="h-64">
+                                                    <RippleLoader />
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : filteredBooks.length > 0 ? (
                                             filteredBooks.map((book) => (
                                                 <TableRow key={book.id}>
                                                     <TableCell className="font-mono">{book.isbn}</TableCell>
@@ -398,7 +405,7 @@ export default function LibraryDashboard() {
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                                                    {loading ? "Loading books..." : "No books found."}
+                                                    No books found.
                                                 </TableCell>
                                             </TableRow>
                                         )}

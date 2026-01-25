@@ -14,14 +14,17 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { useFinance } from "@/contexts/FinanceContext";
+
 export function Refunds() {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
+  const { refreshTrigger, refreshFinance } = useFinance();
   const [refunds, setRefunds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadRefunds();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadRefunds = async () => {
     setLoading(true);
@@ -31,11 +34,12 @@ export function Refunds() {
   };
 
   const handleApprove = async (id: string, status: "approved" | "rejected") => {
-    if (!user) return;
-    const res = await api.approveRefund(id, { status, approved_by: user.id });
+    if (!currentUser) return;
+    const res = await api.approveRefund(id, { status, approved_by: currentUser.id });
     if (res.data) {
       toast.success(`Refund ${status}`);
       loadRefunds();
+      refreshFinance(); // Update financials
     } else {
       toast.error("Failed to update refund status");
     }

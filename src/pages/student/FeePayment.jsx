@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -152,12 +152,12 @@ export function FeePayment() {
         prev.map((p) =>
           p.id === selectedPayment.id
             ? {
-                ...p,
-                status: "paid",
-                paidDate: new Date().toISOString().split("T")[0],
-                paymentMethod: "Online Banking",
-                transactionId: `TXN${Date.now()}`,
-              }
+              ...p,
+              status: "paid",
+              paidDate: new Date().toISOString().split("T")[0],
+              paymentMethod: "Online Banking",
+              transactionId: `TXN${Date.now()}`,
+            }
             : p
         )
       );
@@ -195,9 +195,8 @@ export function FeePayment() {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RippleLoader />
       </div>
     );
   }

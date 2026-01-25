@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import {
   Select,
   SelectContent,
@@ -244,9 +244,8 @@ export function PersonalDetails() {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RippleLoader />
       </div>
     );
   }

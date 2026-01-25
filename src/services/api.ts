@@ -550,7 +550,7 @@ class ApiClient {
   }
 
   async getFinancialStatements(): Promise<ApiResponse<any>> {
-    return this.request("/finance/reports/financial-statements");
+    return this.request("/finance/reports/financial-statements", {}, false);
   }
 
   async getTaxConfig(): Promise<ApiResponse<any>> {

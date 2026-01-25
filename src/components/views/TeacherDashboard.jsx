@@ -41,12 +41,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useNavigate } from "react-router-dom";
+
 export function TeacherDashboard() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [schedules, setSchedules] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [taskViewMode, setTaskViewMode] = useState("to_me"); // 'to_me' or 'by_me'
+
+  // Attendance State
+  const [attendanceStats, setAttendanceStats] = useState({
+    presentPercentage: 0,
+    absentCount: 0,
+    totalMarked: 0
+  });
 
   // Schedule state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -80,8 +90,37 @@ export function TeacherDashboard() {
       loadUsers();
       loadEvents();
       loadTasks();
+      loadAttendance();
     }
   }, [currentUser]);
+
+  const loadAttendance = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await api.getAttendance({ date: today });
+      if (res.data) {
+        const records = res.data;
+        const presentFn = (r) => r.status === 'present' || r.status === 'late' || r.status === 'half_day';
+        const presentCount = records.filter(presentFn).length;
+        const absentCount = records.filter(r => r.status === 'absent').length;
+        const total = records.length; // Or use users.length if we want total students context
+
+        // Use total students if available for more accuracy, otherwise use marked
+        // But users might not be loaded yet fully. Let's rely on records for now or wait for users.
+        // Actually best is to recalculate when users change, but keeping it simple:
+
+        const percentage = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+
+        setAttendanceStats({
+          presentPercentage: percentage,
+          absentCount: absentCount,
+          totalMarked: total
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load attendance stats", e);
+    }
+  };
 
   const loadSchedules = async () => {
     try {
@@ -261,15 +300,21 @@ export function TeacherDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* ... existing stats ... */}
-        <StatsCard title="My Students" value="127" change="Across 3 classes" icon={Users} />
+        <StatsCard title="My Students" value={users.length.toString()} change="Total active" icon={Users} />
         <StatsCard
           title="Classes Today"
           value={schedules.length.toString()}
           change="Updated just now"
           icon={BookOpen}
         />
-        <StatsCard title="Assignments Due" value="5" change="2 need grading" icon={Calendar} />
-        <StatsCard title="Attendance Today" value="96%" change="4 students absent" icon={Clock} />
+        <StatsCard title="Assignments Due" value={tasks.filter(t => t.status === 'pending').length.toString()} change="Pending tasks" icon={Calendar} />
+        <StatsCard
+          title="Attendance Today"
+          value={`${attendanceStats.presentPercentage}%`}
+          change={`${attendanceStats.absentCount} students absent`}
+          icon={Clock}
+          onClick={() => navigate('/attendance')}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">

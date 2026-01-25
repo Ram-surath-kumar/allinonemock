@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { getGrowthData } from "@/services/dashboard";
 import { Loader2 } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { cn } from "@/lib/utils";
 
 export function GrowthChartModal({
@@ -155,7 +156,7 @@ export function GrowthChartModal({
           {/* Chart */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <RippleLoader className="min-h-[300px]" />
             </div>
           ) : chartData.length > 0 ? (
             <div className="h-80 w-full">

@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Login } from "@/pages/Login";
 import { ROLE_LABELS } from "@/types/erp";
-import { Skeleton } from "@/components/ui/skeleton";
+
 
 // Lazy load pages with better code splitting
 const Dashboard = lazy(() =>
@@ -72,22 +72,12 @@ const MISSubmission = lazy(() =>
   import("@/pages/MISSubmission").then((module) => ({ default: module.MISSubmission }))
 );
 // Enhanced skeleton loader with shimmer effect
+// Enhanced loader with ripple effect
+import { RippleLoader } from "@/components/ui/RippleLoader";
+
 const PageLoader = () => (
-  <div className="space-y-6 animate-fade-in" role="status" aria-label="Loading page">
-    <div className="space-y-3">
-      <Skeleton className="h-8 w-48 rounded-xl" />
-      <Skeleton className="h-4 w-64 rounded-lg" />
-    </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => (
-        <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-      ))}
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {[...Array(2)].map((_, i) => (
-        <Skeleton key={i} className="h-64 w-full rounded-2xl" />
-      ))}
-    </div>
+  <div className="flex items-center justify-center min-h-[60vh] w-full animate-fade-in" role="status" aria-label="Loading page">
+    <RippleLoader />
     <span className="sr-only">Loading content...</span>
   </div>
 );

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/services/api";
 import { Loader2, GraduationCap, TrendingUp, AlertCircle } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function AcademicRecord({ studentId }) {
   const [history, setHistory] = useState([]);
@@ -42,8 +43,8 @@ export function AcademicRecord({ studentId }) {
 
   if (loading)
     return (
-      <div className="p-8 flex justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="flex items-center justify-center h-64">
+        <RippleLoader />
       </div>
     );
 

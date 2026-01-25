@@ -13,6 +13,7 @@ import AdmissionAdmin from "./pages/AdmissionAdmin";
 // AdmissionPortal is already imported or not needed here if imported elsewhere?
 import { AdmissionPortal } from "./components/students/Admission/AdmissionPortal";
 import Facilities from "./pages/Facilities";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,14 @@ const AppContent = () => {
   // if (!currentUser && !loading && window.location.pathname !== '/login') {
   //   return null; // Or reliance on Index.jsx to redirect
   // }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <RippleLoader />
+      </div>
+    );
+  }
 
   return (
     <Routes>

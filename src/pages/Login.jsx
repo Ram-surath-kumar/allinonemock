@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GraduationCap, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function Login() {
   const [loopEmailOrId, setLoopEmailOrId] = useState("");
@@ -105,6 +106,10 @@ export function Login() {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <RippleLoader />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">

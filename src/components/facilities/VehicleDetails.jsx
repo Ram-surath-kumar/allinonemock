@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function VehicleDetails({ vehicleId, onBack }) {
   const [vehicle, setVehicle] = useState(null);
@@ -192,7 +193,11 @@ export function VehicleDetails({ vehicleId, onBack }) {
 
 
   if (loading)
-    return <div className="p-20 text-center animate-pulse">Loading vehicle details...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <RippleLoader />
+      </div>
+    );
   if (!vehicle) return <div className="p-20 text-center">Vehicle not found.</div>;
 
   const sections = [

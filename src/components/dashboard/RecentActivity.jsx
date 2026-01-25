@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { User, BookOpen, CreditCard, Calendar } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { useDashboard } from "@/contexts/DashboardContext";
 
 const iconMap = {
@@ -72,18 +72,8 @@ export function RecentActivity() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4" role="status" aria-label="Loading activities">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-4" style={{ animationDelay: `${i * 100}ms` }}>
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-48 rounded-lg" />
-                <Skeleton className="h-3 w-32 rounded-lg" />
-              </div>
-              <Skeleton className="h-3 w-16 rounded-lg" />
-            </div>
-          ))}
-          <span className="sr-only">Loading recent activities...</span>
+        <div className="h-48" role="status" aria-label="Loading activities">
+          <RippleLoader />
         </div>
       ) : activities.length === 0 ? (
         <div className="text-sm text-muted-foreground animate-fade-in text-center py-8">

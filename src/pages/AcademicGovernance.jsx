@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function AcademicGovernance() {
   const [stats, setStats] = useState(null);
@@ -51,7 +52,9 @@ export function AcademicGovernance() {
     { name: "PO5", target: 65, achieved: 69 },
   ];
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  // Removed nested import
+
+  if (loading) return <RippleLoader />;
 
   return (
     <div className="p-6 space-y-6">

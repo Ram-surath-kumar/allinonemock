@@ -5,6 +5,8 @@ import { AdminDashboard } from "@/components/views/AdminDashboard";
 import { TeacherDashboard } from "@/components/views/TeacherDashboard";
 import { StudentDashboard } from "@/components/views/StudentDashboard";
 
+import { RippleLoader } from "@/components/ui/RippleLoader";
+
 interface DashboardProps {
   onAddUser?: () => void;
 }
@@ -25,7 +27,7 @@ function DashboardContent({ onAddUser }: DashboardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">{t("dashboard.loadingDashboard")}</p>
+        <RippleLoader />
       </div>
     );
   }

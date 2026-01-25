@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Trash2, Edit2, Plus, X } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 const categoryLabels = {
   student: "Student Management",
@@ -297,9 +297,8 @@ export function RoleManagementDialog({ open, onOpenChange }) {
             </div>
 
             {loading && !roles.length ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
+              <div className="h-32">
+                <RippleLoader />
               </div>
             ) : roles.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">

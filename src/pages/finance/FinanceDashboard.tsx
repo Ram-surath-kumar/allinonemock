@@ -4,8 +4,11 @@ import { api } from "@/services/api";
 import { IndianRupee, CreditCard, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
+import { useFinance } from "@/contexts/FinanceContext";
+
 export function FinanceDashboard() {
   const { currentUser } = useAuth();
+  const { refreshTrigger } = useFinance();
   const [data, setData] = useState({
     totalIncome: 0,
     totalSalaryPaid: 0,
@@ -25,7 +28,7 @@ export function FinanceDashboard() {
       }
     };
     loadData();
-  }, []);
+  }, [refreshTrigger]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {

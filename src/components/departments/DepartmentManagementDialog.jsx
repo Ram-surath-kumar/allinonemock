@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Trash2, Edit2, Plus, X } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function DepartmentManagementDialog({ open, onOpenChange }) {
   const { currentUser } = useAuth();
@@ -320,9 +320,8 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
                 </p>
                 <div className="border rounded-lg p-4 max-h-64 overflow-y-auto">
                   {loadingTeachers ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
+                    <div className="h-24">
+                      <RippleLoader />
                     </div>
                   ) : teachers.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No teachers available</p>
@@ -394,9 +393,8 @@ export function DepartmentManagementDialog({ open, onOpenChange }) {
             </div>
 
             {loading && !departments.length ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
+              <div className="h-32">
+                <RippleLoader />
               </div>
             ) : departments.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">

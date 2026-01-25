@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
     Card,
     CardContent,
@@ -19,6 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, FileDown, RefreshCw, Wand2, Search } from "lucide-react"; // Added Wand2, Pencil, Search
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import {
     Table,
     TableBody,
@@ -244,7 +246,7 @@ export function HostelFees() {
                             {fees.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} className="h-24 text-center">
-                                        {loading ? "Loading..." : "No records found."}
+                                        {loading ? <RippleLoader className="min-h-[100px]" /> : "No records found."}
                                     </TableCell>
                                 </TableRow>
                             ) : (

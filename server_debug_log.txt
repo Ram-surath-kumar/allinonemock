@@ -562,3 +562,305 @@
 [2026-01-25T15:25:19.464Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-01-25T15:25:20.307Z] [AUTH] Incoming Request: POST /api/finance/assign-bulk
 [2026-01-25T15:25:22.738Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:52:10.885Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T15:52:15.249Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:52:17.097Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T15:52:21.725Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T15:52:23.659Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:52:23.851Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:53:53.928Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T15:54:03.799Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:54:36.352Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T15:54:43.637Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T15:56:32.677Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T15:56:38.133Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:04:05.506Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:04:10.527Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:04:13.276Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T16:04:16.056Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:04:18.325Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:04:22.197Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:20.317Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:07:27.389Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:28.722Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T16:07:32.070Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:07:33.641Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:35.740Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:40.053Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:07:42.918Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:46.193Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T16:07:47.509Z] [AUTH] Incoming Request: GET /api/finance/fee-heads
+[2026-01-25T16:07:47.515Z] [AUTH] Incoming Request: GET /api/finance/structures
+[2026-01-25T16:07:47.522Z] [AUTH] Incoming Request: GET /api/finance/fee-categories
+[2026-01-25T16:07:47.997Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:48.646Z] [AUTH] Incoming Request: GET /api/finance/refunds
+[2026-01-25T16:07:49.995Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:50.098Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:50.101Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:50.209Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:51.053Z] [AUTH] Incoming Request: GET /api/finance/scholarships
+[2026-01-25T16:07:52.853Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:53.898Z] [AUTH] Incoming Request: PUT /api/finance/refund/approve/7df6f2c0-19a3-4b6b-8f84-2ca65486120b
+[2026-01-25T16:07:55.603Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:07:55.621Z] [REFUND-APPROVE] Request to update Refund 7df6f2c0-19a3-4b6b-8f84-2ca65486120b to approved by 9ad73f26-d83a-48df-815c-db4b01ff7cb7
+[2026-01-25T16:07:59.191Z] [REFUND-APPROVE] Success: Updated Refund 7df6f2c0-19a3-4b6b-8f84-2ca65486120b
+[2026-01-25T16:08:19.225Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:08:20.357Z] [AUTH] Incoming Request: GET /api/finance/refunds
+[2026-01-25T16:08:22.451Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-25T16:08:23.152Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-25T16:08:52.154Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:09:02.060Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:09:09.965Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:09:17.741Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:09:20.471Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-01-25T16:09:28.072Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-01-25T16:10:01.878Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:10:06.786Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:10:11.925Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:10:11.955Z] [AUTH] Incoming Request: GET /api/finance/refunds
+[2026-01-25T16:10:13.703Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:10:14.518Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:18:33.577Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:18:40.552Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:18:44.646Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:18:45.866Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T16:18:50.924Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:18:51.820Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:18:58.382Z] [AUTH] Incoming Request: GET /api/finance/fee-categories
+[2026-01-25T16:18:58.386Z] [AUTH] Incoming Request: GET /api/finance/fee-heads
+[2026-01-25T16:18:58.388Z] [AUTH] Incoming Request: GET /api/finance/structures
+[2026-01-25T16:19:00.384Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T16:19:01.528Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:19:02.686Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:19:02.709Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:19:02.949Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:19:05.503Z] [AUTH] Incoming Request: GET /api/finance/scholarships
+[2026-01-25T16:19:09.529Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:21:26.907Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20006
+[2026-01-25T16:21:28.980Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:24:32.023Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T16:24:32.816Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:24:33.243Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T16:24:34.564Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:31:43.104Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T16:31:47.414Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:32:16.692Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T16:32:17.898Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:36:05.029Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:36:09.932Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:36:15.195Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:36:15.951Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:37:18.694Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:37:25.470Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:37:29.852Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:37:33.957Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:37:34.607Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:37:35.673Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:38:20.171Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T16:38:21.198Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:38:22.873Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:38:25.139Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:38:29.338Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:38:31.087Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:42:17.417Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:42:24.393Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:42:58.761Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:43:09.445Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:43:10.965Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:16.149Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:43:16.291Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:21.644Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:23.126Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:43:24.787Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:25.378Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T16:43:28.461Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:36.793Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T16:43:40.654Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:43:44.490Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T16:43:46.571Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:58:53.597Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:58:59.098Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:59:10.242Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:59:14.392Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T16:59:16.161Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:59:18.303Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:59:37.107Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:59:47.103Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T16:59:53.099Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T16:59:55.689Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:02:51.902Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:02:55.395Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:02:56.789Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:02:57.993Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:02:59.196Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:03:00.432Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:03:02.427Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:03:02.504Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:03:28.628Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:03:30.038Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:03:30.336Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:03:31.749Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:03:35.429Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:03:40.119Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:03:43.197Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:03:45.660Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:04:19.194Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:04:21.789Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:04:24.073Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:04:27.188Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:04:28.096Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:04:30.234Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:05:25.275Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:05:31.740Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:05:35.584Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:05:37.756Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-25T17:09:08.622Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:09:14.503Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:09:18.237Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:09:20.285Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:09:21.981Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:09:23.895Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:09:27.470Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:09:30.676Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:10:02.414Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:10:06.250Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:10:11.338Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:10:13.930Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:10:14.450Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:10:15.567Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:12:29.549Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:12:38.062Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:12:45.769Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:12:51.055Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:12:58.877Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:13:00.728Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:13:03.601Z] [AUTH] Incoming Request: GET /api/finance/structures
+[2026-01-25T17:13:03.608Z] [AUTH] Incoming Request: GET /api/finance/fee-categories
+[2026-01-25T17:13:03.626Z] [AUTH] Incoming Request: GET /api/finance/fee-heads
+[2026-01-25T17:13:03.833Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:06.867Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:07.254Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:09.098Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:09.166Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:10.920Z] [AUTH] Incoming Request: GET /api/finance/scholarships
+[2026-01-25T17:13:14.676Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:14.679Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:13:19.239Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T17:13:19.810Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:25.017Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:29.870Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:13:32.250Z] [AUTH] Incoming Request: GET /api/finance/bank-accounts
+[2026-01-25T17:13:33.748Z] [AUTH] Incoming Request: GET /api/finance/chart-of-accounts
+[2026-01-25T17:13:35.521Z] [AUTH] Incoming Request: GET /api/finance/refunds
+[2026-01-25T17:13:35.529Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:37.379Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:39.023Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:42.296Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:13:45.765Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:13:48.017Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:14:46.361Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:14:47.869Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:14:49.639Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:14:49.794Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:14:53.667Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:14:55.002Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:14:55.500Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:14:56.738Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:17:53.255Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:17:58.042Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:17:59.567Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:18:01.148Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:18:01.199Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:18:03.497Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:18:30.489Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:18:33.131Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:18:38.363Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:18:41.810Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:23:58.557Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:24:00.723Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:32:38.864Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:32:49.649Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-01-25T17:35:35.513Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:35:46.888Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:35:49.127Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:35:54.711Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:38:38.622Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:38:43.367Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:38:45.220Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:38:48.368Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:38:53.593Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:38:54.770Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:38:58.854Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:38:59.354Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:39:00.924Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:39:01.018Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:39:09.541Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:39:14.645Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:39:16.036Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:39:18.746Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:41:55.741Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:41:56.885Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:42:00.321Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:42:00.486Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:47:07.363Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:47:15.762Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:47:22.703Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:47:25.036Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:47:26.548Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:47:30.347Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:47:44.498Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:47:47.157Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:48:02.116Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T17:48:11.906Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:48:14.101Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T17:48:20.175Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:52:52.025Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:52:57.127Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:53:03.836Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-25T17:53:08.413Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:53:14.138Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-25T17:53:17.122Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:53:47.342Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:53:54.005Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:55:54.544Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:55:58.038Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:15.055Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:56:16.489Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:18.701Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:56:19.470Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:21.284Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:56:21.996Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:23.576Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:56:24.278Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:24.764Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:56:25.411Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:30.671Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T17:56:35.066Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:37.720Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:56:39.449Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:46.162Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:56:47.776Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:56:48.200Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T17:56:49.253Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:59:27.472Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T17:59:37.520Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:59:43.603Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T17:59:44.502Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T17:59:45.090Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T17:59:45.760Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:18.614Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T18:05:21.158Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:21.393Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T18:05:24.006Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:26.527Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T18:05:29.074Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-25T18:05:29.434Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:30.080Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:32.629Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-25T18:05:33.782Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:34.720Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-25T18:05:37.147Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:40.868Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-25T18:05:42.273Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-25T18:05:47.381Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-25T18:05:48.266Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

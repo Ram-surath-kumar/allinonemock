@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -119,10 +120,12 @@ export function CourseRegistration({ studentId, semesterId = "SEM-1" }) {
     }
   };
 
+  // Removed nested import
+
   if (loading)
     return (
       <div className="p-8 flex justify-center">
-        <Loader2 className="animate-spin" />
+        <RippleLoader className="min-h-[200px]" />
       </div>
     );
 

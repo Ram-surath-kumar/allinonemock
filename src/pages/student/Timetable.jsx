@@ -5,7 +5,7 @@ import { api } from "@/services/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,18 +74,18 @@ export function Timetable() {
           },
           ...(index % 2 === 0
             ? [
-                {
-                  id: `${day}-4`,
-                  period: "4",
-                  startTime: "14:00",
-                  endTime: "15:00",
-                  subject: "Tutorial",
-                  subjectCode: "TUT101",
-                  teacher: "TA",
-                  room: "C-102",
-                  type: "tutorial",
-                },
-              ]
+              {
+                id: `${day}-4`,
+                period: "4",
+                startTime: "14:00",
+                endTime: "15:00",
+                subject: "Tutorial",
+                subjectCode: "TUT101",
+                teacher: "TA",
+                room: "C-102",
+                type: "tutorial",
+              },
+            ]
             : []),
         ],
       }));
@@ -135,9 +135,8 @@ export function Timetable() {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RippleLoader />
       </div>
     );
   }

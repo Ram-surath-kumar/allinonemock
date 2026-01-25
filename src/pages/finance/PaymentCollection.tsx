@@ -47,13 +47,18 @@ import { PaymentGatewayMock } from "@/components/finance/PaymentGatewayMock";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
+import { useFinance } from "@/contexts/FinanceContext";
+
 export function PaymentCollection() {
   const { currentUser } = useAuth();
+  const { refreshFinance } = useFinance();
   const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // ... (rest of state)
 
   // Payment Form
   const [assignId, setAssignId] = useState("");
@@ -138,6 +143,7 @@ export function PaymentCollection() {
           setAmount("");
           setRemarks("");
           loadFees(selectedStudent.id);
+          refreshFinance(); // Refresh Dashboard + Reports
         } else {
           toast.error(res.error || "Payment failed");
         }
@@ -149,12 +155,7 @@ export function PaymentCollection() {
 
     // If Online, show mock gateway
     if (method === "online") {
-      // Close the manual dialog first or keep it open?
-      // Better UX: Close manual dialog, show Gateway.
       setIsPayOpen(false);
-      // We need to trigger the gateway. We can use a new state for that.
-      // But wait, the dialog logic is currently: user selects method IN the dialog.
-      // So if they select 'Online' and click 'Record Payment', we should show the gateway.
       return;
     }
 
@@ -179,6 +180,7 @@ export function PaymentCollection() {
         setAmount("");
         setRemarks("");
         loadFees(selectedStudent.id);
+        refreshFinance(); // Refresh Dashboard + Reports
       } else {
         toast.error(res.error || "Payment failed");
       }
@@ -190,6 +192,7 @@ export function PaymentCollection() {
   const handleOnlinePaySuccess = () => {
     toast.success("Online Payment Received");
     loadFees(selectedStudent.id);
+    refreshFinance(); // Refresh Dashboard + Reports
   };
 
   const openPayment = (assignment: any) => {

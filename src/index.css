@@ -159,6 +159,7 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -170,6 +171,7 @@
 }
 
 @layer utilities {
+
   /* Enhanced animations */
   .animate-fade-in {
     animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -197,12 +199,10 @@
 
   .animate-shimmer {
     animation: shimmer 2s infinite;
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--muted) / 0.5) 50%,
-      hsl(var(--muted)) 100%
-    );
+    background: linear-gradient(90deg,
+        hsl(var(--muted)) 0%,
+        hsl(var(--muted) / 0.5) 50%,
+        hsl(var(--muted)) 100%);
     background-size: 200% 100%;
   }
 
@@ -312,6 +312,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -322,6 +323,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -333,6 +335,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -344,6 +347,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -355,6 +359,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -366,13 +371,16 @@
     opacity: 0;
     transform: scale(0.3);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.9);
   }
+
   100% {
     transform: scale(1);
   }
@@ -382,16 +390,19 @@
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
 }
 
 @keyframes float {
+
   0%,
   100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -401,13 +412,33 @@
   from {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
+
   to {
     box-shadow: 0 0 30px hsl(var(--primary) / 0.5);
   }
 }
 
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+    border-width: 4px;
+  }
+
+  100% {
+    transform: scale(30);
+    opacity: 0;
+    border-width: 0px;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 2.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
 /* Smooth transitions for interactive elements */
 @layer base {
+
   button,
   a,
   [role="button"] {

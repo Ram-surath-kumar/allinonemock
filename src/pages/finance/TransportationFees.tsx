@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, CreditCard, ChevronsUpDown, Check, Bus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function TransportationFees() {
     const [open, setOpen] = useState(false);
@@ -176,7 +177,7 @@ export function TransportationFees() {
                         </CardHeader>
                         <CardContent>
                             {loading ? (
-                                <p>Loading details...</p>
+                                <RippleLoader className="min-h-[300px]" />
                             ) : !transportData ? (
                                 <div className="text-center py-6 text-muted-foreground">
                                     <p>No active transport registration found for this student.</p>

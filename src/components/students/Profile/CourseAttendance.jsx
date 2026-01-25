@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/services/api";
 import { Loader2, CalendarCheck, CheckCircle2, AlertCircle } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 
 export function CourseAttendance({ studentId }) {
   const [stats, setStats] = useState([]);
@@ -29,8 +30,8 @@ export function CourseAttendance({ studentId }) {
 
   if (loading)
     return (
-      <div className="p-8 flex justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="flex items-center justify-center h-64">
+        <RippleLoader />
       </div>
     );
 

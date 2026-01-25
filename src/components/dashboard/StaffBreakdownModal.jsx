@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import { getStaffBreakdown, getStaffGrowthByRole } from "@/services/dashboard";
 import { Loader2, Users, BookOpen, Home, Calculator } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { cn } from "@/lib/utils";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -82,19 +83,19 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
 
   const pieData = breakdown
     ? [
-        { name: "Teachers", value: breakdown.teacher || breakdown.teachers || 0, color: COLORS[0] },
-        {
-          name: "Librarians",
-          value: breakdown.librarian || breakdown.librarians || 0,
-          color: COLORS[1],
-        },
-        { name: "Housekeeping", value: breakdown.housekeeping || 0, color: COLORS[2] },
-        {
-          name: "Accountants",
-          value: breakdown.accountant || breakdown.accountants || 0,
-          color: COLORS[3],
-        },
-      ].filter((item) => item.value > 0)
+      { name: "Teachers", value: breakdown.teacher || breakdown.teachers || 0, color: COLORS[0] },
+      {
+        name: "Librarians",
+        value: breakdown.librarian || breakdown.librarians || 0,
+        color: COLORS[1],
+      },
+      { name: "Housekeeping", value: breakdown.housekeeping || 0, color: COLORS[2] },
+      {
+        name: "Accountants",
+        value: breakdown.accountant || breakdown.accountants || 0,
+        color: COLORS[3],
+      },
+    ].filter((item) => item.value > 0)
     : [];
 
   // Calculate total for center label
@@ -161,7 +162,7 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
           <TabsContent value="breakdown" className="space-y-4">
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <RippleLoader className="min-h-[200px]" />
               </div>
             ) : breakdown ? (
               <>
@@ -435,7 +436,7 @@ export function StaffBreakdownModal({ open, onOpenChange }) {
             {/* Chart */}
             {loading ? (
               <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <RippleLoader />
               </div>
             ) : growthData && (growthData.dataPoints || growthData.data || []).length > 0 ? (
               <div className="h-80 w-full">
