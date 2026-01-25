@@ -58,6 +58,8 @@ export function FeePayment() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -72,51 +74,55 @@ export function FeePayment() {
       const mockPayments = [
         {
           id: "1",
-          feeType: "Tuition Fee",
-          amount: 50000,
-          dueDate: "2024-12-15",
-          paidDate: "2024-12-10",
-          status: "paid",
-          paymentMethod: "Online Banking",
-          transactionId: "TXN123456",
-          receiptUrl: "#",
+          feeType: "College Fee",
+          totalAmount: 45000,
+          amount: 45000,
+          dueDate: "2024-04-15",
+          paidDate: null,
+          status: "pending",
+          paymentMethod: null,
+          transactionId: null,
+          receiptUrl: null,
         },
         {
           id: "2",
-          feeType: "Library Fee",
-          amount: 2000,
-          dueDate: "2024-12-20",
-          status: "pending",
+          feeType: "Hostel Fee",
+          totalAmount: 22000,
+          amount: 0, // Fully paid, so pending is 0
+          dueDate: "2024-04-10",
+          status: "paid",
+          paidDate: "2024-03-01",
+          paymentMethod: "UPI",
+          transactionId: "TXN99887766",
+          receiptUrl: "#",
         },
         {
           id: "3",
-          feeType: "Lab Fee",
-          amount: 5000,
-          dueDate: "2024-11-30",
+          feeType: "Transport Fee",
+          totalAmount: 8500,
+          amount: 8500,
+          dueDate: "2024-04-05",
           status: "overdue",
-        },
-        {
-          id: "4",
-          feeType: "Examination Fee",
-          amount: 3000,
-          dueDate: "2025-01-15",
-          status: "pending",
-        },
+          paidDate: null,
+          paymentMethod: null,
+          transactionId: null,
+          receiptUrl: null,
+        }
       ];
 
       setPayments(mockPayments);
 
       // Calculate summary
-      const total = mockPayments.reduce((sum, p) => sum + p.amount, 0);
+      const total = mockPayments.reduce((sum, p) => sum + p.totalAmount, 0);
       const paid = mockPayments
         .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + p.amount, 0);
+        .reduce((sum, p) => sum + p.totalAmount, 0);
       const pending = mockPayments
         .filter((p) => p.status === "pending")
-        .reduce((sum, p) => sum + p.amount, 0);
+        .reduce((sum, p) => sum + p.amount, 0); // Use p.amount for pending
       const overdue = mockPayments
         .filter((p) => p.status === "overdue")
-        .reduce((sum, p) => sum + p.amount, 0);
+        .reduce((sum, p) => sum + p.amount, 0); // Use p.amount for overdue
       const percentage = total > 0 ? Math.round((paid / total) * 100) : 0;
 
       setSummary({
@@ -140,35 +146,82 @@ export function FeePayment() {
     setPaymentDialogOpen(true);
   };
 
+  const handleDownloadReceipt = (payment) => {
+    setReceiptData({
+      ...payment,
+      studentName: currentUser?.name || "Student Name",
+      studentId: currentUser?.id || "STU-2024-001",
+      date: new Date().toLocaleDateString(),
+    });
+    setShowReceipt(true);
+  };
+
   const processPayment = async () => {
     if (!selectedPayment) return;
 
+    const payAmount = parseFloat(paymentAmount);
+    if (isNaN(payAmount) || payAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (payAmount > selectedPayment.amount) {
+      toast.error("Amount cannot exceed the pending fee");
+      return;
+    }
+
     try {
       // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setLoading(true); // briefly show loading state if desired, or just wait
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Update payment status
       setPayments((prev) =>
-        prev.map((p) =>
-          p.id === selectedPayment.id
-            ? {
+        prev.map((p) => {
+          if (p.id === selectedPayment.id) {
+            // Check for partial payment logic
+            if (p.feeType === "College Fee" && payAmount < p.amount) {
+              // Remaining amount
+              return {
                 ...p,
-                status: "paid",
-                paidDate: new Date().toISOString().split("T")[0],
-                paymentMethod: "Online Banking",
+                amount: p.amount - payAmount,
+                receiptUrl: "#", // Generate receipt for partial payment
                 transactionId: `TXN${Date.now()}`,
-              }
-            : p
-        )
+                paidDate: new Date().toISOString().split("T")[0],
+              };
+            }
+
+            // Full payment
+            return {
+              ...p,
+              amount: 0, // Set pending amount to 0 for full payment
+              status: "paid",
+              paidDate: new Date().toISOString().split("T")[0],
+              paymentMethod: "Online Banking",
+              transactionId: `TXN${Date.now()}`,
+              receiptUrl: "#",
+            };
+          }
+          return p;
+        })
       );
 
-      toast.success("Payment processed successfully!");
+      // Re-fetch logic needs to be careful with mock data state, but since we setPayments directly
+      // we don't call loadFeeData() again or it will reset mocks.
+      // So we skip loadFeeData() call here to persist the partial change in memory.
+
+      if (selectedPayment.feeType === "College Fee" && payAmount < selectedPayment.amount) {
+        toast.success(`Partial payment of ₹${payAmount} successful!`);
+      } else {
+        toast.success("Payment processed successfully!");
+      }
+
       setPaymentDialogOpen(false);
       setSelectedPayment(null);
-      loadFeeData();
     } catch (error) {
       console.error("Error processing payment:", error);
       toast.error("Failed to process payment");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -211,84 +264,7 @@ export function FeePayment() {
   return (
     <div className="space-y-6 p-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Fees</p>
-                <p className="text-2xl font-bold">{formatCurrency(summary.totalFees)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Paid</p>
-                <p className="text-2xl font-bold text-success">
-                  {formatCurrency(summary.paidFees)}
-                </p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-warning">
-                  {formatCurrency(summary.pendingFees)}
-                </p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-warning" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Payment Status</p>
-                <p className="text-2xl font-bold">{summary.paidPercentage}%</p>
-              </div>
-              <CreditCard className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Payment Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Overview</CardTitle>
-          <CardDescription>Fee payment distribution</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-                <Bar dataKey="value" name="Amount">
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Fee Payments List */}
 
       {/* Fee Payments List */}
       <Card>
@@ -320,7 +296,8 @@ export function FeePayment() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
-                        {formatCurrency(payment.amount)}
+                        {/* ALL Tab shows TOTAL Amount */}
+                        {formatCurrency(payment.totalAmount)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -338,8 +315,8 @@ export function FeePayment() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {payment.status === "paid" && payment.receiptUrl && (
-                      <Button variant="outline" size="sm" className="gap-1">
+                    {payment.receiptUrl && (
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownloadReceipt(payment)}>
                         <Download className="h-4 w-4" />
                         Receipt
                       </Button>
@@ -373,7 +350,8 @@ export function FeePayment() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          {formatCurrency(payment.amount)}
+                          {/* PAID Tab shows TOTAL Amount (as they have paid it all) */}
+                          {formatCurrency(payment.totalAmount)}
                         </span>
                         <span className="flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
@@ -383,7 +361,7 @@ export function FeePayment() {
                       </div>
                     </div>
                     {payment.receiptUrl && (
-                      <Button variant="outline" size="sm" className="gap-1">
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => handleDownloadReceipt(payment)}>
                         <Download className="h-4 w-4" />
                         Receipt
                       </Button>
@@ -410,6 +388,7 @@ export function FeePayment() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
+                          {/* PENDING Tab shows PENDING Amount (payment.amount) */}
                           {formatCurrency(payment.amount)}
                         </span>
                         <span className="flex items-center gap-1">
@@ -440,9 +419,10 @@ export function FeePayment() {
             <div className="space-y-2">
               <Label>Amount</Label>
               <Input
+                type="number"
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
-                disabled
+                disabled={selectedPayment?.feeType !== "College Fee"}
               />
             </div>
             <div className="space-y-2">
@@ -463,6 +443,63 @@ export function FeePayment() {
               Process Payment
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center border-b pb-4">Fee Receipt</DialogTitle>
+          </DialogHeader>
+          {receiptData && (
+            <div className="space-y-6 pt-4">
+              <div className="text-center space-y-1">
+                <h3 className="font-bold text-lg">SchoolSphere High School</h3>
+                <p className="text-xs text-muted-foreground">123 Education Lane, Knowledge City</p>
+              </div>
+
+              <div className="space-y-4 text-sm bg-muted/30 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Receipt No:</span>
+                  <span className="font-mono">{receiptData.transactionId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span>{receiptData.paidDate || receiptData.date}</span>
+                </div>
+                <div className="border-t my-2 border-dashed"></div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Student Name:</span>
+                  <span className="font-medium">{receiptData.studentName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Fee Type:</span>
+                  <span>{receiptData.feeType}</span>
+                </div>
+                <div className="border-t my-2 border-dashed"></div>
+                <div className="flex justify-between items-center text-lg font-bold">
+                  <span>Amount Paid:</span>
+                  <span className="text-primary">{formatCurrency(receiptData.totalAmount - receiptData.amount)}</span>
+                  {/* Note: logic for amount paid is total - pending. Or store specific paid amount in transaction history properly. For now deriving it. */}
+                </div>
+                {receiptData.amount > 0 && (
+                  <div className="flex justify-between text-xs text-warning">
+                    <span>Balance Due:</span>
+                    <span>{formatCurrency(receiptData.amount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-center pt-4">
+                <Button className="w-full gap-2" onClick={() => {
+                  toast.success("Receipt saved to device");
+                  setShowReceipt(false);
+                }}>
+                  <Download className="h-4 w-4" />
+                  Download / Print
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

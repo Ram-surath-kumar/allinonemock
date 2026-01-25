@@ -998,6 +998,15 @@ class ApiClient {
     // TODO: Implement backend endpoint
     return Promise.resolve({ data: {}, error: null });
   }
+
+  // Student specific routes
+  async getStudentRegistrations(studentId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/sim/registration/my-courses/${studentId}`);
+  }
+
+  async getAcademicHistory(studentId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/sim/academic/history/${studentId}`);
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);
