@@ -418,22 +418,37 @@
   }
 }
 
-@keyframes ripple {
+@keyframes ripple-smooth {
   0% {
-    transform: scale(0.8);
-    opacity: 1;
+    transform: scale(0.2);
+    opacity: 0;
     border-width: 4px;
+    box-shadow: 0 0 0 rgba(var(--primary), 0);
+  }
+
+  5% {
+    opacity: 1;
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
   }
 
   100% {
-    transform: scale(30);
+    transform: scale(4);
     opacity: 0;
     border-width: 0px;
+    box-shadow: 0 0 0 rgba(var(--primary), 0);
   }
 }
 
 .animate-ripple {
-  animation: ripple 2.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  animation: ripple-smooth 3s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.animate-ripple-delay-1 {
+  animation-delay: 1s;
+}
+
+.animate-ripple-delay-2 {
+  animation-delay: 2s;
 }
 
 /* Smooth transitions for interactive elements */
