@@ -58,6 +58,7 @@ const studentNavItems: NavItem[] = [
   { icon: BookOpen, label: "Grades & Marks", href: "/student/grades-marks", roles: ["student"] },
   { icon: Calendar, label: "Attendance Details", href: "/student/attendance", roles: ["student"] },
   { icon: Clock, label: "Timetable", href: "/student/timetable", roles: ["student"] },
+  { icon: FileText, label: "Examinations", href: "/student/examinations", roles: ["student"] },
   { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
 ];
 
@@ -175,6 +176,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     if (currentUser?.role === 'student') {
       return [
         { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
+        { icon: FileText, label: "Examinations", href: "/student/examinations", roles: ["student"] },
         { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
         { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
       ];
@@ -204,7 +206,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
         icon: BookOpen,
         label: t("sidebar.academicGov"),
         href: "/governance/academic",
-        permission: "view_grades",
+        roles: ["admin", "vice_head"],
       },
       {
         icon: FileText,
@@ -244,9 +246,9 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
       },
       {
         icon: FileText,
-        label: t("sidebar.examinations"),
+        label: currentUser?.role === "teacher" ? "Examination & Evaluation" : t("sidebar.examinations"),
         href: "/exam",
-        roles: ["admin", "vice_head"],
+        roles: ["admin", "vice_head", "teacher"],
       },
       { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
       { icon: Settings, label: t("sidebar.settings"), href: "/settings" },

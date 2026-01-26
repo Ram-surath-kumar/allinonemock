@@ -1046,3 +1046,533 @@
 [2026-01-26T07:30:17.752Z] [AUTH] Incoming Request: GET /api/users
 [2026-01-26T07:30:19.915Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-01-26T07:30:22.368Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:42:32.791Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T07:42:36.268Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:42:41.317Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T07:42:43.245Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:42:54.266Z] [AUTH] Incoming Request: GET /api/users?limit=100
+[2026-01-26T07:42:57.466Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:46:01.882Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T07:46:06.940Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:46:57.725Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-26T07:46:59.041Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:56:18.633Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T07:56:23.391Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:56:25.293Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T07:56:27.303Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T07:56:28.236Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T07:56:30.400Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:00:34.108Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-26T08:00:37.470Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:03:46.314Z] [AUTH] Incoming Request: GET /api/finance/assignments?type=Hostel&_t=1769414626289
+[2026-01-26T08:03:51.725Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:03:51.742Z] [API-ASSIGNMENTS] Request by User: 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:03:51.744Z] [API-ASSIGNMENTS] Params: search=undefined, type=Hostel, status=undefined
+[2026-01-26T08:03:52.362Z] [API-ASSIGNMENTS] Raw Fetch Count: 27
+[2026-01-26T08:03:52.368Z] [API-ASSIGNMENTS] Returned Count: 5
+[2026-01-26T08:04:03.950Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-26T08:04:07.523Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:04:08.106Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:04:11.578Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:04:14.606Z] [AUTH] Incoming Request: GET /api/finance/student/cbe7f706-d04b-4f43-8ee5-066db087708e/fees
+[2026-01-26T08:04:15.681Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[DEBUG] Request for Student: cbe7f706-d04b-4f43-8ee5-066db087708e
+[DEBUG] Found 1 assignments.
+[DEBUG] First Data: {"id":"a54fe12d-d3bb-4cc3-80c4-27806253cd27","student_id":"cbe7f706-d04b-4f43-8ee5-066db087708e","structure_id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","scholarship_id":null,"total_amount":50000,"discount_amount":0,"net_amount":50000,"paid_amount":50000,"status":"paid","assigned_date":"2026-01-25","created_at":"2026-01-25T05:51:50.526256+00:00","updated_at":"2026-01-25T07:23:42.732009+00:00","lock_date":null,"assigned_by":null,"approval_status":"pending","approved_by":null,"approval_date":null,"concessional_amount":0,"gst_amount":0,"change_history":[],"structure":{"id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","name":"Hostel Fee - 2026","batch_id":null,"category":null,"due_date":"2026-02-25","semester":"Annual","batch_year":2026,"created_at":"2026-01-25T05:51:46.310645+00:00","updated_at":"2026-01-25T05:51:46.310645+00:00","category_id":null,"total_amount":50000,"academic_year":null},"installments":[],"transactions":[],"adjustments":[]}
+[2026-01-26T08:04:29.521Z] [AUTH] Incoming Request: GET /api/finance/student/cbe7f706-d04b-4f43-8ee5-066db087708e/fees
+[2026-01-26T08:04:33.299Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[DEBUG] Request for Student: cbe7f706-d04b-4f43-8ee5-066db087708e
+[DEBUG] Found 1 assignments.
+[DEBUG] First Data: {"id":"a54fe12d-d3bb-4cc3-80c4-27806253cd27","student_id":"cbe7f706-d04b-4f43-8ee5-066db087708e","structure_id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","scholarship_id":null,"total_amount":50000,"discount_amount":0,"net_amount":50000,"paid_amount":50000,"status":"paid","assigned_date":"2026-01-25","created_at":"2026-01-25T05:51:50.526256+00:00","updated_at":"2026-01-25T07:23:42.732009+00:00","lock_date":null,"assigned_by":null,"approval_status":"pending","approved_by":null,"approval_date":null,"concessional_amount":0,"gst_amount":0,"change_history":[],"structure":{"id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","name":"Hostel Fee - 2026","batch_id":null,"category":null,"due_date":"2026-02-25","semester":"Annual","batch_year":2026,"created_at":"2026-01-25T05:51:46.310645+00:00","updated_at":"2026-01-25T05:51:46.310645+00:00","category_id":null,"total_amount":50000,"academic_year":null},"installments":[],"transactions":[],"adjustments":[]}
+[2026-01-26T08:04:37.831Z] [AUTH] Incoming Request: GET /api/finance/student/cbe7f706-d04b-4f43-8ee5-066db087708e/fees
+[2026-01-26T08:04:45.071Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[DEBUG] Request for Student: cbe7f706-d04b-4f43-8ee5-066db087708e
+[DEBUG] Found 1 assignments.
+[DEBUG] First Data: {"id":"a54fe12d-d3bb-4cc3-80c4-27806253cd27","student_id":"cbe7f706-d04b-4f43-8ee5-066db087708e","structure_id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","scholarship_id":null,"total_amount":50000,"discount_amount":0,"net_amount":50000,"paid_amount":50000,"status":"paid","assigned_date":"2026-01-25","created_at":"2026-01-25T05:51:50.526256+00:00","updated_at":"2026-01-25T07:23:42.732009+00:00","lock_date":null,"assigned_by":null,"approval_status":"pending","approved_by":null,"approval_date":null,"concessional_amount":0,"gst_amount":0,"change_history":[],"structure":{"id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","name":"Hostel Fee - 2026","batch_id":null,"category":null,"due_date":"2026-02-25","semester":"Annual","batch_year":2026,"created_at":"2026-01-25T05:51:46.310645+00:00","updated_at":"2026-01-25T05:51:46.310645+00:00","category_id":null,"total_amount":50000,"academic_year":null},"installments":[],"transactions":[],"adjustments":[]}
+[2026-01-26T08:04:48.172Z] [AUTH] Incoming Request: GET /api/finance/student/a8d78fd4-0994-4880-b411-6f963ad42cbf/fees
+[2026-01-26T08:04:49.268Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[DEBUG] Request for Student: a8d78fd4-0994-4880-b411-6f963ad42cbf
+[DEBUG] Found 1 assignments.
+[DEBUG] First Data: {"id":"fd02b728-03d1-462c-985f-9201ac8b948c","student_id":"a8d78fd4-0994-4880-b411-6f963ad42cbf","structure_id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","scholarship_id":null,"total_amount":50000,"discount_amount":0,"net_amount":50000,"paid_amount":0,"status":"pending","assigned_date":"2026-01-25","created_at":"2026-01-25T05:51:47.939324+00:00","updated_at":"2026-01-25T05:51:47.939324+00:00","lock_date":null,"assigned_by":null,"approval_status":"pending","approved_by":null,"approval_date":null,"concessional_amount":0,"gst_amount":0,"change_history":[],"structure":{"id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","name":"Hostel Fee - 2026","batch_id":null,"category":null,"due_date":"2026-02-25","semester":"Annual","batch_year":2026,"created_at":"2026-01-25T05:51:46.310645+00:00","updated_at":"2026-01-25T05:51:46.310645+00:00","category_id":null,"total_amount":50000,"academic_year":null},"installments":[],"transactions":[],"adjustments":[]}
+[2026-01-26T08:04:52.606Z] [AUTH] Incoming Request: GET /api/finance/student/16a6b9c7-549e-4e6c-acfa-85ba6bd8ad38/fees
+[2026-01-26T08:04:53.780Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[DEBUG] Request for Student: 16a6b9c7-549e-4e6c-acfa-85ba6bd8ad38
+[DEBUG] Found 4 assignments.
+[DEBUG] First Data: {"id":"10e1c32a-3553-4358-8447-d5b6eb169bfe","student_id":"16a6b9c7-549e-4e6c-acfa-85ba6bd8ad38","structure_id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","scholarship_id":null,"total_amount":50000,"discount_amount":0,"net_amount":50000,"paid_amount":50000,"status":"paid","assigned_date":"2026-01-25","created_at":"2026-01-25T05:51:49.008379+00:00","updated_at":"2026-01-25T13:39:33.942393+00:00","lock_date":null,"assigned_by":null,"approval_status":"pending","approved_by":null,"approval_date":null,"concessional_amount":0,"gst_amount":0,"change_history":[],"structure":{"id":"cc5d9f0e-a7c4-4238-b6a9-da6e01f87af3","name":"Hostel Fee - 2026","batch_id":null,"category":null,"due_date":"2026-02-25","semester":"Annual","batch_year":2026,"created_at":"2026-01-25T05:51:46.310645+00:00","updated_at":"2026-01-25T05:51:46.310645+00:00","category_id":null,"total_amount":50000,"academic_year":null},"installments":[],"transactions":[{"id":"38d170f6-7689-4042-aac0-979a9502725b","amount":50000,"status":"success","remarks":"","created_at":"2026-01-25T13:39:31.012717+00:00","created_by":"9ad73f26-d83a-48df-815c-db4b01ff7cb7","student_id":"16a6b9c7-549e-4e6c-acfa-85ba6bd8ad38","updated_at":"2026-01-25T13:39:31.012717+00:00","assignment_id":"10e1c32a-3553-4358-8447-d5b6eb169bfe","installment_id":null,"payment_method":"cash","receipt_number":"REC-1769348370817","transaction_date":"2026-01-25T13:39:31.012717+00:00","payment_gateway_id":null,"gateway_transaction_id":null},{"id":"54036cbc-d5a5-48f5-be10-5ef271e368bf","amount":50000,"status":"success","remarks":"","created_at":"2026-01-25T13:39:32.534816+00:00","created_by":"9ad73f26-d83a-48df-815c-db4b01ff7cb7","student_id":"16a6b9c7-549e-4e6c-acfa-85ba6bd8ad38","updated_at":"2026-01-25T13:39:32.534816+00:00","assignment_id":"10e1c32a-3553-4358-8447-d5b6eb169bfe","installment_id":null,"payment_method":"cash","receipt_number":"REC-1769348372352","transaction_date":"2026-01-25T13:39:32.534816+00:00","payment_gateway_id":null,"gateway_transaction_id":null}],"adjustments":[]}
+[2026-01-26T08:05:06.472Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-26T08:05:10.617Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:05:41.275Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:05:44.984Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:10:29.164Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:10:30.672Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:10:31.432Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:10:34.364Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:10:57.327Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:11:04.657Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:11:19.761Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T08:11:19.767Z] [AUTH] Fail: Missing Authorization header
+[2026-01-26T08:11:46.019Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:11:48.312Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:11:50.627Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:11:52.105Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T08:11:53.008Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:11:53.012Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:12:20.666Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20004
+[2026-01-26T08:12:22.094Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:13:02.312Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:13:05.303Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:13:05.927Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:13:07.655Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:17:05.077Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:17:09.931Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:17:13.450Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T08:17:14.936Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:17:25.413Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:17:30.520Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:17:36.167Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:17:41.268Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:17:51.492Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:17:56.058Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:18:36.817Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:18:38.722Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:18:53.897Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:18:53.918Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:18:55.713Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:18:57.248Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:19:08.214Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-26T08:19:09.336Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:20:11.431Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:20:13.744Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:20:16.851Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:20:18.557Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:20:25.004Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:20:27.572Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:20:49.929Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:20:49.945Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:20:52.145Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:20:53.203Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:21:11.810Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:21:12.936Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:21:31.370Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:21:31.383Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:21:35.330Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:21:35.977Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:21:37.622Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:21:42.001Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-01-26T08:23:18.448Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:23:22.027Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:23:28.640Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:23:30.568Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:23:31.827Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:23:34.163Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:24:47.604Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:24:50.330Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:24:58.023Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20010
+[2026-01-26T08:25:00.672Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:43:11.076Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:43:13.306Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:43:18.315Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:43:19.342Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:43:20.059Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:43:20.999Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:43:54.621Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:43:56.072Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:43:57.962Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:44:04.235Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:44:05.805Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:44:09.067Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:44:10.433Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:45:22.892Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:45:23.008Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:45:24.082Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:45:25.498Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:46:20.324Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:46:27.450Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:46:30.856Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:46:32.153Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:46:33.204Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:46:35.966Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:47:50.899Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:47:52.602Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:47:56.030Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:47:56.047Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:47:58.385Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:47:58.389Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:49:06.263Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:49:10.127Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:49:10.258Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:49:10.274Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-01-26T08:49:12.319Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:49:13.573Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:52:04.963Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:52:06.825Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T08:54:34.312Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:54:35.689Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:54:36.727Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T08:54:37.272Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T08:54:37.771Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:54:38.023Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:54:51.247Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:54:51.921Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:54:52.329Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:54:52.924Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:55:16.539Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T08:55:17.583Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:55:19.612Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T08:55:20.803Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T08:55:21.179Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T08:55:22.298Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:02:25.612Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:02:26.353Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:02:28.199Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:02:29.744Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:08:45.662Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:08:46.395Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:08:47.518Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:08:48.060Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:09:08.894Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:09:09.539Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:09:10.992Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:09:12.687Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:10:21.079Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T09:10:22.007Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:14.663Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:15:17.108Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:18.399Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:15:18.889Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:42.248Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:15:42.928Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:43.921Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:15:44.503Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:49.784Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:15:50.417Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:15:53.567Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:15:54.178Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:18:21.328Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:18:22.757Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:18:24.522Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:18:25.522Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:18:34.946Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:18:36.177Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:18:39.243Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:18:39.814Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:19:53.676Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:19:54.355Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:19:55.227Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:19:55.835Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:25:51.479Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T09:25:54.160Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:30:28.117Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:30:29.846Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:30:31.097Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:30:32.202Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:33:23.251Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:33:24.003Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:33:25.245Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:33:26.081Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:35:41.611Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:35:46.532Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:35:47.868Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:35:48.568Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:36:36.964Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T09:36:37.574Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:36:42.854Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T09:36:43.602Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:37:36.465Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T09:37:37.778Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:37:42.697Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T09:37:44.008Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:40:22.833Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:40:25.037Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:40:27.241Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:40:28.336Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:41:19.446Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T09:41:23.625Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:44:09.264Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:44:10.347Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:44:12.200Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:44:13.330Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:44:15.043Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T09:44:16.831Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:51:05.043Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:51:07.190Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:51:08.358Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:51:08.362Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:52:19.259Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T09:52:20.225Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:52:21.502Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T09:52:22.610Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:54:33.965Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T09:54:35.397Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T09:54:44.699Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T09:54:45.967Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:33.796Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:00:35.568Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:37.412Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:00:38.322Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:41.945Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-26T10:00:42.718Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:49.229Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:00:50.934Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:52.313Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20012
+[2026-01-26T10:00:53.142Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:00:53.658Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-01-26T10:00:54.645Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:03:01.092Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:03:03.347Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:08:26.720Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:08:27.621Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:13:50.719Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:13:52.883Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:14:06.905Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:14:08.506Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:14:09.568Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:14:10.175Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:14:10.483Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:14:10.969Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:14:23.286Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:14:24.077Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:17:16.563Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:17:18.378Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:17:34.227Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:17:36.180Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:17:38.656Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:17:40.485Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:17:41.153Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:17:42.219Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:19:42.447Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:44.703Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:44.843Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:45.120Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:45.209Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:45.719Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:45.808Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:46.122Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:46.206Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:46.649Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:46.771Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:47.452Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:47.538Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:47.966Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:48.074Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:48.380Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:48.463Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:48.849Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:48.933Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:49.307Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:49.388Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:49.848Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:49.920Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:50.232Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:50.454Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:51.236Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:51.310Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:51.846Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:51.921Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:52.480Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:52.552Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:52.961Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:53.031Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:53.587Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:53.683Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:54.012Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:54.092Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:54.560Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:54.636Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:55.042Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:55.129Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:55.446Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:55.517Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:55.833Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:55.916Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:56.475Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:56.544Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:57.391Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:57.464Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:57.907Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:57.975Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:58.314Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:58.395Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:19:59.339Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:19:59.446Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:00.262Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:00.344Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:01.370Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:01.443Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:01.920Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:02.012Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:03.322Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:03.403Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:03.942Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:04.022Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:04.633Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:04.703Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:05.285Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:05.374Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:06.017Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:06.118Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:06.505Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:06.598Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:06.916Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:06.988Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:07.330Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:07.416Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:07.736Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:07.804Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:08.248Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:08.303Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:08.761Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:08.835Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:09.470Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:09.542Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:11.448Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:11.562Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:11.934Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:12.045Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:12.461Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:12.569Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:13.332Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:13.400Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:14.047Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:14.117Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:14.825Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:14.892Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:15.358Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:15.433Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:15.828Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:15.923Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:16.440Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:16.513Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:17.055Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:17.129Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:17.462Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:17.540Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:17.872Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:17.959Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:18.487Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:18.589Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:18.903Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:18.996Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:19.305Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:19.392Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:19.823Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:19.925Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:20.469Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:20.544Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:20.951Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:21.035Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:21.452Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:21.525Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:21.775Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:21.869Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:22.251Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:22.323Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:22.601Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:22.685Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:23.271Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:23.338Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:23.703Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:23.803Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:24.283Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:24.354Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:24.732Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:24.804Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:25.141Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:25.216Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:25.680Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:25.755Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:26.480Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:26.564Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:27.279Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:27.364Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:27.805Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:27.885Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:28.630Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:28.696Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:29.445Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:29.518Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:29.983Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:30.084Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:30.476Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:30.571Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:31.093Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:31.184Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:32.109Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:32.181Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:33.124Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:33.197Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:33.714Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:33.814Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:34.140Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:34.208Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:34.495Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:34.573Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:35.078Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:35.170Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:35.670Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:35.746Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:36.008Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:36.074Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:36.614Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:36.735Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:37.125Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:37.213Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:37.652Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:37.754Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:38.052Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:38.137Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:38.553Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:38.641Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:38.976Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:39.158Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:39.586Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:39.676Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:40.540Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:42.349Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:42.578Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:42.760Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:43.507Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:46.262Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:46.948Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:47.053Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:47.677Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:47.814Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:48.661Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:48.735Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:49.310Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:49.459Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:50.029Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:50.109Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:50.693Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:50.817Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:51.377Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:20:51.498Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:20:52.109Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:27:40.235Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:27:45.271Z] [AUTH] Fail: Invalid/Expired Token. Error: Auth session missing!
+[2026-01-26T10:28:14.318Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:28:23.240Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:28:24.592Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:28:27.614Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:28:28.074Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:28:28.465Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:28:59.228Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20015
+[2026-01-26T10:29:01.866Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:30:53.201Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-01-26T10:30:54.403Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:30:55.081Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-01-26T10:30:56.195Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:03.852Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:35:05.482Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:05.850Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-01-26T10:35:06.441Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:06.768Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:35:07.351Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:07.699Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-01-26T10:35:07.848Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:35:08.277Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:08.426Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:08.781Z] [AUTH] Incoming Request: GET /api/users
+[2026-01-26T10:35:09.275Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-26T10:35:20.961Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20011
+[2026-01-26T10:35:21.595Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

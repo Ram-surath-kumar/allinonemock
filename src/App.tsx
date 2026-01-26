@@ -13,6 +13,7 @@ import AdmissionAdmin from "./pages/AdmissionAdmin";
 // AdmissionPortal is already imported or not needed here if imported elsewhere?
 import { AdmissionPortal } from "./components/students/Admission/AdmissionPortal";
 import Facilities from "./pages/Facilities";
+import StudentExaminations from "./pages/student/StudentExaminations";
 import { RippleLoader } from "@/components/ui/RippleLoader";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const AppContent = () => {
       <Route path="/governance/*" element={<Index />} />
 
       {/* Student Portal Routes */}
+      <Route path="/student/examinations" element={<Index />} />
       <Route path="/student/*" element={<Index />} />
 
       <Route path="/:orgName/:userId" element={<Index />} />

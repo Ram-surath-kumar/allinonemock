@@ -300,7 +300,14 @@ export function TeacherDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* ... existing stats ... */}
-        <StatsCard title="My Students" value={users.length.toString()} change="Total active" icon={Users} />
+        <StatsCard
+          title="My Students"
+          value={users.length.toString()}
+          change="Total active"
+          icon={Users}
+          onClick={() => navigate('/students')}
+          className="cursor-pointer hover:shadow-md transition-shadow"
+        />
         <StatsCard
           title="Classes Today"
           value={schedules.length.toString()}
@@ -400,10 +407,18 @@ export function TeacherDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tasks.length === 0 ? (
+            {tasks.filter(t => {
+              if (taskViewMode === 'to_me') return t.assigned_to === currentUser.id;
+              if (taskViewMode === 'by_me') return t.assigned_by === currentUser.id;
+              return false;
+            }).length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No tasks found.</p>
             ) : (
-              tasks.map((task, index) => (
+              tasks.filter(t => {
+                if (taskViewMode === 'to_me') return t.assigned_to === currentUser.id;
+                if (taskViewMode === 'by_me') return t.assigned_by === currentUser.id;
+                return false;
+              }).map((task, index) => (
                 <div
                   key={task.id}
                   className="flex items-center justify-between rounded-lg border border-border p-4 animate-slide-up group"

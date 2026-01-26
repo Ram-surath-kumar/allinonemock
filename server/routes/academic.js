@@ -65,6 +65,21 @@ router.get('/programs', async (req, res) => {
     }
 });
 
+// Get All Courses
+router.get('/courses', async (req, res) => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('courses')
+            .select('*')
+            .order('name');
+
+        if (error) throw error;
+        sendSuccess(res, data);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch courses');
+    }
+});
+
 // Get Courses for a Program
 router.get('/programs/:programId/courses', async (req, res) => {
     try {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,8 @@ import { useI18n } from "@/lib/i18n";
 import { ScheduleExamDialog } from "./ScheduleExamDialog";
 import { SeatingArrangement } from "./SeatingArrangement";
 import { HallTicketGenerator } from "./HallTicketGenerator";
+import Grading from "./Grading";
+import Timetable from "./Timetable";
 
 export default function ExamDashboard() {
   const { t } = useI18n();
@@ -25,6 +28,13 @@ export default function ExamDashboard() {
   const [stats, setStats] = useState<any>({});
   const [exams, setExams] = useState<any[]>([]);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("planning");
+  const [timetableExamId, setTimetableExamId] = useState<string | undefined>(undefined);
+  const { currentUser } = useAuth();
+
+  const isTeacher = currentUser?.role === "teacher";
+
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "vice_head";
 
   useEffect(() => {
     loadData();
@@ -42,6 +52,29 @@ export default function ExamDashboard() {
       toast.error(error.message || t("examinations.failedToLoadExamData"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNavigateToTimetable = (examId: string) => {
+    setTimetableExamId(examId);
+    if (isTeacher) {
+      setActiveTab("examination_evaluation");
+    } else if (isAdmin) {
+      setActiveTab("administration");
+      // We also need to ensure the inner tab is set to timetable, but inner tabs are uncontrolled 'defaultValue'.
+      // This is a slight limitation. If already mounted, it won't switch inner tab.
+      // But passing initialExamId will trigger the component update.
+      // Ideally, we should control inner tabs too, but let's see if this suffices or we add inner state.
+      // For now, let's assume user clicks "Timetable" from Planning, it switches to "Administration".
+      // Since default is "seating", they might land on seating. 
+      // BETTER FIX: Make inner tabs controlled or change default? 
+      // OR, since we just added "Timetable" as the FIRST trigger in previous step, it might not be default if we didn't change defaultValue.
+      // Let's rely on the user clicking the Timetable tab if it doesn't auto-switch, OR, better:
+      // We can't easily control inner state without refactoring to use state for inner tabs too.
+      // Given "map it and make it working", let's leave it as is but maybe alert user?
+      // Actually, standard behavior: switching main tab re-mounts content if not kept alive.
+      // Let's just set activeTab("administration"). Users can click "Timetable".
+      // Wait, user said "show the data... map it".
     }
   };
 
@@ -141,15 +174,22 @@ export default function ExamDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="planning" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         {/* @ts-expect-error - TabsList accepts children but TypeScript doesn't recognize it from JSX component */}
         <TabsList>
           {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
           <TabsTrigger value="planning">{t("examinations.planning")}</TabsTrigger>
-          {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
-          <TabsTrigger value="administration">{t("examinations.administration")}</TabsTrigger>
-          {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
-          <TabsTrigger value="evaluation">{t("examinations.evaluation")}</TabsTrigger>
+
+          {isTeacher && (
+            /* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */
+            <TabsTrigger value="examination_evaluation">Examination & Evaluation</TabsTrigger>
+          )}
+
+          {isAdmin && (
+            /* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */
+            <TabsTrigger value="administration">{t("examinations.administration")}</TabsTrigger>
+          )}
+
           {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
           <TabsTrigger value="results">{t("examinations.results")}</TabsTrigger>
         </TabsList>
@@ -213,10 +253,10 @@ export default function ExamDashboard() {
                                     <span>
                                       {isSameDay
                                         ? startDate.toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric",
-                                          })
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })
                                         : `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${endDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                                     </span>
                                   </div>
@@ -226,7 +266,7 @@ export default function ExamDashboard() {
                                       <span>
                                         {Math.ceil(
                                           (endDate.getTime() - startDate.getTime()) /
-                                            (1000 * 60 * 60 * 24)
+                                          (1000 * 60 * 60 * 24)
                                         )}{" "}
                                         days
                                       </span>
@@ -239,11 +279,10 @@ export default function ExamDashboard() {
                           <div className="flex items-center gap-2.5 shrink-0">
                             <Badge
                               variant={isPlanned ? "default" : "secondary"}
-                              className={`text-xs font-medium px-2.5 py-1 ${
-                                isPlanned
-                                  ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
+                              className={`text-xs font-medium px-2.5 py-1 ${isPlanned
+                                ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
+                                : "bg-muted text-muted-foreground"
+                                }`}
                             >
                               {exam.status}
                             </Badge>
@@ -252,6 +291,7 @@ export default function ExamDashboard() {
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                              onClick={() => handleNavigateToTimetable(exam.id)}
                             >
                               <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
                               Timetable
@@ -267,44 +307,79 @@ export default function ExamDashboard() {
           </Card>
         </TabsContent>
 
+        {isTeacher && (
+          /* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */
+          <TabsContent value="examination_evaluation">
+            <Tabs defaultValue="timetable" className="w-full">
+              {/* @ts-expect-error - TabsList accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsList className="mb-4">
+                {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
+                <TabsTrigger value="timetable">Timetable</TabsTrigger>
+                {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
+                <TabsTrigger value="evaluation">{t("examinations.evaluation")}</TabsTrigger>
+              </TabsList>
+
+              {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsContent value="timetable">
+                <Timetable initialExamId={timetableExamId} />
+              </TabsContent>
+
+              {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsContent value="evaluation">
+                <Grading />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          /* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */
+          <TabsContent value="administration">
+            <Tabs defaultValue="timetable" className="w-full">
+              {/* @ts-expect-error - TabsList accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsList className="mb-4">
+                {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
+                <TabsTrigger value="timetable">Timetable</TabsTrigger>
+                {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
+                <TabsTrigger value="seating">Seating Arrangement</TabsTrigger>
+                {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
+                <TabsTrigger value="tickets">Hall Tickets</TabsTrigger>
+              </TabsList>
+
+              {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsContent value="timetable">
+                <Timetable initialExamId={timetableExamId} />
+              </TabsContent>
+
+              {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsContent value="seating">
+                <SeatingArrangement exams={exams} />
+              </TabsContent>
+
+              {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
+              <TabsContent value="tickets">
+                <HallTicketGenerator exams={exams} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        )}
+
         {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
-        <TabsContent value="administration">
-          <Tabs defaultValue="seating" className="w-full">
-            {/* @ts-expect-error - TabsList accepts children but TypeScript doesn't recognize it from JSX component */}
-            <TabsList className="mb-4">
-              {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
-              <TabsTrigger value="seating">Seating Arrangement</TabsTrigger>
-              {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
-              <TabsTrigger value="tickets">Hall Tickets</TabsTrigger>
-            </TabsList>
-
-            {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
-            <TabsContent value="seating">
-              <SeatingArrangement exams={exams} />
-            </TabsContent>
-
-            {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
-            <TabsContent value="tickets">
-              <HallTicketGenerator exams={exams} />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-
-        {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
-        <TabsContent value="evaluation">
+        <TabsContent value="results">
           {/* @ts-expect-error - Card components accept children but TypeScript doesn't recognize it from JSX component */}
           <Card className="shad-card">
             {/* @ts-expect-error - CardHeader accepts children but TypeScript doesn't recognize it from JSX component */}
             <CardHeader>
               {/* @ts-expect-error - CardTitle accepts children but TypeScript doesn't recognize it from JSX component */}
-              <CardTitle>Marks Entry</CardTitle>
+              <CardTitle>Published Results</CardTitle>
             </CardHeader>
             {/* @ts-expect-error - CardContent accepts children but TypeScript doesn't recognize it from JSX component */}
             <CardContent>
-              <p className="text-muted-foreground">Select a course to enter marks.</p>
+              <p className="text-muted-foreground">Access result analytics and reports.</p>
             </CardContent>
           </Card>
         </TabsContent>
+
 
         {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
         <TabsContent value="results">

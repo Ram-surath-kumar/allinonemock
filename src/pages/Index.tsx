@@ -56,6 +56,9 @@ const ExamDashboard = lazy(() =>
 const LibraryDashboard = lazy(() =>
   import("@/pages/Library/LibraryDashboard").then((module) => ({ default: module.default }))
 );
+const StudentExaminations = lazy(() =>
+  import("@/pages/student/StudentExaminations").then((module) => ({ default: module.default }))
+);
 const Facilities = lazy(() =>
   import("@/pages/Facilities").then((module) => ({ default: module.default }))
 );
@@ -111,6 +114,7 @@ function AppContent() {
     "grades-marks": "/student/grades-marks",
     "student-attendance": "/student/attendance",
     timetable: "/student/timetable",
+    examinations: "/student/examinations",
     "fee-payment": "/student/fee-payment",
   };
 
@@ -134,6 +138,7 @@ function AppContent() {
     "/student/grades-marks": "grades-marks",
     "/student/attendance": "student-attendance",
     "/student/timetable": "timetable",
+    "/student/examinations": "examinations",
     "/student/fee-payment": "fee-payment",
   };
 
@@ -301,7 +306,8 @@ function AppContent() {
       case "/student/attendance":
         return "Attendance Details";
       case "/student/timetable":
-        return "Timetable";
+      case "/student/examinations":
+        return "Examinations";
       case "/student/fee-payment":
         return "Fee Payment";
       case "/tools":
@@ -370,6 +376,12 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <Timetable />
+          </Suspense>
+        );
+      case "/student/examinations":
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <StudentExaminations />
           </Suspense>
         );
       case "/student/fee-payment":

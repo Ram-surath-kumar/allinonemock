@@ -303,9 +303,28 @@ router.get('/timetable/:examId', async (req, res) => {
 router.post('/timetable', async (req, res) => {
   try {
     const { exam_id, subject_id, exam_date, start_time, end_time, room_no } = req.body;
+
+    // Calculate duration in minutes
+    let duration_minutes = 60; // Default
+    if (start_time && end_time) {
+      const [startH, startM] = start_time.split(':').map(Number);
+      const [endH, endM] = end_time.split(':').map(Number);
+      const calculated = (endH * 60 + endM) - (startH * 60 + startM);
+      if (calculated > 0) duration_minutes = calculated;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('exam_timetable')
-      .insert({ exam_id, subject_id, exam_date, start_time, end_time, room_no })
+      .insert({
+        exam_id,
+        subject_id,
+        course_id: subject_id, // Satisfy NOT NULL constraint using subject_id
+        exam_date,
+        start_time,
+        end_time,
+        duration_minutes,
+        room_no
+      })
       .select()
       .single();
 
@@ -319,8 +338,29 @@ router.post('/timetable', async (req, res) => {
 // Submit marks
 router.post('/marks/submit', async (req, res) => {
   try {
-    // Mock response
-    sendSuccess(res, { message: 'Marks submitted successfully' });
+    const { exam_id, marks } = req.body;
+
+    if (!exam_id || !marks || !Array.isArray(marks)) {
+      return sendValidationError(res, 'Invalid data format');
+    }
+
+    // Prepare upsert data
+    const upsertData = marks.map(({ student_id, score, remarks }) => ({
+      exam_id,
+      student_id,
+      score,
+      remarks: remarks || null,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { data, error } = await supabaseAdmin
+      .from('exam_marks')
+      .upsert(upsertData, { onConflict: 'exam_id,student_id' })
+      .select();
+
+    if (error) throw error;
+
+    sendSuccess(res, { message: 'Marks submitted successfully', count: data.length });
   } catch (error) {
     handleError(error, res, 'Failed to submit marks');
   }

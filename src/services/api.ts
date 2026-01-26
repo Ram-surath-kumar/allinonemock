@@ -832,7 +832,7 @@ class ApiClient {
   }
 
   async getTimetable(examId: string): Promise<ApiResponse<any>> {
-    return this.request(`/exam/timetable/${examId}`);
+    return this.request(`/exam/timetable/${examId}`, {}, false);
   }
 
   async createTimetableEntry(data: any): Promise<ApiResponse<any>> {
@@ -875,7 +875,7 @@ class ApiClient {
     if (params?.status) queryParams.append("status", params.status);
     if (params?.academic_calendar_id) queryParams.append("academic_calendar_id", params.academic_calendar_id);
     const query = queryParams.toString();
-    return this.request<any[]>(`/exam/list${query ? `?${query}` : ""}`);
+    return this.request<any[]>(`/exam/list${query ? `?${query}` : ""}`, {}, false);
   }
 
   // Transport Fees
@@ -906,7 +906,7 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request<any[]>(`/tasks${query ? `?${query}` : ""}`);
+    return this.request<any[]>(`/tasks${query ? `?${query}` : ""}`, {}, false);
   }
 
   async createTask(data: {
@@ -977,7 +977,7 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request(`/schedules${query ? `?${query}` : ""}`);
+    return this.request(`/schedules${query ? `?${query}` : ""}`, {}, false);
   }
 
   async createSchedule(data: any): Promise<ApiResponse<any>> {
@@ -1076,6 +1076,25 @@ class ApiClient {
   async getAcademicHistory(studentId: string): Promise<ApiResponse<any[]>> {
     return this.request(`/sim/academic/history/${studentId}`);
   }
+
+  // Exam & Timetable Management methods are already defined above (lines 834+)
+
+  async getStudents(): Promise<ApiResponse<any[]>> {
+    return this.request("/students");
+  }
+
+  async getStudents(): Promise<ApiResponse<any[]>> {
+    return this.request("/students");
+  }
+
+  async getCourses(): Promise<ApiResponse<any[]>> {
+    return this.request("/academic/courses");
+  }
+
+  // Tasks Filter Logic Reminder:
+  // getTasks params are passed directly to query string.
+  // Backend /tasks filters by assigned_to or assigned_by respectively.
+  // "My Tasks" calls getTasks({ assigned_to: currentId }), which matches backend logic.
 }
 
 export const api = new ApiClient(API_BASE_URL);

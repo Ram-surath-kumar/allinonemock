@@ -397,7 +397,7 @@ export function StudentDashboard() {
           icon={BookOpen}
         />
         <StatsCard
-          title="Pending Assignments"
+          title="Pending Tasks"
           value={tasks.filter((t) => t.status === "pending").length.toString()}
           change="Due soon"
           icon={Clock}
@@ -445,7 +445,7 @@ export function StudentDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
-              My Assignments
+              My Tasks
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
