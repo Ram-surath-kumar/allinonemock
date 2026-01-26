@@ -35,7 +35,11 @@ export function SeatingArrangement({ exams }: { exams: any[] }) {
       setLoading(true);
       const response = await api.getSeatingPlan(selectedExam);
       if (response.data) {
-        setSeatingPlan(response.data);
+        // Handle both array response (old/simple) and object response (new/structured)
+        const plans = Array.isArray(response.data)
+          ? response.data
+          : (response.data.plans || []);
+        setSeatingPlan(plans);
       }
     } catch (error) {
       console.error("Failed to load seating plan", error);

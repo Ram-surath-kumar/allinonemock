@@ -224,19 +224,40 @@ router.get('/', async (req, res) => {
 
     const systemVersion = latestUpdate ? latestUpdate.version : 'v1.0.0';
 
-    // 5. Fee Collection (Simplified for Dashboard)
+    // 5. Fee Collection (Unified with Finance Module Logic)
     let totalFeeCollection = 0.0;
-    try {
-      const { data: feesData } = await supabaseAdmin
-        .from('fees')
-        .select('amount')
-        .in('status', ['paid', 'completed']);
 
-      if (feesData) {
-        totalFeeCollection = feesData.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
+    // Part A: From fees table
+    try {
+      const { data: feesData, error: feesError } = await supabaseAdmin
+        .from('fees')
+        .select('amount, status');
+
+      if (!feesError && feesData) {
+        feesData.forEach(fee => {
+          if (['paid', 'completed'].includes(fee.status)) {
+            totalFeeCollection += parseFloat(fee.amount || 0);
+          }
+        });
       }
     } catch (e) {
-      // fees table might not exist
+      console.error('Error fetching fees for dashboard:', e);
+    }
+
+    // Part B: From payments table (if exists)
+    try {
+      const { data: paymentsData, error: paymentsError } = await supabaseAdmin
+        .from('payments')
+        .select('amount');
+
+      if (!paymentsError && paymentsData) {
+        paymentsData.forEach(payment => {
+          totalFeeCollection += parseFloat(payment.amount || 0);
+        });
+      }
+    } catch (e) {
+      // payments table might not exist
+      console.log('Payments table check skipped or failed (optional)');
     }
 
     // Update stats object

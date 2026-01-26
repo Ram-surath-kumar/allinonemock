@@ -224,4 +224,107 @@ router.post('/register', async (req, res) => {
   }
 });
 
+
+// ==========================================
+// SEATING PLAN & HALL TICKET ENDPOINTS
+// ==========================================
+
+// Generate seating plan (Mock for now)
+router.post('/seating/generate', async (req, res) => {
+  try {
+    const { exam_id, rooms } = req.body;
+    // Mock response - in production this would allocate students to seats
+    sendSuccess(res, {
+      message: 'Seating plan generated successfully',
+      allocated_seats: 120,
+      rooms_used: rooms?.length || 5
+    });
+  } catch (error) {
+    handleError(error, res, 'Failed to generate seating plan');
+  }
+});
+
+// Get seating plan
+router.get('/seating/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+    // Mock response
+    sendSuccess(res, {
+      exam_id: examId,
+      plans: []
+    });
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch seating plan');
+  }
+});
+
+// Generate hall tickets
+router.post('/hall-tickets/generate/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+    // Mock response
+    sendSuccess(res, {
+      message: 'Hall tickets generated',
+      count: 150
+    });
+  } catch (error) {
+    handleError(error, res, 'Failed to generate hall tickets');
+  }
+});
+
+// Get hall tickets
+router.get('/hall-tickets/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+    // Mock response
+    sendSuccess(res, []);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch hall tickets');
+  }
+});
+
+// Get timetable
+router.get('/timetable/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const { data, error } = await supabaseAdmin
+      .from('exam_timetable')
+      .select('*')
+      .eq('exam_id', examId);
+
+    if (error) throw error;
+    sendSuccess(res, data || []);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch timetable');
+  }
+});
+
+// Create timetable entry
+router.post('/timetable', async (req, res) => {
+  try {
+    const { exam_id, subject_id, exam_date, start_time, end_time, room_no } = req.body;
+    const { data, error } = await supabaseAdmin
+      .from('exam_timetable')
+      .insert({ exam_id, subject_id, exam_date, start_time, end_time, room_no })
+      .select()
+      .single();
+
+    if (error) throw error;
+    sendSuccess(res, data);
+  } catch (error) {
+    handleError(error, res, 'Failed to create timetable entry');
+  }
+});
+
+// Submit marks
+router.post('/marks/submit', async (req, res) => {
+  try {
+    // Mock response
+    sendSuccess(res, { message: 'Marks submitted successfully' });
+  } catch (error) {
+    handleError(error, res, 'Failed to submit marks');
+  }
+});
+
 export default router;
+

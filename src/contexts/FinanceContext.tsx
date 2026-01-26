@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 interface FinanceContextType {
     refreshTrigger: number;
@@ -13,6 +13,24 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     const refreshFinance = useCallback(() => {
         setRefreshTrigger(prev => prev + 1);
     }, []);
+
+    // Listen for global finance refresh events
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log("FinanceContext - Received refresh event");
+            refreshFinance();
+        };
+
+        import("@/lib/events").then(({ events, REFRESH_FINANCE }) => {
+            events.on(REFRESH_FINANCE, handleRefresh);
+        });
+
+        return () => {
+            import("@/lib/events").then(({ events, REFRESH_FINANCE }) => {
+                events.off(REFRESH_FINANCE, handleRefresh);
+            });
+        };
+    }, [refreshFinance]);
 
     return (
         <FinanceContext.Provider value={{ refreshTrigger, refreshFinance }}>

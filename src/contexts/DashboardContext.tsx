@@ -55,6 +55,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser?.id]);
 
+  // Listen for global refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log("DashboardContext - Received refresh event");
+      refreshDashboard();
+    };
+
+    // Import dynamically to avoid circular dependencies if any (though standard import is fine here)
+    import("@/lib/events").then(({ events, REFRESH_DASHBOARD }) => {
+      events.on(REFRESH_DASHBOARD, handleRefresh);
+    });
+
+    return () => {
+      import("@/lib/events").then(({ events, REFRESH_DASHBOARD }) => {
+        events.off(REFRESH_DASHBOARD, handleRefresh);
+      });
+    };
+  }, [currentUser]); // Re-bind if user changes (though mostly stable)
+
   return (
     <DashboardContext.Provider value={{ dashboardData, loading, error, refreshDashboard }}>
       {children}

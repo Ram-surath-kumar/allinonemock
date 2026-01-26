@@ -644,10 +644,19 @@ class ApiClient {
 
   // Online Payment Mock
   async payOnlineMock(data: any): Promise<ApiResponse<any>> {
-    return this.request("/finance/pay/online-mock", {
+    const response = await this.request("/finance/pay/online-mock", {
       method: "POST",
       body: JSON.stringify(data),
     });
+
+    if (!response.error) {
+      import("../lib/events").then(({ events, REFRESH_DASHBOARD, REFRESH_FINANCE }) => {
+        events.emit(REFRESH_DASHBOARD);
+        events.emit(REFRESH_FINANCE);
+      });
+    }
+
+    return response;
   }
 
   async createFeeCategory(data: { name: string; description?: string }): Promise<ApiResponse<any>> {
@@ -717,10 +726,20 @@ class ApiClient {
   }
 
   async recordPayment(data: any): Promise<ApiResponse<any>> {
-    return this.request("/finance/pay/manual", {
+    const response = await this.request("/finance/pay/manual", {
       method: "POST",
       body: JSON.stringify(data),
     });
+
+    // Trigger global refresh
+    if (!response.error) {
+      import("../lib/events").then(({ events, REFRESH_DASHBOARD, REFRESH_FINANCE }) => {
+        events.emit(REFRESH_DASHBOARD);
+        events.emit(REFRESH_FINANCE);
+      });
+    }
+
+    return response;
   }
 
   async getReceipt(id: string): Promise<ApiResponse<any>> {
@@ -729,7 +748,11 @@ class ApiClient {
 
   // Auto-Assignment & Rules
   async autoAssignFees(studentId: string): Promise<ApiResponse<any>> {
-    return this.request(`/finance/auto-assign/${studentId}`, { method: "POST" });
+    const response = await this.request(`/finance/auto-assign/${studentId}`, { method: "POST" });
+    if (!response.error) {
+      import("../lib/events").then(({ events, REFRESH_DASHBOARD }) => events.emit(REFRESH_DASHBOARD));
+    }
+    return response;
   }
 
   async getAssignmentRules(): Promise<ApiResponse<any[]>> {
@@ -799,6 +822,52 @@ class ApiClient {
 
   async getExamDashboard(): Promise<ApiResponse<any>> {
     return this.request("/exam/dashboard");
+  }
+
+  async createExam(data: any): Promise<ApiResponse<any>> {
+    return this.request("/exam/create", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getTimetable(examId: string): Promise<ApiResponse<any>> {
+    return this.request(`/exam/timetable/${examId}`);
+  }
+
+  async createTimetableEntry(data: any): Promise<ApiResponse<any>> {
+    return this.request("/exam/timetable", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateHallTickets(examId: string): Promise<ApiResponse<any>> {
+    return this.request(`/exam/hall-tickets/generate/${examId}`, {
+      method: "POST",
+    });
+  }
+
+  async getHallTickets(examId: string): Promise<ApiResponse<any>> {
+    return this.request(`/exam/hall-tickets/${examId}`);
+  }
+
+  async submitMarks(data: any): Promise<ApiResponse<any>> {
+    return this.request("/exam/marks/submit", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateSeatingPlan(data: any): Promise<ApiResponse<any>> {
+    return this.request("/exam/seating/generate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getSeatingPlan(examId: string): Promise<ApiResponse<any>> {
+    return this.request(`/exam/seating/${examId}`);
   }
 
   async getExams(params?: { status?: string; academic_calendar_id?: string }): Promise<ApiResponse<any[]>> {
