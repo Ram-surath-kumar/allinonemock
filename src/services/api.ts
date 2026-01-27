@@ -1083,9 +1083,7 @@ class ApiClient {
     return this.request("/students");
   }
 
-  async getStudents(): Promise<ApiResponse<any[]>> {
-    return this.request("/students");
-  }
+
 
   async getCourses(): Promise<ApiResponse<any[]>> {
     return this.request("/academic/courses");
