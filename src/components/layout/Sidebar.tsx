@@ -176,7 +176,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     if (currentUser?.role === 'student') {
       return [
         { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
-        { icon: FileText, label: "Examinations", href: "/student/examinations", roles: ["student"] },
+        { icon: FileText, label: "Examination and Results", href: "/student/examinations", roles: ["student"] },
         { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
         { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
       ];

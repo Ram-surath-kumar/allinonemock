@@ -229,15 +229,101 @@ router.post('/register', async (req, res) => {
 // SEATING PLAN & HALL TICKET ENDPOINTS
 // ==========================================
 
-// Generate seating plan (Mock for now)
+// ==========================================
+// SEATING PLAN & HALL TICKET ENDPOINTS
+// ==========================================
+
+// Generate seating plan
 router.post('/seating/generate', async (req, res) => {
   try {
-    const { exam_id, rooms } = req.body;
-    // Mock response - in production this would allocate students to seats
+    const { exam_id, center_id, room_capacity, rooms } = req.body;
+
+    if (!exam_id) {
+      return sendValidationError(res, 'Exam ID is required');
+    }
+
+    // Default rooms if not provided (simple allocation)
+    // If rooms array is provided [{room: "101", capacity: 30}, ...] used that.
+    // Otherwise use generic room "Hall A" etc.
+
+    // 1. Get registered students
+    const { data: registrations, error: regError } = await supabaseAdmin
+      .from('exam_attendance')
+      .select('student_id')
+      .eq('exam_id', exam_id)
+      .eq('status', 'REGISTERED');
+
+    if (regError) throw regError;
+
+    if (!registrations || registrations.length === 0) {
+      return res.status(400).json({ error: 'No registered students found for this exam' });
+    }
+
+    // 2. Clear existing seating for this exam (optional: or upsert?)
+    // Let's clear to regenerate
+    await supabaseAdmin
+      .from('seating_plans')
+      .delete()
+      .eq('exam_id', exam_id);
+
+    // 3. Allocate seats
+    const seatings = [];
+    const capacityPerRoom = room_capacity || 30;
+
+    // Simple allocation logic: Fill rooms sequentially
+    // In a real app, 'rooms' param would dictate available rooms
+
+    let currentRoomIndex = 0;
+    let currentSeat = 1;
+    let roomsUsed = new Set();
+
+    // Use user provided rooms or defaults
+    const availableRooms = rooms && rooms.length > 0
+      ? rooms
+      : Array.from({ length: Math.ceil(registrations.length / capacityPerRoom) }, (_, i) => ({
+        name: `Room ${i + 1}`,
+        capacity: capacityPerRoom
+      }));
+
+    let studentIndex = 0;
+
+    for (const room of availableRooms) {
+      const roomName = room.name || room.room_number || `Room ${currentRoomIndex + 1}`;
+      const cap = room.capacity || capacityPerRoom;
+
+      for (let s = 1; s <= cap; s++) {
+        if (studentIndex >= registrations.length) break;
+
+        const student = registrations[studentIndex];
+
+        seatings.push({
+          exam_id,
+          student_id: student.student_id,
+          center_id: center_id || 'Main Center', // Default center
+          room_number: roomName,
+          seat_number: `S-${s}`, // e.g. S-1, S-2
+          created_at: new Date().toISOString()
+        });
+
+        roomsUsed.add(roomName);
+        studentIndex++;
+      }
+      currentRoomIndex++;
+    }
+
+    // 4. Save to DB
+    if (seatings.length > 0) {
+      const { error: insertError } = await supabaseAdmin
+        .from('seating_plans')
+        .insert(seatings);
+
+      if (insertError) throw insertError;
+    }
+
     sendSuccess(res, {
       message: 'Seating plan generated successfully',
-      allocated_seats: 120,
-      rooms_used: rooms?.length || 5
+      allocated_seats: seatings.length,
+      rooms_used: roomsUsed.size
     });
   } catch (error) {
     handleError(error, res, 'Failed to generate seating plan');
@@ -248,10 +334,19 @@ router.post('/seating/generate', async (req, res) => {
 router.get('/seating/:examId', async (req, res) => {
   try {
     const { examId } = req.params;
-    // Mock response
+
+    const { data, error } = await supabaseAdmin
+      .from('seating_plans')
+      .select('*')
+      .eq('exam_id', examId)
+      .order('room_number', { ascending: true })
+      .order('seat_number', { ascending: true });
+
+    if (error) throw error;
+
     sendSuccess(res, {
       exam_id: examId,
-      plans: []
+      plans: data || []
     });
   } catch (error) {
     handleError(error, res, 'Failed to fetch seating plan');
@@ -262,10 +357,41 @@ router.get('/seating/:examId', async (req, res) => {
 router.post('/hall-tickets/generate/:examId', async (req, res) => {
   try {
     const { examId } = req.params;
-    // Mock response
+
+    // 1. Get registered students
+    const { data: registrations, error: regError } = await supabaseAdmin
+      .from('exam_attendance')
+      .select('student_id')
+      .eq('exam_id', examId)
+      .eq('status', 'REGISTERED'); // Or ALL present
+
+    if (regError) throw regError;
+
+    if (!registrations || registrations.length === 0) {
+      return res.status(400).json({ error: 'No students found to generate tickets for' });
+    }
+
+    // 2. Clear existing (or upsert)
+    // We'll use upsert to avoid duplicate key errors, keeping existing status if any
+
+    const tickets = registrations.map(reg => ({
+      exam_id: examId,
+      student_id: reg.student_id,
+      status: 'GENERATED',
+      generated_at: new Date().toISOString()
+      // file_url: null 
+    }));
+
+    const { data, error } = await supabaseAdmin
+      .from('hall_tickets')
+      .upsert(tickets, { onConflict: 'exam_id,student_id' })
+      .select();
+
+    if (error) throw error;
+
     sendSuccess(res, {
       message: 'Hall tickets generated',
-      count: 150
+      count: data.length
     });
   } catch (error) {
     handleError(error, res, 'Failed to generate hall tickets');
@@ -276,8 +402,15 @@ router.post('/hall-tickets/generate/:examId', async (req, res) => {
 router.get('/hall-tickets/:examId', async (req, res) => {
   try {
     const { examId } = req.params;
-    // Mock response
-    sendSuccess(res, []);
+
+    const { data, error } = await supabaseAdmin
+      .from('hall_tickets')
+      .select('*')
+      .eq('exam_id', examId);
+
+    if (error) throw error;
+
+    sendSuccess(res, data || []);
   } catch (error) {
     handleError(error, res, 'Failed to fetch hall tickets');
   }
@@ -335,6 +468,61 @@ router.post('/timetable', async (req, res) => {
   }
 });
 
+// Get evaluation data (students + marks) for an exam
+router.get('/evaluation/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+
+    // 1. Get all registered students for this exam
+    const { data: attendance, error: attError } = await supabaseAdmin
+      .from('exam_attendance')
+      .select('student_id')
+      .eq('exam_id', examId)
+      .in('status', ['REGISTERED', 'PRESENT']);
+
+    if (attError) throw attError;
+
+    if (!attendance || attendance.length === 0) {
+      return sendSuccess(res, []);
+    }
+
+    const studentIds = attendance.map(a => a.student_id);
+
+    // 2. Get student details
+    const { data: students, error: studentError } = await supabaseAdmin
+      .from('users')
+      .select('id, name') // removed loopid, section which likely don't exist
+      .in('id', studentIds);
+
+    if (studentError) throw studentError;
+
+    // 3. Get existing marks
+    const { data: marks, error: marksError } = await supabaseAdmin
+      .from('exam_marks')
+      .select('student_id, score, remarks')
+      .eq('exam_id', examId);
+
+    if (marksError) throw marksError;
+
+    // 4. Merge data
+    const result = students.map(student => {
+      const markEntry = marks?.find(m => m.student_id === student.id);
+      return {
+        id: student.id,
+        name: student.name,
+        loopid: student.loopid,
+        section: student.section,
+        score: markEntry ? markEntry.score : '', // Empty string for UI input
+        remarks: markEntry ? markEntry.remarks : ''
+      };
+    });
+
+    sendSuccess(res, result);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch evaluation data');
+  }
+});
+
 // Submit marks
 router.post('/marks/submit', async (req, res) => {
   try {
@@ -363,6 +551,37 @@ router.post('/marks/submit', async (req, res) => {
     sendSuccess(res, { message: 'Marks submitted successfully', count: data.length });
   } catch (error) {
     handleError(error, res, 'Failed to submit marks');
+  }
+});
+
+// Get student marks
+router.get('/marks/student/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Fetch marks with Exam details
+    const { data, error } = await supabaseAdmin
+      .from('exam_marks')
+      .select(`
+        score,
+        remarks,
+        exam_id,
+        updated_at,
+        exams:exam_id (
+          id,
+          name,
+          start_date,
+          status
+        )
+      `)
+      .eq('student_id', studentId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    sendSuccess(res, data || []);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch student marks');
   }
 });
 
