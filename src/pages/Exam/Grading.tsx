@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
@@ -11,15 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/services/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save, User } from "lucide-react";
+
+interface StudentGrade {
+    id: string; // Student ID
+    name: string;
+    loopid?: string;
+    score: string | number;
+    remarks: string;
+}
 
 export default function Grading() {
     const [exams, setExams] = useState<any[]>([]);
     const [selectedExam, setSelectedExam] = useState<string>("");
-    const [students, setStudents] = useState<any[]>([]);
+    const [students, setStudents] = useState<StudentGrade[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [grades, setGrades] = useState<Record<string, number>>({});
 
     useEffect(() => {
         loadExams();
@@ -27,13 +34,14 @@ export default function Grading() {
 
     useEffect(() => {
         if (selectedExam) {
-            loadStudents(selectedExam);
+            loadStudentsData(selectedExam);
+        } else {
+            setStudents([]);
         }
     }, [selectedExam]);
 
     const loadExams = async () => {
         try {
-            // Fetch exams (you might need to add a method to fetch exams if getExams isn't enough)
             const response = await api.getExams();
             if (response.data) {
                 setExams(response.data);
@@ -43,34 +51,42 @@ export default function Grading() {
         }
     };
 
-    const loadStudents = async (examId: string) => {
+    const loadStudentsData = async (examId: string) => {
         try {
             setLoading(true);
-            // In a real app, you might fetch students registered for this exam
-            // For now, we'll fetch all students or use a mock endpoint if specific one needed
-            // Assuming getStudents works or we use a fallback
-            // Ideally implementation: api.getExamStudents(examId)
-
-            // Let's use getStudents for now as a base
-            const response = await api.getStudents();
+            const response = await api.get(`/exam/evaluation/${examId}`);
             if (response.data) {
-                setStudents(response.data);
-                // Initialize grades if existing
-                // const gradesResponse = await api.getExamGrades(examId);
+                // Ensure we map the data correctly
+                const mappedData = response.data.map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                    loopid: item.loopid,
+                    score: item.score ?? "",
+                    remarks: item.remarks ?? ""
+                }));
+                setStudents(mappedData);
             }
         } catch (error) {
             console.error("Failed to load students", error);
-            toast.error("Failed to load students");
+            toast.error("Failed to load students for evaluation");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleGradeChange = (studentId: string, value: string) => {
-        setGrades((prev) => ({
-            ...prev,
-            [studentId]: parseFloat(value),
-        }));
+    const handleScoreChange = (studentId: string, value: string) => {
+        const numValue = parseFloat(value);
+        if (value && (isNaN(numValue) || numValue < 0 || numValue > 100)) return;
+
+        setStudents((prev) =>
+            prev.map((s) => (s.id === studentId ? { ...s, score: value } : s))
+        );
+    };
+
+    const handleRemarksChange = (studentId: string, value: string) => {
+        setStudents((prev) =>
+            prev.map((s) => (s.id === studentId ? { ...s, remarks: value } : s))
+        );
     };
 
     const handleSubmit = async () => {
@@ -78,18 +94,34 @@ export default function Grading() {
 
         try {
             setSaving(true);
+
+            // Filter out students with empty scores? Or submit all?
+            // Submitting all allows clearing scores if needed, but usually we just submit valid ones.
+            // Let's submit all where score is not empty string.
             const marksData = {
                 exam_id: selectedExam,
-                marks: Object.entries(grades).map(([student_id, score]) => ({
-                    student_id,
-                    score,
-                })),
+                marks: students
+                    .filter(s => s.score !== "")
+                    .map((s) => ({
+                        student_id: s.id,
+                        score: Number(s.score),
+                        remarks: s.remarks,
+                    })),
             };
 
-            const response = await api.submitMarks(marksData);
+            if (marksData.marks.length === 0) {
+                toast.warning("No marks to save.");
+                setSaving(false);
+                return;
+            }
+
+            const response = await api.post("/exam/marks/submit", marksData);
+
             if (response.error) throw new Error(response.error);
 
             toast.success("Grades submitted successfully");
+            // Reload to ensure sync
+            loadStudentsData(selectedExam);
         } catch (error: any) {
             toast.error(error.message || "Failed to submit grades");
         } finally {
@@ -98,97 +130,133 @@ export default function Grading() {
     };
 
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-bold tracking-tight">Student Grading</h2>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Select Exam</CardTitle>
-                </CardHeader>
-                <CardContent>
+        <div className="space-y-6 pt-6 animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Evaluation & Grading</h2>
+                    <p className="text-muted-foreground mt-1">
+                        Enter marks and feedback for completed examinations.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
                     <Select value={selectedExam} onValueChange={setSelectedExam}>
-                        <SelectTrigger className="w-[300px]">
-                            <SelectValue placeholder="Choose an exam to grade..." />
+                        <SelectTrigger className="w-[250px] bg-background">
+                            <SelectValue placeholder="Select Examination..." />
                         </SelectTrigger>
                         <SelectContent>
-                            {exams.map((exam) => (
-                                <SelectItem key={exam.id} value={exam.id}>
-                                    {exam.name}
-                                </SelectItem>
-                            ))}
+                            {exams.length === 0 ? (
+                                <SelectItem value="none" disabled>No exams available</SelectItem>
+                            ) : (
+                                exams.map((exam) => (
+                                    <SelectItem key={exam.id} value={exam.id}>
+                                        {exam.name}
+                                    </SelectItem>
+                                ))
+                            )}
                         </SelectContent>
                     </Select>
+                </div>
+            </div>
+
+            <Card className="border-border/50 shadow-md">
+                <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Student Marks Entry</CardTitle>
+                            <CardDescription>
+                                {selectedExam
+                                    ? `Showing registered students for ${exams.find(e => e.id === selectedExam)?.name}`
+                                    : "Select an exam to start grading"}
+                            </CardDescription>
+                        </div>
+                        {selectedExam && (
+                            <Button onClick={handleSubmit} disabled={saving || students.length === 0} className="gap-2">
+                                {saving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                Save Changes
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {!selectedExam ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                            <div className="bg-muted p-4 rounded-full mb-4">
+                                <User className="h-8 w-8 text-muted-foreground/50" />
+                            </div>
+                            <p className="font-medium">Please select an examination to view students.</p>
+                        </div>
+                    ) : loading ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                            <p className="text-sm text-muted-foreground">Loading student list...</p>
+                        </div>
+                    ) : students.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground rounded-lg border border-dashed">
+                            <p>No students registered for this exam yet.</p>
+                        </div>
+                    ) : (
+                        <div className="rounded-md border overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
+                                    <tr>
+                                        <th className="p-4 w-[50px]">#</th>
+                                        <th className="p-4">Student Name</th>
+                                        <th className="p-4">ID / Roll No</th>
+                                        <th className="p-4 w-[150px]">Score (0-100)</th>
+                                        <th className="p-4">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y bg-card">
+                                    {students.map((student, index) => (
+                                        <tr key={student.id} className="hover:bg-muted/50 transition-colors">
+                                            <td className="p-4 text-muted-foreground">{index + 1}</td>
+                                            <td className="p-4 font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                                        {student.name.charAt(0)}
+                                                    </div>
+                                                    {student.name}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-muted-foreground font-mono text-xs">
+                                                {student.loopid || student.id.substring(0, 8)}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="relative">
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="-"
+                                                        className={`w-24 font-mono select-all ${student.score !== "" && Number(student.score) < 35
+                                                                ? "border-destructive text-destructive focus-visible:ring-destructive"
+                                                                : ""
+                                                            }`}
+                                                        value={student.score}
+                                                        onChange={(e) => handleScoreChange(student.id, e.target.value)}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <Input
+                                                    placeholder="Enter remarks..."
+                                                    value={student.remarks}
+                                                    onChange={(e) => handleRemarksChange(student.id, e.target.value)}
+                                                    className="max-w-md"
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
-
-            {selectedExam && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Enter Grades</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="flex justify-center p-8">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="border rounded-md">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-muted/50 text-muted-foreground font-medium">
-                                            <tr>
-                                                <th className="p-4">Student Name</th>
-                                                <th className="p-4">ID</th>
-                                                <th className="p-4">Grade / Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {students.map((student) => (
-                                                <tr key={student.id} className="hover:bg-muted/50">
-                                                    <td className="p-4 font-medium">{student.name}</td>
-                                                    <td className="p-4 text-muted-foreground">{student.loopid || student.id.substring(0, 8)}</td>
-                                                    <td className="p-4">
-                                                        <Input
-                                                            type="number"
-                                                            min="0"
-                                                            max="100"
-                                                            placeholder="0-100"
-                                                            className="w-24"
-                                                            value={grades[student.id] || ""}
-                                                            onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                                                        />
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-
-                                    {students.length === 0 && (
-                                        <div className="p-8 text-center text-muted-foreground">
-                                            No students found for this exam context.
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex justify-end pt-4">
-                                    <Button onClick={handleSubmit} disabled={saving || students.length === 0}>
-                                        {saving ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            "Submit Grades"
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }

@@ -131,7 +131,7 @@ export function HallTicketGenerator({ exams }: HallTicketGeneratorProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student ID</TableHead>
+                      <TableHead>Student</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Generated At</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -141,9 +141,7 @@ export function HallTicketGenerator({ exams }: HallTicketGeneratorProps) {
                     {tickets.map((ticket) => (
                       <TableRow key={ticket.id}>
                         <TableCell className="font-medium">
-                          {ticket.student_id
-                            ? ticket.student_id.substring(0, 8) + "..."
-                            : "Unknown"}
+                          {ticket.student_name || (ticket.student_id ? ticket.student_id.substring(0, 8) + "..." : "Unknown")}
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

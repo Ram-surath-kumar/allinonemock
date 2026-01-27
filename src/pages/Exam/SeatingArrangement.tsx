@@ -141,8 +141,8 @@ export function SeatingArrangement({ exams }: { exams: any[] }) {
                   <div className="text-xs font-bold text-muted-foreground">
                     {seat.room_number} - {seat.seat_number}
                   </div>
-                  <div className="mt-2 font-medium truncate" title={seat.student_id}>
-                    Student ID: <br /> {seat.student_id?.substring(0, 8)}...
+                  <div className="mt-2 font-medium truncate" title={seat.student_name || seat.student_id}>
+                    {seat.student_name ? seat.student_name : `ID: ${seat.student_id?.substring(0, 8)}...`}
                   </div>
                 </div>
               ))}
