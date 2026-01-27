@@ -155,32 +155,38 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
 
   return (
     <header
-      className="flex h-16 md:h-18 items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
+      className="flex h-[76px] items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
       role="banner"
     >
-      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
         {onMenuClick && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden h-9 w-9 rounded-sm"
+            className="md:hidden h-9 w-9 rounded-sm shrink-0"
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm md:text-base font-semibold text-foreground truncate">{title}</h1>
+        
+        {/* Page Title & Welcome */}
+        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
+          <div className="min-w-0 flex-1 h-full flex flex-col justify-center">
+            <h1 className="text-base md:text-lg font-semibold text-foreground truncate leading-tight">
+              {title}
+            </h1>
+            {currentUser && (
+              <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                {t("header.welcomeBack", { name: currentUser.name })}
+              </p>
+            )}
+            {!currentUser && subtitle && (
+              <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                {subtitle}
+              </p>
+            )}
           </div>
-          {currentUser && (
-            <p className="text-xs text-muted-foreground truncate">
-              {t("header.welcomeBack", { name: currentUser.name })}
-            </p>
-          )}
-          {!currentUser && subtitle && (
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-          )}
         </div>
       </div>
 
