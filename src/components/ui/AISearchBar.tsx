@@ -3,6 +3,7 @@ import { Search, Sparkles, TrendingUp, Loader2, ArrowRight } from "lucide-react"
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 import { searchFeatures, getPopularSearches, SearchSuggestion } from "@/services/ai-search";
 
 interface AISearchBarProps {
@@ -12,6 +13,7 @@ interface AISearchBarProps {
 
 export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
   const { t } = useI18n();
+  const { currentUser } = useAuth();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +47,7 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
 
       setIsLoading(true);
       try {
-        const results = await searchFeatures(searchQuery, undefined, t);
+        const results = await searchFeatures(searchQuery, currentUser, t);
         setSuggestions(results);
       } catch (error) {
         console.error("Search error:", error);
