@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { getActionsForUser, AppAction } from "@/services/action-registry";
 
 export function AIAssistantChat({ onNavigate }) {
   const { currentUser, hasPermission } = useAuth();
@@ -59,6 +60,13 @@ export function AIAssistantChat({ onNavigate }) {
     title: "",
     description: "",
   });
+
+  // Slash Command State
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashFilter, setSlashFilter] = useState("");
+  const [slashIndex, setSlashIndex] = useState(0);
+  const [filteredActions, setFilteredActions] = useState<AppAction[]>([]);
+  const slashMenuRef = useRef<HTMLDivElement>(null);
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -142,6 +150,37 @@ export function AIAssistantChat({ onNavigate }) {
     }
   }, [messages]);
 
+  // Slash Command Effect
+  useEffect(() => {
+    if (showSlashMenu) {
+      const actions = getActionsForUser(currentUser?.role);
+      const filtered = slashFilter
+        ? actions.filter(
+          (a) =>
+            a.title.toLowerCase().includes(slashFilter.toLowerCase()) ||
+            a.keywords.some((k) => k.includes(slashFilter.toLowerCase()))
+        ).slice(0, 10)
+        : actions.slice(0, 10);
+      setFilteredActions(filtered);
+      setSlashIndex(0);
+    }
+  }, [showSlashMenu, slashFilter, currentUser]);
+
+  // Close slash menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (slashMenuRef.current && !slashMenuRef.current.contains(event.target)) {
+        setShowSlashMenu(false);
+      }
+    };
+    if (showSlashMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSlashMenu]);
+
   const loadData = async () => {
     try {
       // Load students
@@ -192,9 +231,9 @@ export function AIAssistantChat({ onNavigate }) {
       if (response.data && response.data.length > 0) {
         setMessages(
           response.data.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
             timestamp: new Date(msg.timestamp), // Ensure timestamp is a Date object
           }))
         );
@@ -264,10 +303,10 @@ export function AIAssistantChat({ onNavigate }) {
         const dateStr = action.date || format(new Date(), "yyyy-MM-dd");
         const response = await api.markAttendance([
           {
-          student_id: action.student_id,
-          date: dateStr,
-          status: action.status,
-          marked_by: currentUser?.id || null,
+            student_id: action.student_id,
+            date: dateStr,
+            status: action.status,
+            marked_by: currentUser?.id || null,
           },
         ]);
 
@@ -419,7 +458,7 @@ export function AIAssistantChat({ onNavigate }) {
         const message =
           deletedCount > 0
             ? `✅ Successfully deleted ${deletedCount} student${deletedCount !== 1 ? "s" : ""}.${errorCount > 0 ? ` ${errorCount} student(s) could not be deleted due to database constraints.` : ""}`
-          : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
+            : `❌ Failed to delete students. ${errorCount} error(s) occurred.`;
 
         addMessage("assistant", message);
 
@@ -686,481 +725,562 @@ export function AIAssistantChat({ onNavigate }) {
         `Sorry, I encountered an error: ${error.message || "Failed to process your query"}`
       );
     }
-  };
+    const handleSlashAction = (action: AppAction) => {
+      setShowSlashMenu(false);
+      setPrompt("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!prompt.trim()) {
-      return;
-    }
-
-    const userPrompt = prompt.trim();
-    setPrompt("");
-    addMessage("user", userPrompt);
-    setLoading(true);
-
-    try {
-      // Load data if not loaded
-      if (students.length === 0) {
-        await loadData();
+      // Execute action
+      if (onNavigate) {
+        onNavigate(action.path || "/", action.action, action.actionData);
       }
 
-      // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
-      const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(
-        userPrompt
-      );
+      // Add system message
+      addMessage("assistant", `Executing action: ${action.title}...`);
 
-      const isDataQuery =
-        !isAnalyzeCommand &&
-        (/^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(
-          userPrompt
-        ) ||
-          /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(
-            userPrompt
-          ) ||
-          userPrompt.includes("?") ||
-          /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt));
+      // If it's pure navigation, close the chat
+      if (action.action === "navigate") {
+        setTimeout(() => setIsOpen(false), 800);
+      }
+    };
 
-      if (isDataQuery) {
-        // Handle data query
-        await handleDataQuery(userPrompt);
+    const handleKeyDown = (e) => {
+      if (showSlashMenu && filteredActions.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSlashIndex((prev) => (prev + 1) % filteredActions.length);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSlashIndex((prev) => (prev - 1 + filteredActions.length) % filteredActions.length);
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          handleSlashAction(filteredActions[slashIndex]);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          setShowSlashMenu(false);
+        }
       } else {
-        // Handle action - loading state is already set, no need to add processing message
-        const context = {
-          students,
-          currentDate: format(new Date(), "yyyy-MM-dd"),
-          availableActions: [
-            "mark_attendance",
-            "edit_student",
-            "view_student",
-            "delete_students",
-            "add_department",
-            "add_applicant",
-            "analyze_system",
-          ],
-        };
-
-        const action = await callGeminiAPI(userPrompt, context);
-
-        if (action.confidence >= 0.7) {
-          await executeAction(action);
-        } else {
-          addMessage("assistant", t("aiAssistant.couldNotUnderstand"));
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSubmit(e);
         }
       }
-    } catch (error) {
-      console.error("Error processing message:", error);
-      addMessage(
-        "assistant",
-        t("aiAssistant.failedToProcess", {
-          error: error.message || "Failed to process your message",
-        })
-      );
-    } finally {
-      setLoading(false);
+    };
+
+    const handleInputChange = (e) => {
+      const value = e.target.value;
+      setPrompt(value);
+
+      // Check for slash command
+      const lastSlashIndex = value.lastIndexOf("/");
+      // Only show if slash is at start or after space, and no other slash later
+      if (lastSlashIndex !== -1 && (lastSlashIndex === 0 || value[lastSlashIndex - 1] === " ")) {
+        const filter = value.substring(lastSlashIndex + 1);
+        // Valid if no spaces in filter (unless we want multi-word commands, but simple is better)
+        if (!filter.includes(" ")) {
+          setShowSlashMenu(true);
+          setSlashFilter(filter);
+          return;
+        }
+      }
+      setShowSlashMenu(false);
+    };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+
+      if (!prompt.trim()) {
+        return;
+      }
+
+      const userPrompt = prompt.trim();
+      setPrompt("");
+      addMessage("user", userPrompt);
+      setLoading(true);
+
+      try {
+        // Load data if not loaded
+        if (students.length === 0) {
+          await loadData();
+        }
+
+        // Check if it's a data query (questions like "what", "how many", "is", "show me", etc.)
+        const isAnalyzeCommand = /^(analyze system|analyze erp|analyze the entire erp)/i.test(
+          userPrompt
+        );
+
+        const isDataQuery =
+          !isAnalyzeCommand &&
+          (/^(what|how|is|are|was|were|show|tell|give|list|display|explain|describe|compare|summary|report|count|check|find)/i.test(
+            userPrompt
+          ) ||
+            /^(how many|how much|what is|what are|tell me|show me|give me|is there|are there)/i.test(
+              userPrompt
+            ) ||
+            userPrompt.includes("?") ||
+            /^(is|are|was|were)\s+\w+\s+(present|absent|late|excused)/i.test(userPrompt));
+
+        if (isDataQuery) {
+          // Handle data query
+          await handleDataQuery(userPrompt);
+        } else {
+          // Handle action - loading state is already set, no need to add processing message
+          const context = {
+            students,
+            currentDate: format(new Date(), "yyyy-MM-dd"),
+            availableActions: [
+              "mark_attendance",
+              "edit_student",
+              "view_student",
+              "delete_students",
+              "add_department",
+              "add_applicant",
+              "analyze_system",
+            ],
+          };
+
+          const action = await callGeminiAPI(userPrompt, context);
+
+          if (action.confidence >= 0.7) {
+            await executeAction(action);
+          } else {
+            addMessage("assistant", t("aiAssistant.couldNotUnderstand"));
+          }
+        }
+      } catch (error) {
+        console.error("Error processing message:", error);
+        addMessage(
+          "assistant",
+          t("aiAssistant.failedToProcess", {
+            error: error.message || "Failed to process your message",
+          })
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Ensure we have document available (client-side only)
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return null; // SSR safety check
     }
-  };
 
-  // Ensure we have document available (client-side only)
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return null; // SSR safety check
-  }
+    // Ensure document.body exists
+    if (!document.body) {
+      return null;
+    }
 
-  // Ensure document.body exists
-  if (!document.body) {
-    return null;
-  }
-
-  // Render using portal to document.body to ensure it's always on top
-  return createPortal(
-    <>
-      {/* Floating Button - Positioned at bottom-right corner */}
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsOpen(true);
-          }}
-          className={cn(
-            "fixed h-14 w-14 rounded-full",
-            "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
-            "shadow-lg hover:shadow-xl transition-all duration-300",
-            "hover:scale-110 active:scale-95",
-            "flex items-center justify-center",
-            "group focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-          )}
-          style={{
-            zIndex: 99999,
-            pointerEvents: "auto",
-            cursor: "pointer",
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            width: "56px",
-            height: "56px",
-          }}
-          aria-label="Open AI Assistant"
-        >
-          <Sparkles className="h-6 w-6 animate-pulse group-hover:animate-spin transition-transform" />
-          <span className="absolute inset-0 rounded-full bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
-        </button>
-      )}
-
-      {/* Chat Widget - Positioned at bottom-right corner */}
-      {isOpen && (
-        <div
-          className={cn(
-          "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
-          "flex flex-col overflow-hidden transition-all duration-300",
-          isMinimized ? "h-14" : "h-[600px]"
+    // Render using portal to document.body to ensure it's always on top
+    return createPortal(
+      <>
+        {/* Floating Button - Positioned at bottom-right corner */}
+        {!isOpen && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(true);
+            }}
+            className={cn(
+              "fixed h-14 w-14 rounded-full",
+              "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground",
+              "shadow-lg hover:shadow-xl transition-all duration-300",
+              "hover:scale-110 active:scale-95",
+              "flex items-center justify-center",
+              "group focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            )}
+            style={{
+              zIndex: 99999,
+              pointerEvents: "auto",
+              cursor: "pointer",
+              position: "fixed",
+              bottom: "24px",
+              right: "24px",
+              width: "56px",
+              height: "56px",
+            }}
+            aria-label="Open AI Assistant"
+          >
+            <Sparkles className="h-6 w-6 animate-pulse group-hover:animate-spin transition-transform" />
+            <span className="absolute inset-0 rounded-full bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
+          </button>
         )}
-          style={{
-            zIndex: 99999,
-            pointerEvents: "auto",
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-          }}
-          role="dialog"
-          aria-label="AI Assistant Chat"
-          aria-modal="true"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              {!isMinimized && (
-                <div>
-                  <h3 className="text-sm font-semibold">{t("aiAssistant.title")}</h3>
-                  <p className="text-xs text-muted-foreground">{t("aiAssistant.subtitle")}</p>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
-              <Button variant="ghost" size="icon" onClick={() => setIsMinimized(!isMinimized)}>
-                {isMinimized ? (
-                  <Maximize2 className="h-4 w-4" />
-                ) : (
-                  <Minimize2 className="h-4 w-4" />
-                )}
-              </Button>
-              {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
-          {!isMinimized && (
-            <>
-              {/* Messages */}
-              {/* @ts-expect-error - ScrollArea accepts children but TypeScript doesn't recognize it from JSX component */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                          message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                        )}
-                      >
-                        {message.content}
-                        <div className="text-xs opacity-70 mt-1">
-                          {format(message.timestamp, "HH:mm")}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {loading && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg px-3 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Attachments Preview */}
-              {attachments.length > 0 && (
-                <div className="px-4 py-2 border-t border-border bg-muted/20">
-                  <div className="flex gap-1.5 flex-wrap">
-                  {attachments.map((file, index) => (
-                      <div key={index} className="group relative">
-                        {file.type.startsWith("image/") ? (
-                          <div className="relative h-10 w-10 rounded-[6px] overflow-hidden bg-muted border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow aspect-square">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                              className="h-full w-full object-cover aspect-square"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedImage({
-                                  url: URL.createObjectURL(file),
-                                  name: file.name,
-                                });
-                              }}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeAttachment(index);
-                              }}
-                              className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
-                              title={t("aiAssistant.removeAttachment")}
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                        </div>
-                      ) : (
-                          <div className="relative h-10 w-10 rounded-[6px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow flex items-center justify-center aspect-square">
-                            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <button
-                        onClick={() => removeAttachment(index)}
-                              className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
-                              title={t("aiAssistant.removeAttachment")}
-                      >
-                              <X className="h-2.5 w-2.5" />
-                      </button>
-                          </div>
-                        )}
-                        {/* Hover Tooltip with Details */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-popover border border-border rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] whitespace-nowrap max-w-[200px]">
-                          <div className="text-xs font-medium text-foreground truncate">
-                            {file.name}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            {(file.size / 1024).toFixed(1)} KB
-                          </div>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
-                            <div className="h-1.5 w-1.5 bg-popover border-r border-b border-border rotate-45"></div>
-                          </div>
-                        </div>
-                    </div>
-                  ))}
+        {/* Chat Widget - Positioned at bottom-right corner */}
+        {isOpen && (
+          <div
+            className={cn(
+              "fixed bottom-6 right-6 w-96 rounded-2xl border border-border bg-background shadow-lg",
+              "flex flex-col overflow-hidden transition-all duration-300",
+              isMinimized ? "h-14" : "h-[600px]"
+            )}
+            style={{
+              zIndex: 99999,
+              pointerEvents: "auto",
+              position: "fixed",
+              bottom: "24px",
+              right: "24px",
+            }}
+            role="dialog"
+            aria-label="AI Assistant Chat"
+            aria-modal="true"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                {!isMinimized && (
+                  <div>
+                    <h3 className="text-sm font-semibold">{t("aiAssistant.title")}</h3>
+                    <p className="text-xs text-muted-foreground">{t("aiAssistant.subtitle")}</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+                <Button variant="ghost" size="icon" onClick={() => setIsMinimized(!isMinimized)}>
+                  {isMinimized ? (
+                    <Maximize2 className="h-4 w-4" />
+                  ) : (
+                    <Minimize2 className="h-4 w-4" />
+                  )}
+                </Button>
+                {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-              {/* Input */}
-              <form onSubmit={handleSubmit} className="border-t border-border p-4">
-                <div className="flex gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx"
-                  />
+            {!isMinimized && (
+              <>
+                {/* Messages */}
+                {/* @ts-expect-error - ScrollArea accepts children but TypeScript doesn't recognize it from JSX component */}
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          "flex",
+                          message.role === "user" ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground"
+                          )}
+                        >
+                          {message.content}
+                          <div className="text-xs opacity-70 mt-1">
+                            {format(message.timestamp, "HH:mm")}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {loading && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted rounded-lg px-3 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
 
-                  <div className="relative flex gap-2 items-center" ref={attachMenuRef}>
+                {/* Attachments Preview */}
+                {attachments.length > 0 && (
+                  <div className="px-4 py-2 border-t border-border bg-muted/20">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {attachments.map((file, index) => (
+                        <div key={index} className="group relative">
+                          {file.type.startsWith("image/") ? (
+                            <div className="relative h-10 w-10 rounded-[6px] overflow-hidden bg-muted border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow aspect-square">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={file.name}
+                                className="h-full w-full object-cover aspect-square"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedImage({
+                                    url: URL.createObjectURL(file),
+                                    name: file.name,
+                                  });
+                                }}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeAttachment(index);
+                                }}
+                                className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
+                                title={t("aiAssistant.removeAttachment")}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="relative h-10 w-10 rounded-[6px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border border-border/60 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow flex items-center justify-center aspect-square">
+                              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              <button
+                                onClick={() => removeAttachment(index)}
+                                className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-background/95 backdrop-blur-sm border border-border/60 hover:bg-destructive/10 hover:border-destructive/50 text-muted-foreground hover:text-destructive transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                title={t("aiAssistant.removeAttachment")}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          )}
+                          {/* Hover Tooltip with Details */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-popover border border-border rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-[100] whitespace-nowrap max-w-[200px]">
+                            <div className="text-xs font-medium text-foreground truncate">
+                              {file.name}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+                              <div className="h-1.5 w-1.5 bg-popover border-r border-b border-border rotate-45"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input */}
+                <form onSubmit={handleSubmit} className="border-t border-border p-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx"
+                    />
+
+                    <div className="relative flex gap-2 items-center" ref={attachMenuRef}>
+                      {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-full shrink-0"
+                        title="Attach..."
+                        onClick={() => setShowAttachMenu(!showAttachMenu)}
+                      >
+                        <Paperclip className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                      </Button>
+
+                      {showAttachMenu && (
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-popover rounded-xl shadow-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
+                          <div className="p-1 flex flex-col">
+                            <button
+                              type="button"
+                              className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                              onClick={() => {
+                                fileInputRef.current?.click();
+                                setShowAttachMenu(false);
+                              }}
+                            >
+                              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                <FileText className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium">Files</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  Upload documents
+                                </span>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
+                              onClick={() => {
+                                startCamera();
+                                setShowAttachMenu(false);
+                              }}
+                            >
+                              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                <Camera className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium">Camera</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  Take a photo
+                                </span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Slash Command Menu */}
+                    {showSlashMenu && filteredActions.length > 0 && (
+                      <div
+                        ref={slashMenuRef}
+                        className="absolute bottom-full left-0 mb-2 w-full bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2"
+                        style={{ maxHeight: "250px", overflowY: "auto" }}
+                      >
+                        <div className="p-1 px-2 text-xs font-medium text-muted-foreground bg-muted/50 border-b">
+                          Actions
+                        </div>
+                        {filteredActions.map((action, index) => (
+                          <button
+                            key={action.id}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors",
+                              index === slashIndex && "bg-accent text-accent-foreground"
+                            )}
+                            onClick={() => handleSlashAction(action)}
+                          >
+                            <span className="flex-1 font-medium">{action.title}</span>
+                            <span className="text-xs text-muted-foreground">{action.category}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <Input
+                      value={prompt}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder={t("aiAssistant.typeMessage")}
+                      className="pr-24 pl-10 rounded-full border-border/50 bg-background/50 focus:bg-background transition-all"
+                      disabled={loading}
+                    />
                     {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                     <Button
-                      type="button"
-                      variant="ghost"
+                      type="submit"
+                      disabled={loading || (!prompt.trim() && attachments.length === 0)}
                       size="icon"
-                      className="h-9 w-9 rounded-full shrink-0"
-                      title="Attach..."
-                      onClick={() => setShowAttachMenu(!showAttachMenu)}
                     >
-                      <Paperclip className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
-
-                    {showAttachMenu && (
-                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-popover rounded-xl shadow-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
-                        <div className="p-1 flex flex-col">
-                          <button
-                            type="button"
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
-                            onClick={() => {
-                              fileInputRef.current?.click();
-                              setShowAttachMenu(false);
-                            }}
-                          >
-                            <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                              <FileText className="h-4 w-4" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium">Files</span>
-                              <span className="text-[10px] text-muted-foreground">
-                                Upload documents
-                              </span>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors w-full text-left"
-                            onClick={() => {
-                              startCamera();
-                              setShowAttachMenu(false);
-                            }}
-                          >
-                            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                              <Camera className="h-4 w-4" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium">Camera</span>
-                              <span className="text-[10px] text-muted-foreground">
-                                Take a photo
-                              </span>
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
+                </form>
+              </div>
+          </div>
+          </div >
+        )
+  }
 
-                  <Input
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    disabled={loading}
-                    placeholder={
-                      attachments.length > 0
-                        ? t("aiAssistant.describeFiles")
-                        : t("aiAssistant.askAIOrCommands")
-                    }
-                    className="flex-1 rounded-full"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                  {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
-                  <Button
-                    type="submit"
-                    disabled={loading || (!prompt.trim() && attachments.length === 0)}
-                    size="icon"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </>
-          )}
-        </div>
-      )}
-      {/* Confirmation Dialog */}
-      <AlertDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
-      >
-        {/* @ts-expect-error - AlertDialogContent accepts children but TypeScript doesn't recognize it from JSX component */}
-        <AlertDialogContent>
-          {/* @ts-expect-error - AlertDialogHeader accepts children but TypeScript doesn't recognize it from JSX component */}
-          <AlertDialogHeader>
-            {/* @ts-expect-error - AlertDialogTitle accepts children but TypeScript doesn't recognize it from JSX component */}
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              {confirmDialog.title}
-            </AlertDialogTitle>
-            {/* @ts-expect-error - AlertDialogDescription accepts children but TypeScript doesn't recognize it from JSX component */}
-            <AlertDialogDescription className="pt-2">
-              {confirmDialog.description}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {/* @ts-expect-error - AlertDialogFooter accepts children but TypeScript doesn't recognize it from JSX component */}
-          <AlertDialogFooter>
-            {/* @ts-expect-error - AlertDialogCancel accepts children but TypeScript doesn't recognize it from JSX component */}
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {/* @ts-expect-error - AlertDialogAction accepts children but TypeScript doesn't recognize it from JSX component */}
-            <AlertDialogAction
-              onClick={handleConfirmAction}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Yes, Delete All Students
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* Expanded Image Modal */}
-      {expandedImage && (
-        <div
-          className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4"
-          onClick={() => setExpandedImage(null)}
+  {/* Confirmation Dialog */ }
+  <AlertDialog
+    open={confirmDialog.open}
+    onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+  >
+    {/* @ts-expect-error - AlertDialogContent accepts children but TypeScript doesn't recognize it from JSX component */}
+    <AlertDialogContent>
+      {/* @ts-expect-error - AlertDialogHeader accepts children but TypeScript doesn't recognize it from JSX component */}
+      <AlertDialogHeader>
+        {/* @ts-expect-error - AlertDialogTitle accepts children but TypeScript doesn't recognize it from JSX component */}
+        <AlertDialogTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          {confirmDialog.title}
+        </AlertDialogTitle>
+        {/* @ts-expect-error - AlertDialogDescription accepts children but TypeScript doesn't recognize it from JSX component */}
+        <AlertDialogDescription className="pt-2">
+          {confirmDialog.description}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      {/* @ts-expect-error - AlertDialogFooter accepts children but TypeScript doesn't recognize it from JSX component */}
+      <AlertDialogFooter>
+        {/* @ts-expect-error - AlertDialogCancel accepts children but TypeScript doesn't recognize it from JSX component */}
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        {/* @ts-expect-error - AlertDialogAction accepts children but TypeScript doesn't recognize it from JSX component */}
+        <AlertDialogAction
+          onClick={handleConfirmAction}
+          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
         >
-          <div className="relative w-full h-full max-w-7xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4 px-4">
-              <div className="text-white text-sm font-medium truncate max-w-[80%]">
-                {expandedImage.name}
-              </div>
-              <button
-                type="button"
-                onClick={() => setExpandedImage(null)}
-                className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur transition-all flex items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+          Yes, Delete All Students
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 
-            {/* Image Container */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg">
-              <img
-                src={expandedImage.url}
-                alt={expandedImage.name}
-                className="max-w-full max-h-full object-contain rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
+  {/* Expanded Image Modal */ }
+  {
+    expandedImage && (
+      <div
+        className="fixed inset-0 z-[100000] bg-black/95 flex flex-col items-center justify-center p-4"
+        onClick={() => setExpandedImage(null)}
+      >
+        <div className="relative w-full h-full max-w-7xl max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 px-4">
+            <div className="text-white text-sm font-medium truncate max-w-[80%]">
+              {expandedImage.name}
             </div>
+            <button
+              type="button"
+              onClick={() => setExpandedImage(null)}
+              className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur transition-all flex items-center justify-center"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Image Container */}
+          <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg">
+            <img
+              src={expandedImage.url}
+              alt={expandedImage.name}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {/* Camera Modal */}
-      {isCameraOpen && (
-          <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
-            <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
+  {/* Camera Modal */ }
+  {
+    isCameraOpen && (
+      <div className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4">
+        <div className="relative w-full max-w-lg bg-black rounded-2xl overflow-hidden aspect-[3/4] md:aspect-video shadow-2xl border border-white/20">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
 
-              <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+          <div className="absolute bottom-0 inset-x-0 p-6 flex items-center justify-center gap-8 bg-gradient-to-t from-black/80 to-transparent">
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="p-4 rounded-full bg-white/20 hover:bg-white/30 text-white backdrop-blur transition-all"
+            >
+              <X className="h-6 w-6" />
+            </button>
 
-                <button
-                  type="button"
-                  onClick={capturePhoto}
-                  className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
-                >
-                  <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={capturePhoto}
+              className="p-1 rounded-full border-4 border-white/50 hover:border-white transition-all"
+            >
+              <div className="h-16 w-16 bg-white rounded-full hover:scale-95 transition-transform" />
+            </button>
           </div>
-      )}
-    </>,
+        </div>
+      </div>
+    )
+  }
+      </>,
     document.body
-  );
+    );
 }
