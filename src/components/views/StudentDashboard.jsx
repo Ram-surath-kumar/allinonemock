@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Calendar as CalendarIcon, Clock, Award, CheckCircle, Circle, TrendingUp, Info } from "lucide-react";
+import { BookOpen, Calendar as CalendarIcon, Clock, Award, CheckCircle, Circle, TrendingUp, Info, Users, DollarSign, MapPin, UserCheck, LogIn } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { api } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { StudentFeePayment } from "./StudentFeePayment";
+import { toast } from "sonner";
 
 // Fallback mock grades if API returns empty
 const MOCK_GRADES = [
@@ -33,6 +35,10 @@ export function StudentDashboard() {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventParticipants, setEventParticipants] = useState([]);
+  const [loadingEvent, setLoadingEvent] = useState(false);
 
   // new state
   const [grades, setGrades] = useState([]);
@@ -238,10 +244,85 @@ export function StudentDashboard() {
       // Optimistic update
       setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t)));
 
-      await api.updateTask(task.id, { status: newStatus });
+      const response = await api.updateTask(task.id, { status: newStatus });
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      toast.success(`Task marked as ${newStatus}`);
     } catch (error) {
       console.error("Failed to update status", error);
+      // Revert optimistic update
       setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: task.status } : t)));
+      toast.error(error.message || "Failed to update task status");
+    }
+  };
+
+  const loadEventParticipants = async (eventId) => {
+    try {
+      const response = await api.getEventParticipants(eventId);
+      if (response.data) {
+        setEventParticipants(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load participants", error);
+    }
+  };
+
+  const isEventParticipant = (eventId) => {
+    return eventParticipants.some(p => p.student_id === currentUser?.id || p.user_id === currentUser?.id);
+  };
+
+  const isPresenceMarked = (eventId) => {
+    const participant = eventParticipants.find(p => p.student_id === currentUser?.id || p.user_id === currentUser?.id);
+    return participant?.presence_marked || false;
+  };
+
+  const handleJoinEvent = async (event) => {
+    try {
+      setLoadingEvent(true);
+      const joinData = {
+        student_id: currentUser?.id,
+        payment_amount: event.fee || 0
+      };
+
+      const response = await api.joinEvent(event.id, joinData);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast.success("Successfully joined the event!");
+      // Reload participants
+      await loadEventParticipants(event.id);
+      // Update event in list
+      setEvents(events.map(e => 
+        e.id === event.id 
+          ? { ...e, participants: [...(e.participants || []), { student_id: currentUser?.id, student_name: currentUser?.name }] }
+          : e
+      ));
+    } catch (error) {
+      console.error("Failed to join event", error);
+      toast.error(error.message || "Failed to join event");
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
+
+  const handleMarkPresence = async (eventId) => {
+    try {
+      setLoadingEvent(true);
+      const response = await api.markEventPresence(eventId, { student_id: currentUser?.id });
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      toast.success("Presence marked successfully!");
+      // Reload participants
+      await loadEventParticipants(eventId);
+    } catch (error) {
+      console.error("Failed to mark presence", error);
+      toast.error(error.message || "Failed to mark presence");
+    } finally {
+      setLoadingEvent(false);
     }
   };
 
@@ -504,24 +585,167 @@ export function StudentDashboard() {
                 {events.map((event, index) => (
                   <div
                     key={event.id}
-                    className="rounded-lg border border-border p-3 animate-slide-up"
+                    className="rounded-lg border border-border p-3 animate-slide-up hover:shadow-md transition-shadow cursor-pointer"
                     style={{ animationDelay: `${index * 100}ms` }}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setEventDialogOpen(true);
+                      loadEventParticipants(event.id);
+                    }}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <p className="font-medium text-foreground">{event.title}</p>
-                      <Badge variant="secondary" className="text-xs">
-                        {event.date}
+                      <Badge variant={event.type === 'invite' ? 'default' : 'secondary'} className="text-xs">
+                        {event.type === 'invite' ? 'Invite' : 'Info'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {event.time} @ {event.location}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <CalendarIcon className="h-3 w-3" />
+                        {event.date} {event.time}
+                      </p>
+                      {event.location && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {event.location}
+                        </p>
+                      )}
+                      {event.fee && event.fee > 0 && (
+                        <p className="text-sm text-primary flex items-center gap-1 font-medium">
+                          <DollarSign className="h-3 w-3" />
+                          Fee: ₹{event.fee}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <Users className="h-3 w-3" />
+                      {event.participants?.length || 0} participants
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Event Details Dialog */}
+        <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {selectedEvent && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between">
+                    <DialogTitle className="text-xl">{selectedEvent.title}</DialogTitle>
+                    <Badge variant={selectedEvent.type === 'invite' ? 'default' : 'secondary'}>
+                      {selectedEvent.type === 'invite' ? 'Invite Event' : 'Information Event'}
+                    </Badge>
+                  </div>
+                  <DialogDescription className="pt-2">
+                    {selectedEvent.description || 'No description available'}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                  {/* Event Details */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Date & Time</p>
+                        <p className="text-sm font-medium">{selectedEvent.date} {selectedEvent.time}</p>
+                      </div>
+                    </div>
+                    {selectedEvent.location && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Location</p>
+                          <p className="text-sm font-medium">{selectedEvent.location}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedEvent.fee && selectedEvent.fee > 0 && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Fee</p>
+                          <p className="text-sm font-medium">₹{selectedEvent.fee}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Participants</p>
+                        <p className="text-sm font-medium">{eventParticipants.length} joined</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Participant List */}
+                  {eventParticipants.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2">Participants</h4>
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {eventParticipants.map((participant, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                            <span>{participant.student_name || participant.name || 'Unknown'}</span>
+                            {participant.presence_marked && (
+                              <Badge variant="outline" className="text-xs">
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Present
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-4 border-t">
+                    {selectedEvent.type === 'invite' && (
+                      <>
+                        {!isEventParticipant(selectedEvent.id) ? (
+                          <Button
+                            variant="default"
+                            onClick={() => handleJoinEvent(selectedEvent)}
+                            disabled={loadingEvent}
+                            className="flex-1"
+                          >
+                            <LogIn className="h-4 w-4 mr-2" />
+                            {selectedEvent.fee && selectedEvent.fee > 0 ? `Join (₹${selectedEvent.fee})` : 'Join Event'}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleMarkPresence(selectedEvent.id)}
+                            disabled={loadingEvent || isPresenceMarked(selectedEvent.id)}
+                            className="flex-1"
+                          >
+                            <UserCheck className="h-4 w-4 mr-2" />
+                            {isPresenceMarked(selectedEvent.id) ? 'Presence Marked' : 'Mark Presence'}
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {selectedEvent.type === 'information' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleMarkPresence(selectedEvent.id)}
+                        disabled={loadingEvent || isPresenceMarked(selectedEvent.id)}
+                        className="flex-1"
+                      >
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        {isPresenceMarked(selectedEvent.id) ? 'Presence Marked' : 'Mark Presence'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

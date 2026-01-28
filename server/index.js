@@ -37,6 +37,7 @@ import schedulesRouter from './routes/schedules.js';
 import tasksRouter from './routes/tasks.js';
 import eventsRouter from './routes/events.js';
 import aiRouter from './routes/ai.js';
+import chatRouter from './routes/chat.js';
 
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
@@ -132,6 +133,7 @@ app.use('/api/schedules', schedulesRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/chat', chatRouter);
 
 // Future Routes
 // app.use('/api/growth', growthRouter);

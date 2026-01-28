@@ -9,9 +9,10 @@ import { RippleLoader } from "@/components/ui/RippleLoader";
 
 interface DashboardProps {
   onAddUser?: () => void;
+  onNavigate?: (path: string) => void;
 }
 
-function DashboardContent({ onAddUser }: DashboardProps) {
+function DashboardContent({ onAddUser, onNavigate }: DashboardProps) {
   const { currentUser } = useAuth();
   const { t } = useI18n();
   const { loading } = useDashboard();
@@ -37,7 +38,7 @@ function DashboardContent({ onAddUser }: DashboardProps) {
   switch (currentUser.role) {
     case "admin":
     case "vice_head":
-      return <AdminDashboard onAddUser={onAddUser} />;
+      return <AdminDashboard onAddUser={onAddUser} onNavigate={onNavigate} />;
     case "teacher":
     case "librarian":
     case "accountant":
@@ -56,15 +57,15 @@ function DashboardContent({ onAddUser }: DashboardProps) {
         </div>
       );
     default:
-      return <AdminDashboard onAddUser={onAddUser} />;
+      return <AdminDashboard onAddUser={onAddUser} onNavigate={onNavigate} />;
   }
 }
 
-export function Dashboard({ onAddUser }: DashboardProps) {
+export function Dashboard({ onAddUser, onNavigate }: DashboardProps) {
   // Wrap in DashboardProvider to load data only when dashboard is displayed
   return (
     <DashboardProvider>
-      <DashboardContent onAddUser={onAddUser} />
+      <DashboardContent onAddUser={onAddUser} onNavigate={onNavigate} />
     </DashboardProvider>
   );
 }

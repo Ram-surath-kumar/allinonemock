@@ -1024,6 +1024,48 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Chat Messaging
+  async getChatMessages(userId: string, otherUserId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
+  }
+
+  async sendChatMessage(data: {
+    sender_id: string;
+    receiver_id: string;
+    content: string;
+    type: "text" | "image" | "file";
+  }): Promise<ApiResponse<any>> {
+    return this.request("/chat/messages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async markMessagesAsRead(userId: string, otherUserId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/messages/read`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, other_user_id: otherUserId }),
+    });
+  }
+
+  // Calling
+  async initiateCall(data: {
+    caller_id: string;
+    receiver_id: string;
+    type: "audio" | "video";
+  }): Promise<ApiResponse<any>> {
+    return this.request("/chat/calls", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async endCall(callId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/calls/${callId}/end`, {
+      method: "PUT",
+    });
+  }
   async getEvents(params?: any): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params) {
@@ -1039,6 +1081,43 @@ class ApiClient {
     return this.request("/events", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  async joinEvent(eventId: string, data: { student_id: string; payment_amount?: number }): Promise<ApiResponse<any>> {
+    return this.request(`/events/${eventId}/join`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async markEventPresence(eventId: string, data: { student_id: string }): Promise<ApiResponse<any>> {
+    return this.request(`/events/${eventId}/presence`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getEventParticipants(eventId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/events/${eventId}/participants`);
+  }
+
+  async updateEvent(id: string, data: any): Promise<ApiResponse<any>> {
+    return this.request(`/events/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEvent(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/events/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async deleteTask(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/tasks/${id}`, {
+      method: "DELETE",
     });
   }
 

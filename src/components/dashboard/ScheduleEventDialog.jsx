@@ -51,6 +51,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
+  type: z.enum(["invite", "information"], {
+    required_error: "Event type is required",
+  }),
+  fee: z.number().min(0).optional().default(0),
   department_id: z.string().optional(),
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required"),
@@ -83,6 +87,8 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      type: "information",
+      fee: 0,
       department_id: "",
       date: "",
       time: "",
@@ -107,6 +113,8 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
       loadEvents();
       form.reset({
         title: "",
+        type: "information",
+        fee: 0,
         department_id: "",
         date: "",
         time: "",
@@ -223,6 +231,56 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
 
                 <FormField
                   control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Type *</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select event type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="information">Information Event</SelectItem>
+                          <SelectItem value="invite">Invite Event</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Information: Students can mark presence. Invite: Students must join to participate.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("type") === "invite" && (
+                  <FormField
+                    control={form.control}
+                    name="fee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Registration Fee (₹)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            value={field.value || 0}
+                          />
+                        </FormControl>
+                        <FormDescription>Enter 0 if the event is free.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
                   name="recipient_roles"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
@@ -283,11 +341,11 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                           </Command>
                         </PopoverContent>
                       </Popover>
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-2">
                         {field.value?.map((roleId) => {
                           const role = rolesList.find((r) => r.id === roleId);
                           return role ? (
-                            <Badge key={roleId} variant="secondary" className="mr-1">
+                            <Badge key={roleId} variant="secondary" className="relative z-0">
                               {role.label}
                             </Badge>
                           ) : null;

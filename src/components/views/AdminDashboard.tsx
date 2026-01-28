@@ -47,7 +47,7 @@ interface AdminDashboardProps {
   onAddUser: () => void;
 }
 
-export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
+export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & { onNavigate?: (path: string) => void }) {
   const { currentUser } = useAuth();
   const { t } = useI18n();
   const { dashboardData, loading: dashboardLoading, refreshDashboard } = useDashboard();
@@ -354,7 +354,7 @@ export function AdminDashboard({ onAddUser }: AdminDashboardProps) {
       </div>
 
       {/* Quick Actions & AI Actions - Compact */}
-      <QuickActions onAddUser={onAddUser} onAssignTask={handleOpenTaskDialog} />
+      <QuickActions onAddUser={onAddUser} onAssignTask={handleOpenTaskDialog} onNavigate={onNavigate} />
 
       {/* Analytics Section */}
       <AnalyticsSection data={dashboardData?.charts} />

@@ -44,6 +44,9 @@ const AppContent = () => {
       <Route path="/admin/admissions" element={<AdmissionAdmin />} />
 
       {/* Main Sidebar Routes */}
+      <Route path="/chat" element={<Index />} />
+      <Route path="/events" element={<Index />} />
+      <Route path="/tasks" element={<Index />} />
       <Route path="/users" element={<Index />} />
       <Route path="/students" element={<Index />} />
       <Route path="/attendance" element={<Index />} />
@@ -65,6 +68,7 @@ const AppContent = () => {
       <Route path="/student/*" element={<Index />} />
 
       <Route path="/:orgName/:userId" element={<Index />} />
+      <Route path="/:orgName/:userId/chat/:chatUserId" element={<Index />} />
       <Route path="/:orgName/:userId/:tab" element={<Index />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

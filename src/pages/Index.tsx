@@ -10,6 +10,9 @@ import { ROLE_LABELS } from "@/types/erp";
 const Dashboard = lazy(() =>
   import("@/pages/Dashboard").then((module) => ({ default: module.Dashboard }))
 );
+const Chat = lazy(() =>
+  import("@/pages/Chat").then((module) => ({ default: module.Chat }))
+);
 const UserManagement = lazy(() =>
   import("@/pages/UserManagement").then((module) => ({ default: module.UserManagement }))
 );
@@ -65,6 +68,12 @@ const Facilities = lazy(() =>
 const Transportation = lazy(() =>
   import("@/pages/Transportation").then((module) => ({ default: module.default }))
 );
+const Events = lazy(() =>
+  import("@/pages/Events").then((module) => ({ default: module.Events }))
+);
+const Tasks = lazy(() =>
+  import("@/pages/Tasks").then((module) => ({ default: module.Tasks }))
+);
 
 // Import AcademicGovernance
 const AcademicGovernance = lazy(() =>
@@ -87,7 +96,7 @@ const PageLoader = () => (
 
 function AppContent() {
   const { currentUser, login, loading } = useAuth();
-  const { orgName, userId, tab } = useParams();
+  const { orgName, userId, tab, chatUserId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
@@ -96,6 +105,10 @@ function AppContent() {
   // Map tab names to paths
   const tabToPath = {
     dashboard: "/",
+    chat: "/chat",
+    "chat/:userId": "/chat/:userId",
+    events: "/events",
+    tasks: "/tasks",
     users: "/users",
     students: "/students",
     attendance: "/attendance",
@@ -120,6 +133,9 @@ function AppContent() {
 
   const pathToTab = {
     "/": "dashboard",
+    "/chat": "chat",
+    "/events": "events",
+    "/tasks": "tasks",
     "/users": "users",
     "/students": "students",
     "/attendance": "attendance",
@@ -152,7 +168,7 @@ function AppContent() {
             // Load user by org name and user_id if URL params don't match current user
             if (
               currentUser.organization?.org_name !== orgName ||
-              currentUser.user_id !== userIdNum
+              String(currentUser.user_id) !== String(userIdNum)
             ) {
               login("", orgName, userIdNum);
             }
@@ -173,6 +189,11 @@ function AppContent() {
   useEffect(() => {
     if (!currentUser?.organization || !currentUser.user_id) return;
 
+    // Don't redirect if we're on a chat URL with userId
+    if (chatUserId || (tab && tab.startsWith('chat/'))) {
+      return;
+    }
+
     const currentTab = tab || pathToTab[location.pathname] || "dashboard";
     const expectedPath = `/${currentUser.organization.org_name}/${currentUser.user_id}/${currentTab}`;
 
@@ -182,7 +203,7 @@ function AppContent() {
       orgName &&
       userId &&
       (orgName !== currentUser.organization.org_name ||
-        parseInt(userId, 10) !== currentUser.user_id);
+        String(parseInt(userId, 10)) !== String(currentUser.user_id));
 
     // If we are switching user via URL, DO NOT redirect back to old user.
     if (isUrlSwitchingUser) {
@@ -192,12 +213,14 @@ function AppContent() {
     // Only navigate if:
     // 1. Current path doesn't match expected path
     // 2. Current path is not already a valid path for this user (prevents loops)
+    // 3. Current path is not a chat with userId (chat/userId pattern)
     const isOnUserPath = location.pathname.startsWith(
       `/${currentUser.organization.org_name}/${currentUser.user_id}/`
     );
     const pathMatches = location.pathname === expectedPath;
+    const isChatWithUserId = location.pathname.match(/\/chat\/[^/]+$/);
 
-    if (!pathMatches && !isOnUserPath) {
+    if (!pathMatches && !isOnUserPath && !isChatWithUserId) {
       navigate(expectedPath, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -230,8 +253,17 @@ function AppContent() {
 
   // Get current path from URL
   const getCurrentPath = () => {
+    // If we have chatUserId in URL params, we're on a chat page
+    if (chatUserId) {
+      return "/chat";
+    }
+    
     // If we have a tab parameter, use it
     if (tab) {
+      // Check if it's a chat with userId pattern (chat/userId)
+      if (tab.startsWith('chat/')) {
+        return "/chat";
+      }
       // Check if it's a direct path mapping
       if (tabToPath[tab]) {
         return tabToPath[tab];
@@ -277,6 +309,12 @@ function AppContent() {
     switch (currentPath) {
       case "/":
         return "Dashboard";
+      case "/chat":
+        return "Chat";
+      case "/events":
+        return "Events";
+      case "/tasks":
+        return "Tasks";
       case "/users":
         return "User Management";
       case "/students":
@@ -333,7 +371,13 @@ function AppContent() {
       case "/":
         return (
           <Suspense fallback={<PageLoader />}>
-            <Dashboard onAddUser={handleOpenAddUserDialog} />
+            <Dashboard onAddUser={handleOpenAddUserDialog} onNavigate={handleNavigate} />
+          </Suspense>
+        );
+      case "/chat":
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <Chat onNavigate={handleNavigate} />
           </Suspense>
         );
       case "/users":

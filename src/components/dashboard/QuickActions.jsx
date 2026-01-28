@@ -7,15 +7,12 @@ import {
   Sparkles,
   TrendingUp,
   DollarSign,
-  Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/lib/i18n";
-import { createEventScheduledActivity } from "@/services/activities";
-import { toast } from "sonner";
 import { SendNoticeDialog } from "@/components/notices/SendNoticeDialog";
 import { ScheduleEventDialog } from "@/components/dashboard/ScheduleEventDialog";
+import { AssignTaskDialog } from "@/components/dashboard/AssignTaskDialog";
 import { cn } from "@/lib/utils";
 import { callGeminiAnalytics } from "@/services/gemini";
 import {
@@ -25,10 +22,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { RippleLoader } from "@/components/ui/RippleLoader";
 
-export function QuickActions({ onAddUser, onAssignTask }) {
+export function QuickActions({ onAddUser, onAssignTask: _onAssignTask, onNavigate: _onNavigate }) {
   const { hasPermission } = useAuth();
   const { t } = useI18n();
 
@@ -77,6 +73,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
   ];
   const [sendNoticeDialogOpen, setSendNoticeDialogOpen] = useState(false);
   const [scheduleEventDialogOpen, setScheduleEventDialogOpen] = useState(false);
+  const [assignTaskDialogOpen, setAssignTaskDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiActionType, setAiActionType] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -172,7 +169,7 @@ export function QuickActions({ onAddUser, onAssignTask }) {
     } else if (action.label === t("dashboard.sendNotice")) {
       handleSendNotice();
     } else if (action.label === t("dashboard.assignTask")) {
-      onAssignTask?.();
+      setAssignTaskDialogOpen(true);
     } else {
       action.onClick?.();
     }
@@ -296,11 +293,8 @@ export function QuickActions({ onAddUser, onAssignTask }) {
       </Dialog>
 
       <SendNoticeDialog open={sendNoticeDialogOpen} onOpenChange={setSendNoticeDialogOpen} />
-
-      <ScheduleEventDialog
-        open={scheduleEventDialogOpen}
-        onOpenChange={setScheduleEventDialogOpen}
-      />
+      <ScheduleEventDialog open={scheduleEventDialogOpen} onOpenChange={setScheduleEventDialogOpen} />
+      <AssignTaskDialog open={assignTaskDialogOpen} onOpenChange={setAssignTaskDialogOpen} />
     </div>
   );
 }

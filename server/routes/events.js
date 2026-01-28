@@ -76,6 +76,9 @@ router.post('/', async (req, res) => {
 
     const newEvent = {
         id: Date.now().toString(),
+        type: req.body.type || 'information', // 'invite' or 'information'
+        fee: req.body.fee || 0,
+        participants: [],
         ...req.body,
         created_at: new Date().toISOString()
     };
@@ -133,6 +136,149 @@ router.post('/', async (req, res) => {
     }
 
     res.json({ data: newEvent, error: null });
+});
+
+// Join an event (for invite type events)
+router.post('/:id/join', (req, res) => {
+    const { id } = req.params;
+    const { student_id, payment_amount } = req.body;
+
+    const events = readData();
+    const eventIndex = events.findIndex(e => e.id === id);
+
+    if (eventIndex === -1) {
+        return res.status(404).json({ data: null, error: 'Event not found' });
+    }
+
+    const event = events[eventIndex];
+
+    // Check if event is invite type
+    if (event.type !== 'invite') {
+        return res.status(400).json({ data: null, error: 'This event does not require joining' });
+    }
+
+    // Check if already joined
+    const existingParticipant = event.participants?.find(p => p.student_id === student_id);
+    if (existingParticipant) {
+        return res.status(400).json({ data: null, error: 'Already joined this event' });
+    }
+
+    // Add participant
+    if (!event.participants) {
+        event.participants = [];
+    }
+
+    event.participants.push({
+        student_id,
+        joined_at: new Date().toISOString(),
+        payment_amount: payment_amount || 0,
+        payment_status: payment_amount > 0 ? 'pending' : 'not_required',
+        presence_marked: false
+    });
+
+    events[eventIndex] = event;
+    writeData(events);
+
+    res.json({ data: { success: true, event }, error: null });
+});
+
+// Mark presence for an event
+router.post('/:id/presence', (req, res) => {
+    const { id } = req.params;
+    const { student_id } = req.body;
+
+    const events = readData();
+    const eventIndex = events.findIndex(e => e.id === id);
+
+    if (eventIndex === -1) {
+        return res.status(404).json({ data: null, error: 'Event not found' });
+    }
+
+    const event = events[eventIndex];
+
+    // For invite events, check if student has joined
+    if (event.type === 'invite') {
+        const participant = event.participants?.find(p => p.student_id === student_id);
+        if (!participant) {
+            return res.status(400).json({ data: null, error: 'You must join the event first' });
+        }
+        if (participant.presence_marked) {
+            return res.status(400).json({ data: null, error: 'Presence already marked' });
+        }
+        participant.presence_marked = true;
+        participant.presence_marked_at = new Date().toISOString();
+    } else {
+        // For information events, add participant if not exists
+        if (!event.participants) {
+            event.participants = [];
+        }
+        let participant = event.participants.find(p => p.student_id === student_id);
+        if (!participant) {
+            participant = {
+                student_id,
+                joined_at: new Date().toISOString(),
+                presence_marked: true,
+                presence_marked_at: new Date().toISOString()
+            };
+            event.participants.push(participant);
+        } else {
+            if (participant.presence_marked) {
+                return res.status(400).json({ data: null, error: 'Presence already marked' });
+            }
+            participant.presence_marked = true;
+            participant.presence_marked_at = new Date().toISOString();
+        }
+    }
+
+    events[eventIndex] = event;
+    writeData(events);
+
+    res.json({ data: { success: true, event }, error: null });
+});
+
+// Get event participants
+router.get('/:id/participants', (req, res) => {
+    const { id } = req.params;
+    const events = readData();
+    const event = events.find(e => e.id === id);
+
+    if (!event) {
+        return res.status(404).json({ data: null, error: 'Event not found' });
+    }
+
+    res.json({ data: event.participants || [], error: null });
+});
+
+// Update event
+router.put('/:id', (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const events = readData();
+    const index = events.findIndex(e => e.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ data: null, error: 'Event not found' });
+    }
+
+    events[index] = { ...events[index], ...updates, updated_at: new Date().toISOString() };
+    writeData(events);
+
+    res.json({ data: events[index], error: null });
+});
+
+// Delete event
+router.delete('/:id', (req, res) => {
+    const { id } = req.params;
+    const events = readData();
+    const filteredEvents = events.filter(e => e.id !== id);
+
+    if (events.length === filteredEvents.length) {
+        return res.status(404).json({ data: null, error: 'Event not found' });
+    }
+
+    writeData(filteredEvents);
+    res.json({ data: { success: true }, error: null });
 });
 
 export default router;

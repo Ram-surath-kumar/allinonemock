@@ -19,6 +19,7 @@ import {
   Library,
   Settings as SettingsIcon,
   Bus,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,16 +66,16 @@ const studentNavItems: NavItem[] = [
 interface SidebarProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  collapsed?: boolean;
 }
 
-export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
+export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarProps) {
   const { currentUser, login, logout, hasPermission } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersDropdownOpen, setUsersDropdownOpen] = useState(false);
-  const [collapsed] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,6 +177,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
     if (currentUser?.role === 'student') {
       return [
         { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
+        { icon: MessageSquare, label: "Chat", href: "/chat" },
         { icon: FileText, label: "Examination and Results", href: "/student/examinations", roles: ["student"] },
         { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
         { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
@@ -184,6 +186,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
 
     return [
       { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/" },
+      { icon: MessageSquare, label: "Chat", href: "/chat" },
       {
         icon: Users,
         label: t("sidebar.userManagement"),

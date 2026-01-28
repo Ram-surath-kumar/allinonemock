@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1769622487564",
+    "caller_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "cd13a89a-7c66-4502-b6af-a790f8cd2c8d",
+    "type": "audio",
+    "status": "initiated",
+    "created_at": "2026-01-28T17:48:07.564Z",
+    "ended_at": null
+  },
+  {
+    "id": "1769622495999",
+    "caller_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "cd13a89a-7c66-4502-b6af-a790f8cd2c8d",
+    "type": "audio",
+    "status": "initiated",
+    "created_at": "2026-01-28T17:48:15.999Z",
+    "ended_at": null
+  }
+]

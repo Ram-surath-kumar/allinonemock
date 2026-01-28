@@ -1,19 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AIAssistantChat } from "@/components/ai/AIAssistantChat";
+import { cn } from "@/lib/utils";
 
 export function AppLayout({ children, title, subtitle, currentPath, onNavigate }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isMobile = useIsMobile();
+  const isChatPage = currentPath === "/chat";
+
+  // Auto-collapse sidebar when on chat page
+  useEffect(() => {
+    if (isChatPage) {
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(false);
+    }
+  }, [isChatPage]);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex h-screen flex-col text-sidebar-foreground">
-        <Sidebar currentPath={currentPath} onNavigate={onNavigate} />
+      <aside className={cn(
+        "hidden md:flex h-screen flex-col text-sidebar-foreground transition-all duration-300",
+        sidebarCollapsed ? "w-16" : "w-64"
+      )}>
+        <Sidebar currentPath={currentPath} onNavigate={onNavigate} collapsed={sidebarCollapsed} />
       </aside>
 
       {/* Mobile Sidebar Sheet */}
