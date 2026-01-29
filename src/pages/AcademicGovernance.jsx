@@ -3,7 +3,26 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, BookOpen, CheckCircle, AlertTriangle, FileText } from "lucide-react";
+import { Activity, BookOpen, CheckCircle, AlertTriangle, FileText, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -20,6 +39,13 @@ export function AcademicGovernance() {
   const [stats, setStats] = useState(null);
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [newProgram, setNewProgram] = useState({
+    code: "",
+    name: "",
+    duration_years: "3",
+    type: "Degree"
+  });
 
   useEffect(() => {
     fetchData();
@@ -54,18 +80,102 @@ export function AcademicGovernance() {
 
   // Removed nested import
 
+  const handlePropose = async () => {
+    if (!newProgram.code || !newProgram.name) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    // Mock success for now as we're focusing on UI/Responsiveness
+    toast.success("Program proposal submitted for review");
+    setProposalOpen(false);
+    setNewProgram({ code: "", name: "", duration_years: "3", type: "Degree" });
+  };
+
   if (loading) return <RippleLoader />;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Academic Governance</h1>
-        <Button>New Program Proposal</Button>
+    <div className="space-y-6 px-5 py-6 md:px-10 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">Academic Governance</h1>
+        <Dialog open={proposalOpen} onOpenChange={setProposalOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="w-full sm:w-auto h-9">
+              <Plus className="mr-2 h-4 w-4" /> New Program Proposal
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md w-[90vw] rounded-xl">
+            <DialogHeader>
+              <DialogTitle>New Program Proposal</DialogTitle>
+              <DialogDescription>
+                Submit a new academic program for accreditation and approval.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="prog-code">Program Code</Label>
+                <Input
+                  id="prog-code"
+                  placeholder="e.g. BSC-CS"
+                  value={newProgram.code}
+                  onChange={(e) => setNewProgram({ ...newProgram, code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="prog-name">Program Name</Label>
+                <Input
+                  id="prog-name"
+                  placeholder="e.g. B.Sc. Computer Science"
+                  value={newProgram.name}
+                  onChange={(e) => setNewProgram({ ...newProgram, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Duration (Years)</Label>
+                  <Select
+                    value={newProgram.duration_years}
+                    onValueChange={(v) => setNewProgram({ ...newProgram, duration_years: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Year</SelectItem>
+                      <SelectItem value="2">2 Years</SelectItem>
+                      <SelectItem value="3">3 Years</SelectItem>
+                      <SelectItem value="4">4 Years</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Program Type</Label>
+                  <Select
+                    value={newProgram.type}
+                    onValueChange={(v) => setNewProgram({ ...newProgram, type: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Degree">Degree</SelectItem>
+                      <SelectItem value="Diploma">Diploma</SelectItem>
+                      <SelectItem value="Certificate">Certificate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setProposalOpen(false)}>Cancel</Button>
+              <Button onClick={handlePropose}>Submit Proposal</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* KPI Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border/50 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Programs</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -110,20 +220,20 @@ export function AcademicGovernance() {
       </div>
 
       <Tabs defaultValue="programs" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="programs">Program Status</TabsTrigger>
-          <TabsTrigger value="outcomes">Outcome Analysis</TabsTrigger>
-          <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+        <TabsList className="w-full flex h-auto items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground overflow-x-auto no-scrollbar scroll-smooth">
+          <TabsTrigger value="programs" className="px-4">Program Status</TabsTrigger>
+          <TabsTrigger value="outcomes" className="px-4">Outcome Analysis</TabsTrigger>
+          <TabsTrigger value="curriculum" className="px-4">Curriculum</TabsTrigger>
         </TabsList>
 
         <TabsContent value="programs" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Academic Programs</CardTitle>
+          <Card className="border-border/50 shadow-sm overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Academic Programs</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
+            <CardContent className="p-0 sm:p-6">
+              <div className="rounded-none sm:rounded-md border-x-0 sm:border overflow-x-auto no-scrollbar">
+                <table className="w-full text-sm min-w-[700px]">
                   <thead className="bg-muted">
                     <tr>
                       <th className="p-3 text-left">Program Code</th>

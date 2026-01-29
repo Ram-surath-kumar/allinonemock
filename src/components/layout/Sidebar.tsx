@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/services/api";
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface NavItem {
@@ -358,7 +358,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-2 overflow-y-auto", collapsed ? "px-1.5 py-3" : "p-3")}>
+      <nav className={cn("flex-1 space-y-1.5 overflow-y-auto", collapsed ? "px-1.5 py-3" : "p-3")}>
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPath === item.href;
@@ -371,7 +371,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
                 "group relative flex items-center rounded-xl text-sm font-medium",
                 "transition-all duration-200",
                 "hover:scale-[1.02] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
-                collapsed ? "justify-center w-full py-3" : "justify-start w-full gap-4 px-4 py-3.5",
+                "active:scale-95 transition-all duration-200",
+                collapsed ? "justify-center w-full py-4" : "justify-start w-full gap-4 px-4 py-4",
                 collapsed && isActive ? "px-2.5" : collapsed ? "px-1.5" : "",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
@@ -462,7 +463,6 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
               </div>
             </button>
           </DropdownMenuTrigger>
-          {/* @ts-expect-error - DropdownMenuContent accepts children but TypeScript doesn't recognize it from JSX component */}
           <DropdownMenuContent align="end" className="w-64 glass-modern">
             <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               {t("sidebar.switchRole")}
@@ -477,7 +477,6 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
               </div>
             ) : (
               allUsers.map((user) => (
-                /* @ts-expect-error - DropdownMenuItem accepts children but TypeScript doesn't recognize it from JSX component */
                 <DropdownMenuItem
                   key={user.id}
                   onClick={() => handleUserSwitch(user)}
@@ -500,7 +499,6 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
                 </DropdownMenuItem>
               ))
             )}
-            {/* @ts-expect-error - DropdownMenuItem accepts children but TypeScript doesn't recognize it from JSX component */}
             <DropdownMenuItem onClick={logout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               {t("sidebar.signOut")}

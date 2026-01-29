@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,10 +37,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getActionsForUser, AppAction } from "@/services/action-registry";
 
-export function AIAssistantChat({ onNavigate }) {
+export function AIAssistantChat({ onNavigate, isChatConversation, isChatPage }) {
     const { currentUser, hasPermission } = useAuth();
     const { t } = useI18n();
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [prompt, setPrompt] = useState("");
@@ -137,6 +139,13 @@ export function AIAssistantChat({ onNavigate }) {
             loadData();
         }
     }, [isOpen]);
+
+    // Handle external toggle event
+    useEffect(() => {
+        const handleToggle = () => setIsOpen(prev => !prev);
+        window.addEventListener("toggle-ai-assistant", handleToggle);
+        return () => window.removeEventListener("toggle-ai-assistant", handleToggle);
+    }, []);
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -886,8 +895,8 @@ export function AIAssistantChat({ onNavigate }) {
 
     const content = (
         <>
-            {/* Floating Button - Positioned at bottom-right corner */}
-            {!isOpen && (
+            {/* Floating Button - Positioned at bottom-right corner, hidden on chat page to avoid overlap */}
+            {!isOpen && !isChatPage && (
                 <button
                     type="button"
                     onClick={(e) => {
@@ -908,10 +917,11 @@ export function AIAssistantChat({ onNavigate }) {
                         pointerEvents: "auto",
                         cursor: "pointer",
                         position: "fixed",
-                        bottom: "24px",
-                        right: "24px",
-                        width: "56px",
-                        height: "56px",
+                        bottom: isMobile && isChatConversation ? "auto" : (isMobile ? "120px" : "24px"),
+                        top: isMobile && isChatConversation ? "76px" : "auto",
+                        right: isMobile ? "16px" : "24px",
+                        width: isMobile ? "48px" : "56px",
+                        height: isMobile ? "48px" : "56px",
                     }}
                     aria-label="Open AI Assistant"
                 >
@@ -932,8 +942,14 @@ export function AIAssistantChat({ onNavigate }) {
                         zIndex: 99999,
                         pointerEvents: "auto",
                         position: "fixed",
-                        bottom: "24px",
-                        right: "24px",
+                        bottom: isMobile ? "0px" : "24px",
+                        top: isMobile ? (isMinimized ? "auto" : "80px") : "auto",
+                        right: isMobile ? "0px" : "24px",
+                        left: isMobile ? "0px" : "auto",
+                        width: isMobile ? "100%" : "384px",
+                        height: isMinimized ? (isMobile ? "56px" : "56px") : (isMobile ? "auto" : "600px"),
+                        maxHeight: isMobile ? "calc(100dvh - 80px)" : "600px",
+                        borderRadius: isMobile ? "20px 20px 0 0" : "16px",
                     }}
                     role="dialog"
                     aria-label="AI Assistant Chat"
@@ -969,7 +985,6 @@ export function AIAssistantChat({ onNavigate }) {
                     {!isMinimized && (
                         <>
                             {/* Messages */}
-                            {/* @ts-expect-error - ScrollArea accepts children */}
                             <ScrollArea className="flex-1 p-4">
                                 <div className="space-y-4">
                                     {messages.map((message) => (
@@ -1167,7 +1182,7 @@ export function AIAssistantChat({ onNavigate }) {
                                         value={prompt}
                                         onChange={handleInputChange}
                                         onKeyDown={handleKeyDown}
-                                        placeholder={t("aiAssistant.typeMessage")}
+                                        placeholder={t("aiAssistant.typeMessage") === "aiAssistant.typeMessage" ? "Type a message..." : t("aiAssistant.typeMessage")}
                                         className="rounded-full border-border/50 bg-background/50 focus:bg-background transition-all"
                                         disabled={loading}
                                     />
@@ -1195,25 +1210,18 @@ export function AIAssistantChat({ onNavigate }) {
                 open={confirmDialog.open}
                 onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
             >
-                {/* @ts-expect-error - AlertDialogContent accepts children */}
                 <AlertDialogContent>
-                    {/* @ts-expect-error - AlertDialogHeader accepts children */}
-                    <AlertDialogHeader>
-                        {/* @ts-expect-error - AlertDialogTitle accepts children */}
+                    <AlertDialogHeader className="">
                         <AlertDialogTitle className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 text-destructive" />
                             {confirmDialog.title}
                         </AlertDialogTitle>
-                        {/* @ts-expect-error - AlertDialogDescription accepts children */}
                         <AlertDialogDescription className="pt-2">
                             {confirmDialog.description}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    {/* @ts-expect-error - AlertDialogFooter accepts children */}
-                    <AlertDialogFooter>
-                        {/* @ts-expect-error - AlertDialogCancel accepts children */}
+                    <AlertDialogFooter className="">
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        {/* @ts-expect-error - AlertDialogAction accepts children */}
                         <AlertDialogAction
                             onClick={handleConfirmAction}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

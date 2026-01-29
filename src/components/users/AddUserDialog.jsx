@@ -447,7 +447,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto w-[98vw] sm:w-full p-3 sm:p-6 rounded-2xl sm:rounded-3xl">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
@@ -521,7 +521,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-2 sm:gap-4">
                   <FormField
                     control={form.control}
                     name="role"
@@ -616,11 +616,10 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                         <FormItem>
                           <FormLabel>Departments *</FormLabel>
                           <div
-                            className={`rounded-lg border p-3 min-h-[80px] max-h-[200px] overflow-y-auto ${
-                              form.formState.errors.department_ids
+                            className={`rounded-lg border p-3 min-h-[80px] max-h-[200px] overflow-y-auto ${form.formState.errors.department_ids
                                 ? "border-destructive"
                                 : "border-border"
-                            }`}
+                              }`}
                           >
                             {loadingDepartments ? (
                               <p className="text-sm text-muted-foreground">
@@ -676,7 +675,7 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                                 <h4 className="text-sm font-medium text-foreground mb-3">
                                   {categoryLabels[category]}
                                 </h4>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   {permissions.map((permission) => (
                                     <div key={permission.id} className="flex items-start gap-3">
                                       <Checkbox

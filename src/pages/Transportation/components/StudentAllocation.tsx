@@ -176,23 +176,33 @@ export function StudentAllocation({ onUpdate }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h3 className="text-lg font-semibold">Student Route Allocation</h3>
+                    <h3 className="text-lg font-semibold whitespace-nowrap">Student Route Allocation</h3>
                     <p className="text-sm text-muted-foreground">
                         Assign students to transport routes
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={async () => {
-                        if (!confirm("This will calculate and assign fees to all currently allocated students who have no fee records. Continue?")) return;
-                        const res = await api.syncTransportFees();
-                        if (res.data) toast.success(res.data.message);
-                        else toast.error("Failed to sync fees");
-                    }}>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                        onClick={async () => {
+                            if (!confirm("This will calculate and assign fees to all currently allocated students who have no fee records. Continue?")) return;
+                            const res = await api.syncTransportFees();
+                            if (res.data) toast.success(res.data.message);
+                            else toast.error("Failed to sync fees");
+                        }}
+                    >
                         Sync Fees
                     </Button>
-                    <Button variant="outline" onClick={() => setShowAllocationsDialog(true)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none whitespace-nowrap"
+                        onClick={() => setShowAllocationsDialog(true)}
+                    >
                         <Users className="h-4 w-4 mr-2" />
                         View All Allocations
                     </Button>

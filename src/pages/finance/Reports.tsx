@@ -16,14 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Reports() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-5 py-6 md:px-10 animate-in fade-in duration-500">
       <Tabs defaultValue="collection">
-        <TabsList>
-          <TabsTrigger value="collection">Collection</TabsTrigger>
-          <TabsTrigger value="outstanding">Outstanding</TabsTrigger>
-          <TabsTrigger value="scholarships">Scholarships</TabsTrigger>
-          <TabsTrigger value="financials">Financial Statements</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced Analysis</TabsTrigger>
+        <TabsList className="w-full flex h-auto items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground overflow-x-auto no-scrollbar scroll-smooth">
+          <TabsTrigger value="collection" className="px-4">Collection</TabsTrigger>
+          <TabsTrigger value="outstanding" className="px-4">Outstanding</TabsTrigger>
+          <TabsTrigger value="scholarships" className="px-4">Scholarships</TabsTrigger>
+          <TabsTrigger value="financials" className="px-4 whitespace-nowrap">Financial Statements</TabsTrigger>
+          <TabsTrigger value="advanced" className="px-4 whitespace-nowrap">Advanced Analysis</TabsTrigger>
         </TabsList>
 
         <TabsContent value="collection">
@@ -90,16 +90,16 @@ function CollectionReport() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end gap-4 border p-4 rounded-lg bg-card">
+      <div className="grid grid-cols-1 sm:grid-cols-3 items-end gap-4 border p-5 sm:p-6 rounded-xl bg-card shadow-sm">
         <div className="space-y-2">
           <Label>Start Date</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
         </div>
         <div className="space-y-2">
           <Label>End Date</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
         </div>
-        <Button onClick={loadReport} disabled={loading}>
+        <Button onClick={loadReport} disabled={loading} className="w-full h-9">
           Generate Report
         </Button>
       </div>
@@ -191,7 +191,7 @@ function AdvancedReports() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Cash Flow Analysis</CardTitle>
@@ -255,6 +255,7 @@ function AdvancedReports() {
 }
 
 function OutstandingReport() {
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -309,6 +310,7 @@ function OutstandingReport() {
 }
 
 function ScholarshipReport() {
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -370,7 +372,7 @@ function FinancialStatementReport() {
   const profit = income - expense;
 
   return (
-    <div className="grid grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <Card>
         <CardHeader>
           <CardTitle>Balance Sheet</CardTitle>

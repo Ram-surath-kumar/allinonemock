@@ -66,16 +66,15 @@ export function FeeManagement() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 px-4 py-6 sm:px-6 animate-in fade-in duration-500">
       <Tabs defaultValue="structures">
-        <TabsList>
-          <TabsTrigger value="structures">Fee Structures</TabsTrigger>
-
-          <TabsTrigger value="heads">Fee Heads</TabsTrigger>
-          <TabsTrigger value="scholarships">Scholarships</TabsTrigger>
-          <TabsTrigger value="assignments">Fee Assignments</TabsTrigger>
-          <TabsTrigger value="rules">Assignment Rules</TabsTrigger>
-          <TabsTrigger value="penalties">Penalty Configs</TabsTrigger>
+        <TabsList className="w-full flex h-auto items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground overflow-x-auto no-scrollbar scroll-smooth">
+          <TabsTrigger value="structures" className="px-4">Fee Structures</TabsTrigger>
+          <TabsTrigger value="heads" className="px-4">Fee Heads</TabsTrigger>
+          <TabsTrigger value="scholarships" className="px-4">Scholarships</TabsTrigger>
+          <TabsTrigger value="assignments" className="px-4">Fee Assignments</TabsTrigger>
+          <TabsTrigger value="rules" className="px-4">Assignment Rules</TabsTrigger>
+          <TabsTrigger value="penalties" className="px-4">Penalty Configs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="structures" className="space-y-4">
@@ -135,10 +134,10 @@ function HeadsTab({ heads, refresh }: { heads: any[]; refresh: () => void }) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <CardTitle>Fee Heads</CardTitle>
+          <CardTitle className="text-xl">Fee Heads</CardTitle>
           <CardDescription>Components of fee structure (e.g. Tuition, Lab)</CardDescription>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -265,10 +264,10 @@ function FeeStructuresTab({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <CardTitle>Fee Structures</CardTitle>
+          <CardTitle className="text-xl">Fee Structures</CardTitle>
           <CardDescription>Define fees for batches and categories</CardDescription>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -545,8 +544,8 @@ function AssignmentsTab({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-4">
-          <Button onClick={handleAssign} disabled={loading}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleAssign} disabled={loading} className="w-full sm:w-auto">
             Assign Fee
           </Button>
           <Button
@@ -563,6 +562,7 @@ function AssignmentsTab({
               else toast.error(res.error || "Auto-assignment failed");
             }}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             Auto-Assign Best Match
           </Button>
@@ -571,10 +571,10 @@ function AssignmentsTab({
             variant="destructive"
             onClick={handleBulkAssign}
             disabled={loading || !selectedDepartment}
+            className="w-full sm:w-auto"
           >
             Assign to Department
           </Button>
-
         </div>
       </CardContent>
     </Card >
@@ -643,10 +643,10 @@ function ScholarshipsTab({ scholarships, refresh }: { scholarships: any[]; refre
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <CardTitle>Scholarships & Discounts</CardTitle>
+          <CardTitle className="text-xl">Scholarships & Discounts</CardTitle>
           <CardDescription>Manage scholarships and fee concessions</CardDescription>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

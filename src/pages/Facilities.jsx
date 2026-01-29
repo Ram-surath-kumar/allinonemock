@@ -41,10 +41,10 @@ export default function Facilities() {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-6 px-4 py-6 sm:px-6 animate-in fade-in duration-500">
       {/* Top Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Facilities Management</h1>
             <p className="text-muted-foreground text-sm">
@@ -52,12 +52,12 @@ export default function Facilities() {
             </p>
           </div>
 
-          <div className="flex bg-muted/50 p-1 rounded-lg border">
+          <div className="flex bg-muted/50 p-1 rounded-lg border w-fit">
             <Button
               variant={view === "infrastructure" ? "secondary" : "ghost"}
               size="sm"
               onClick={() => setView("infrastructure")}
-              className="rounded-md"
+              className="rounded-md h-8"
             >
               <Building className="h-4 w-4 mr-2" />
               Infrastructure
@@ -66,23 +66,23 @@ export default function Facilities() {
               variant={view === "vehicles" ? "secondary" : "ghost"}
               size="sm"
               onClick={() => setView("vehicles")}
-              className="rounded-md"
+              className="rounded-md h-8"
             >
               <Bus className="h-4 w-4 mr-2" />
               Vehicles
             </Button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => fetchHierarchy(false)}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchHierarchy(false)} className="h-8 flex-1 sm:flex-none">
             Refresh
           </Button>
           {view === "infrastructure" && (
             <>
-              <Button size="sm" variant="secondary" onClick={() => setIsAddRoomOpen(true)}>
+              <Button size="sm" variant="secondary" onClick={() => setIsAddRoomOpen(true)} className="h-8 flex-1 sm:flex-none">
                 <Plus className="h-4 w-4 mr-2" /> Add Room
               </Button>
-              <Button size="sm" onClick={() => setIsAddBuildingOpen(true)}>
+              <Button size="sm" onClick={() => setIsAddBuildingOpen(true)} className="h-8 flex-1 sm:flex-none">
                 <Plus className="h-4 w-4 mr-2" /> Add Building
               </Button>
             </>
@@ -92,15 +92,15 @@ export default function Facilities() {
 
       {/* Content Logic */}
       {view === "infrastructure" ? (
-        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-12rem)] min-h-[500px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[500px]">
           {/* Left Sidebar - Tree View */}
-          <Card className="col-span-3 h-full overflow-hidden flex flex-col">
+          <Card className="lg:col-span-3 flex flex-col border-border/50 shadow-sm overflow-hidden min-h-[400px]">
             <div className="p-4 border-b bg-muted/40">
               <h3 className="font-semibold flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" /> Structure
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
               <FacilitiesTree
                 data={hierarchy}
                 onSelectRoom={setSelectedRoomId}
@@ -110,7 +110,7 @@ export default function Facilities() {
           </Card>
 
           {/* Right Content - Room Details or Dashboard */}
-          <Card className="col-span-9 h-full overflow-hidden flex flex-col shadow-sm border-border/50">
+          <Card className="lg:col-span-9 flex flex-col shadow-md border-border/50 overflow-hidden min-h-[500px]">
             {selectedRoomId ? (
               <div className="flex-1 overflow-y-auto p-6">
                 <RoomForm

@@ -48,7 +48,7 @@ export default function Transportation() {
     };
 
     return (
-        <div className="h-[calc(100vh-2rem)] flex flex-col gap-4 p-6">
+        <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6 sm:px-6 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -111,38 +111,47 @@ export default function Transportation() {
             </div>
 
             {/* Main Content Tabs */}
-            <Card className="flex-1 overflow-hidden">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                    <CardHeader className="pb-3 border-b">
-                        <TabsList className="bg-muted/50">
-                            <TabsTrigger value="routes" className="flex items-center gap-2">
-                                <Route className="h-4 w-4" />
+            <Card className="border-border/50">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
+                    <div className="border-b px-6 py-1 bg-muted/30 overflow-x-auto no-scrollbar">
+                        <TabsList className="bg-transparent border-none p-0 h-auto gap-6 whitespace-nowrap">
+                            <TabsTrigger
+                                value="routes"
+                                className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-3 font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none transition-all"
+                            >
+                                <Route className="h-4 w-4 mr-2" />
                                 Route Management
                             </TabsTrigger>
-                            <TabsTrigger value="vehicles" className="flex items-center gap-2">
-                                <Bus className="h-4 w-4" />
+                            <TabsTrigger
+                                value="vehicles"
+                                className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-3 font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none transition-all"
+                            >
+                                <Bus className="h-4 w-4 mr-2" />
                                 Vehicle Assignment
                             </TabsTrigger>
-                            <TabsTrigger value="students" className="flex items-center gap-2">
-                                <Users className="h-4 w-4" />
+                            <TabsTrigger
+                                value="students"
+                                className="relative h-12 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-3 font-semibold data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none transition-all"
+                            >
+                                <Users className="h-4 w-4 mr-2" />
                                 Student Allocation
                             </TabsTrigger>
                         </TabsList>
-                    </CardHeader>
+                    </div>
 
-                    <CardContent className="flex-1 overflow-auto pt-6">
-                        <TabsContent value="routes" className="mt-0 h-full">
+                    <div className="p-6">
+                        <TabsContent value="routes" className="mt-0 focus-visible:outline-none">
                             <RouteManagement onUpdate={fetchStats} />
                         </TabsContent>
 
-                        <TabsContent value="vehicles" className="mt-0 h-full">
+                        <TabsContent value="vehicles" className="mt-0 focus-visible:outline-none">
                             <VehicleAssignment onUpdate={fetchStats} />
                         </TabsContent>
 
-                        <TabsContent value="students" className="mt-0 h-full">
+                        <TabsContent value="students" className="mt-0 focus-visible:outline-none">
                             <StudentAllocation onUpdate={fetchStats} />
                         </TabsContent>
-                    </CardContent>
+                    </div>
                 </Tabs>
             </Card>
         </div>

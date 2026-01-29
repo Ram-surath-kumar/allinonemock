@@ -485,14 +485,14 @@ export const Settings = () => {
   const isStudent = currentUser?.role === "student";
 
   return (
-    <div className="container mx-auto max-w-5xl py-6 space-y-8 animate-fade-in">
+    <div className="container mx-auto max-w-5xl px-4 py-6 space-y-8 animate-fade-in sm:px-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t("settings.title")}</h1>
         <p className="text-muted-foreground mt-2">{t("settings.manageAccountSettings")}</p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="min-w-0 w-auto inline-flex h-9 items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground">
+        <TabsList className="w-full flex h-auto items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground overflow-x-auto no-scrollbar scroll-smooth">
           <TabsTrigger value="profile" className="flex items-center gap-2 px-4">
             <User className="h-4 w-4" />
             {t("settings.profile")}

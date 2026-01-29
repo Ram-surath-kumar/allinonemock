@@ -70,14 +70,14 @@ export function MISSubmission() {
   if (loading) return <div className="p-8">{t("mis.loading")}</div>;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">{t("mis.title")}</h1>
+    <div className="space-y-6 px-5 py-6 md:px-10 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">{t("mis.title")}</h1>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Generator Card */}
-        <Card>
+        <Card className="border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>{t("mis.generateNewReport")}</CardTitle>
           </CardHeader>
@@ -120,7 +120,7 @@ export function MISSubmission() {
         </Card>
 
         {/* Recent Activity / Stats */}
-        <Card>
+        <Card className="border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>{t("mis.submissionStatus")}</CardTitle>
           </CardHeader>
@@ -146,13 +146,13 @@ export function MISSubmission() {
       </div>
 
       {/* History Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("mis.reportHistory")}</CardTitle>
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">{t("mis.reportHistory")}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <table className="w-full text-sm">
+        <CardContent className="p-0 sm:p-6">
+          <div className="rounded-none sm:rounded-md border-x-0 sm:border overflow-x-auto no-scrollbar">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-muted">
                 <tr>
                   <th className="p-3 text-left">{t("mis.reportType")}</th>

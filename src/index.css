@@ -144,10 +144,19 @@
 
   html {
     scroll-behavior: smooth;
+    font-size: 16px;
+    /* Base size */
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+      /* Slightly smaller base for mobile */
+    }
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-weight: 400;
     line-height: 1.5;
@@ -156,6 +165,7 @@
       color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    width: 100vw;
   }
 
   /* Focus visible styles for accessibility */
@@ -179,6 +189,58 @@
 }
 
 @layer utilities {
+
+  /* Fluid Spacing Utility */
+  .fluid-p {
+    padding: clamp(1rem, 5vw, 2.5rem);
+  }
+
+  .fluid-m {
+    margin: clamp(1rem, 5vw, 2.5rem);
+  }
+
+  .fluid-gap {
+    gap: clamp(0.75rem, 3vw, 1.5rem);
+  }
+
+  /* Responsive Grid Utility */
+  .responsive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    .responsive-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Form Container Utility */
+  .form-container {
+    width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Table Wrapper for Horizontal Scroll */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-bottom: 1rem;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
   /* Enhanced animations */
   .animate-fade-in {
@@ -464,6 +526,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -473,6 +536,7 @@
   from {
     transform: rotate(360deg);
   }
+
   to {
     transform: rotate(0deg);
   }
@@ -483,10 +547,12 @@
     transform: scale(1);
     opacity: 0.6;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 0.3;
   }
+
   100% {
     transform: scale(2);
     opacity: 0;
@@ -498,10 +564,12 @@
     transform: scale(1);
     opacity: 0.5;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 0.25;
   }
+
   100% {
     transform: scale(2);
     opacity: 0;
@@ -513,10 +581,12 @@
     transform: scale(1);
     opacity: 0.4;
   }
+
   50% {
     transform: scale(1.5);
     opacity: 0.2;
   }
+
   100% {
     transform: scale(2);
     opacity: 0;
@@ -571,6 +641,21 @@
     outline-offset: 2px;
     border-color: hsl(var(--ring));
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+  }
+
+  /* Touch-friendly targets */
+  button,
+  [role="button"],
+  input,
+  select {
+    min-height: 44px;
+    /* iOS standard for touch targets */
+  }
+
+  @media (pointer: coarse) {
+    .touch-target {
+      padding: 0.75rem 1rem;
+    }
   }
 }
 

@@ -456,10 +456,10 @@ export function AdmissionPortal() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="bg-muted/20 border">
-                    <TabsTrigger value="applications">Applications</TabsTrigger>
-                    <TabsTrigger value="exams">Entrance Exams</TabsTrigger>
-                    <TabsTrigger value="merit">Merit Lists</TabsTrigger>
+                <TabsList className="flex w-full overflow-x-auto justify-start h-auto p-1 bg-muted/20 border no-scrollbar">
+                    <TabsTrigger value="applications" className="flex-shrink-0">Applications</TabsTrigger>
+                    <TabsTrigger value="exams" className="flex-shrink-0">Entrance Exams</TabsTrigger>
+                    <TabsTrigger value="merit" className="flex-shrink-0">Merit Lists</TabsTrigger>
                 </TabsList>
 
                 {/* TAB 1: APPLICATIONS (Existing View) */}
@@ -484,12 +484,12 @@ export function AdmissionPortal() {
                         </Card>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-250px)] h-auto">
                         {/* List */}
-                        <Card className="lg:col-span-1 border-muted h-full flex flex-col">
+                        <Card className="lg:col-span-1 border-muted lg:h-full h-auto flex flex-col min-h-[400px]">
                             <CardHeader><CardTitle>Applications</CardTitle></CardHeader>
-                            <CardContent className="p-0 flex-1 overflow-hidden">
-                                <ScrollArea className="h-full">
+                            <CardContent className="p-0 flex-1 lg:overflow-hidden overflow-visible">
+                                <ScrollArea className="lg:h-full h-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -524,9 +524,9 @@ export function AdmissionPortal() {
                         </Card>
 
                         {/* Detail View */}
-                        <div className="lg:col-span-2 h-full overflow-y-auto">
+                        <div className="lg:col-span-2 lg:h-full h-auto overflow-y-auto">
                             {selectedApp ? (
-                                <Card className="h-full flex flex-col">
+                                <Card className="lg:h-full h-auto flex flex-col">
                                     <CardHeader className="border-b bg-muted/20 pb-4">
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -544,12 +544,12 @@ export function AdmissionPortal() {
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="p-0 flex-1 overflow-y-auto">
+                                    <CardContent className="p-0 flex-1 lg:overflow-y-auto overflow-visible">
                                         <Tabs defaultValue="overview" className="w-full">
-                                            <TabsList className="w-full justify-start rounded-none border-b h-12">
-                                                <TabsTrigger value="overview">Overview</TabsTrigger>
-                                                <TabsTrigger value="merit_offer">Merit & Offer</TabsTrigger>
-                                                <TabsTrigger value="verification">Verification</TabsTrigger>
+                                            <TabsList className="flex w-full overflow-x-auto justify-start rounded-none border-b h-auto p-0 no-scrollbar">
+                                                <TabsTrigger value="overview" className="flex-shrink-0 h-10">Overview</TabsTrigger>
+                                                <TabsTrigger value="merit_offer" className="flex-shrink-0 h-10">Merit & Offer</TabsTrigger>
+                                                <TabsTrigger value="verification" className="flex-shrink-0 h-10">Verification</TabsTrigger>
                                             </TabsList>
 
                                             <TabsContent value="overview" className="p-4 space-y-6">

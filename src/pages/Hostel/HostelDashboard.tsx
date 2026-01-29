@@ -83,25 +83,25 @@ export default function HostelDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Hostel Management</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Hostel Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage infrastructure, allocations, and residents
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => loadData()}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => loadData()}>
             Refresh
           </Button>
-          <Button className="shad-button-primary" onClick={() => setAllocationOpen(true)}>
+          <Button size="sm" className="shad-button-primary" onClick={() => setAllocationOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Allocation
           </Button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="shad-card hover-lift">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>

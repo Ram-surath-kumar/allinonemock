@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings } from "lucide-react";
+import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,6 +17,7 @@ import { api } from "@/services/api";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { ROLE_LABELS } from "@/types/erp";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header({ title, subtitle, onMenuClick, onNavigate }) {
   const { currentUser } = useAuth();
@@ -27,6 +28,8 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setMounted(true);
@@ -159,40 +162,64 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
       role="banner"
     >
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
-        {onMenuClick && (
+        {!mobileSearchOpen && onMenuClick && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="md:hidden h-9 w-9 rounded-sm shrink-0"
+            className="md:hidden h-10 w-10 rounded-xl shrink-0 hover:bg-muted/50"
+            aria-label="Open sidebar"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6" />
           </Button>
         )}
-        
+
         {/* Page Title & Welcome */}
-        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
-          <div className="min-w-0 flex-1 h-full flex flex-col justify-center">
-            <h1 className="text-base md:text-lg font-semibold text-foreground truncate leading-tight">
-              {title}
-            </h1>
-            {currentUser && (
-              <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                {t("header.welcomeBack", { name: currentUser.name })}
-              </p>
-            )}
-            {!currentUser && subtitle && (
-              <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-                {subtitle}
-              </p>
-            )}
+        {!mobileSearchOpen && (
+          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
+            <div className="min-w-0 flex-1 h-full flex flex-col justify-center">
+              <h1 className="text-base md:text-lg font-bold text-foreground truncate leading-tight uppercase tracking-wide">
+                {title}
+              </h1>
+              {currentUser && (
+                <p className="hidden xs:block text-[11px] font-medium text-muted-foreground truncate leading-tight mt-1 opacity-70">
+                  {t("header.welcomeBack", { name: currentUser.name })}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Mobile Search Input Overlay */}
+        {isMobile && mobileSearchOpen && (
+          <div className="flex-1 flex items-center gap-2 animate-in slide-in-from-top-4 duration-200">
+            <AISearchBar onNavigate={(path) => {
+              onNavigate(path);
+              setMobileSearchOpen(false);
+            }} className="flex-1" />
+            <Button variant="ghost" size="icon" onClick={() => setMobileSearchOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* AI-Powered Search Bar */}
-        <AISearchBar onNavigate={onNavigate} className="hidden sm:block" />
+      <div className={cn("flex items-center gap-1 sm:gap-2 md:gap-3", mobileSearchOpen ? "hidden" : "flex")}>
+        {/* AI-Powered Search Bar - Desktop */}
+        <AISearchBar onNavigate={onNavigate} className="hidden lg:block w-64 xl:w-80" />
+
+        {/* Mobile Search Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileSearchOpen(true)}
+          className="lg:hidden h-10 w-10 rounded-xl hover:bg-muted/50"
+          aria-label="Toggle search"
+        >
+          <Search className="h-5 w-5" />
+        </Button>
+
+        <div className="h-6 w-[1px] bg-border/40 mx-1 hidden sm:block" />
 
         {/* Theme Toggle */}
         {mounted && (
@@ -200,37 +227,22 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="h-9 w-9 rounded-sm hover-lift"
+            className="h-10 w-10 rounded-xl hover-lift"
             title={t("header.toggleTheme")}
             aria-label={t("header.toggleTheme")}
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-        )}
-
-        {/* Settings */}
-        {onNavigate && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onNavigate("/settings")}
-            className="h-9 w-9 rounded-sm hover-lift"
-            title={t("header.settings")}
-            aria-label={t("header.settings")}
-          >
-            <Settings className="h-5 w-5" />
           </Button>
         )}
 
         {/* Notifications */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-sm">
+            <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -right-1 -top-1 h-5 w-5 flex items-center justify-center rounded-full p-0 text-xs bg-destructive text-destructive-foreground border-2 border-background">
+                <Badge className="absolute right-2 top-2 h-4 w-4 flex items-center justify-center rounded-full p-0 text-[10px] bg-destructive text-destructive-foreground border-2 border-background">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </Badge>
               )}
@@ -275,7 +287,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
                           <div className="flex items-start justify-between gap-2">
                             <p
                               className={cn(
-                                "text-sm font-medium",
+                                "text-sm font-medium text-foreground",
                                 !notification.read && "font-semibold"
                               )}
                             >
@@ -292,10 +304,10 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
                               </Button>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">
+                          <p className="text-[10px] text-muted-foreground mt-2 font-medium opacity-60">
                             {getTimeAgo(notification.created_at)}
                           </p>
                         </div>
@@ -314,31 +326,43 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 px-2 md:px-3 rounded-full gap-2 hover:bg-muted/50"
+                className="h-10 px-1 md:px-2 rounded-full gap-2 hover:bg-muted/50 ml-1"
               >
-                <Avatar className="h-7 w-7 border-2 border-primary/20">
+                <Avatar className="h-8 w-8 border-2 border-primary/20 shadow-sm transition-transform hover:scale-105">
                   <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs font-semibold">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs font-bold uppercase">
                     {getInitials(currentUser.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-xs font-semibold text-foreground leading-none">
-                    {currentUser.name.split(" ")[0]}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground leading-none mt-0.5">
-                    {ROLE_LABELS[currentUser.role]}
-                  </span>
-                </div>
+                {!isMobile && (
+                  <div className="flex flex-col items-start pr-1 max-w-[100px]">
+                    <span className="text-[11px] font-bold text-foreground leading-none truncate w-full uppercase tracking-tight">
+                      {currentUser.name}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground leading-none mt-1 font-medium opacity-70">
+                      {ROLE_LABELS[currentUser.role]}
+                    </span>
+                  </div>
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 glass-modern">
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-semibold">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">{currentUser.email}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+            <DropdownMenuContent align="end" className="w-56 glass-modern border-0 shadow-depth-3 rounded-2xl">
+              <div className="px-3 py-3 border-b border-border/10">
+                <p className="text-sm font-bold truncate">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground truncate opacity-70">{currentUser.email}</p>
+                <Badge variant="outline" className="mt-2 text-[9px] py-0 font-bold uppercase bg-primary/5 text-primary border-primary/20">
                   {ROLE_LABELS[currentUser.role]}
-                </p>
+                </Badge>
+              </div>
+              <div className="p-1.5">
+                <DropdownMenuItem onClick={() => onNavigate("/settings")} className="rounded-xl">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onNavigate("/settings")} className="rounded-xl">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Preferences</span>
+                </DropdownMenuItem>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

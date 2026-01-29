@@ -188,7 +188,7 @@ export function QuickActions({ onAddUser, onAssignTask: _onAssignTask, onNavigat
           <h3 className="text-sm font-semibold text-foreground">{t("dashboard.quickActions")}</h3>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {filteredActions.map((action, index) => {
             const Icon = action.icon;
             return (
@@ -227,7 +227,7 @@ export function QuickActions({ onAddUser, onAssignTask: _onAssignTask, onNavigat
           <h3 className="text-sm font-semibold text-foreground">{t("dashboard.aiActions")}</h3>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {aiActions.map((action, index) => {
             const Icon = action.icon;
             return (

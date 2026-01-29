@@ -68,7 +68,7 @@ export function Accounting() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-6 sm:px-6 animate-in fade-in duration-500">
       <Tabs defaultValue="journal" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
           <TabsTrigger value="journal">Journal Entry</TabsTrigger>
@@ -126,25 +126,25 @@ function ChartOfAccounts({ coa, onUpdate }: { coa: any[]; onUpdate: () => void }
   );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4">
         <div className="space-y-1">
-          <CardTitle>Chart of Accounts</CardTitle>
+          <CardTitle className="text-xl">Chart of Accounts</CardTitle>
           <CardDescription>Manage your ledger accounts structure</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-64">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search accounts..."
-              className="pl-8"
+              className="pl-8 h-9"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="h-9 w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> New Account
               </Button>
             </DialogTrigger>

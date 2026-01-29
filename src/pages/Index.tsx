@@ -257,7 +257,7 @@ function AppContent() {
     if (chatUserId) {
       return "/chat";
     }
-    
+
     // If we have a tab parameter, use it
     if (tab) {
       // Check if it's a chat with userId pattern (chat/userId)
@@ -536,12 +536,15 @@ function AppContent() {
     );
   }
 
+  const isChatConversation = !!chatUserId || (!!tab && tab.startsWith('chat/'));
+
   return (
     <AppLayout
       title={getPageTitle()}
       subtitle={getPageSubtitle()}
       currentPath={currentPath}
       onNavigate={handleNavigate}
+      isChatConversation={isChatConversation}
     >
       {renderContent()}
     </AppLayout>

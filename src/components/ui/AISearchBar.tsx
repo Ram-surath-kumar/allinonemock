@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Sparkles, TrendingUp, Loader2, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
         setIsLoading(false);
       }
     },
-    [t]
+    [t, currentUser]
   );
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [query, performSearch]);
+  }, [query, performSearch, t]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
@@ -145,7 +145,7 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
     const parts = text.split(new RegExp(`(${query})`, "gi"));
     return parts.map((part, index) =>
       part.toLowerCase() === query.toLowerCase() ? (
-        <mark key={index} className="bg-primary/20 text-primary font-medium">
+        <mark key={index} className="bg-primary/20 text-primary font-medium rounded-sm">
           {part}
         </mark>
       ) : (
@@ -176,10 +176,10 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
   };
 
   return (
-    <div ref={searchRef} className={cn("relative", className)}>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Sparkles className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary animate-pulse" />
+    <div ref={searchRef} className={cn("relative w-full transition-all duration-300", className)}>
+      <div className="relative group/input">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-primary transition-colors duration-200" />
+        <Sparkles className="absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary/60 group-focus-within/input:text-primary animate-pulse" />
         <Input
           ref={inputRef}
           type="text"
@@ -188,7 +188,7 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
-          className="w-48 md:w-64 pl-9 pr-10 h-9 rounded-full bg-background/50 border-border/50 focus:bg-background focus:border-primary/50 transition-all"
+          className="w-full pl-10 pr-10 h-10 rounded-2xl bg-muted/40 border-transparent hover:bg-muted/60 focus:bg-background focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all duration-200 shadow-sm"
           aria-label={t("search.searchWithAI")}
           aria-autocomplete="list"
           aria-controls="search-suggestions"
@@ -200,95 +200,84 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
       {isOpen && (
         <div
           id="search-suggestions"
-          className="absolute top-full mt-2 w-80 md:w-96 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-depth-2 overflow-hidden z-50 glass-modern"
+          className="fixed left-4 right-4 md:absolute md:left-0 md:right-0 md:w-[400px] top-full mt-3 bg-card border border-border/10 rounded-2xl shadow-2xl overflow-hidden z-[100] glass-modern animate-in slide-in-from-top-2 duration-300"
           role="listbox"
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
+          <div className="px-5 py-4 border-b border-border/5 bg-muted/20">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-2">
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
                     {t("search.searching")}
                   </>
                 ) : query.trim() ? (
                   <>
-                    <Sparkles className="h-3 w-3" />
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
                     {t("search.aiSuggestions")}
                   </>
                 ) : (
                   <>
-                    <TrendingUp className="h-3 w-3" />
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
                     {t("search.popularSearches")}
                   </>
                 )}
               </p>
               {suggestions.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {suggestions.length}{" "}
-                  {suggestions.length !== 1 ? t("search.results") : t("search.result")}
+                <span className="text-[10px] font-bold text-primary/40">
+                  {suggestions.length} {suggestions.length !== 1 ? "RESULTS" : "RESULT"}
                 </span>
               )}
             </div>
           </div>
 
           {/* Suggestions List */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[min(70vh,400px)] overflow-y-auto overscroll-contain px-2 py-2">
             {suggestions.length === 0 && !isLoading ? (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="px-4 py-10 text-center text-sm text-muted-foreground italic">
                 {t("search.noResultsFound")}
               </div>
             ) : (
-              <div className="py-2">
+              <div className="space-y-1">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={`${suggestion.path}-${index}`}
                     onClick={() => handleSuggestionClick(suggestion)}
                     className={cn(
-                      "w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 focus:bg-muted/50 focus:outline-none group",
-                      selectedIndex === index && "bg-muted/50"
+                      "w-full px-4 py-3 text-left transition-all duration-200 rounded-xl flex items-center gap-3 active:scale-[0.98]",
+                      selectedIndex === index ? "bg-primary/10" : "hover:bg-muted/60"
                     )}
                     role="option"
                     aria-selected={selectedIndex === index}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {highlightMatch(suggestion.title, query)}
-                          </p>
-                          {suggestion.confidence > 0.8 && (
-                            <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded">
-                              {t("search.bestMatch")}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {suggestion.description}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-bold text-foreground truncate uppercase tracking-tight">
+                          {highlightMatch(suggestion.title, query)}
                         </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span
-                            className={cn(
-                              "text-[10px] font-medium uppercase tracking-wide",
-                              getCategoryColor(suggestion.category)
-                            )}
-                          >
-                            {suggestion.category}
+                        {suggestion.confidence > 0.8 && (
+                          <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded uppercase">
+                            TOP
                           </span>
-                          {suggestion.action && (
-                            <span className="text-[10px] text-muted-foreground">
-                              •{" "}
-                              {suggestion.action === "dialog"
-                                ? t("search.opensDialog")
-                                : suggestion.action === "focus"
-                                  ? t("search.focusesSection")
-                                  : t("search.navigates")}
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <p className="text-xs text-muted-foreground line-clamp-1 font-medium opacity-80">
+                        {suggestion.description}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-muted/80",
+                            getCategoryColor(suggestion.category)
+                          )}
+                        >
+                          {suggestion.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ArrowRight className="h-4 w-4 text-primary" />
                     </div>
                   </button>
                 ))}
@@ -297,9 +286,9 @@ export function AISearchBar({ onNavigate, className }: AISearchBarProps) {
           </div>
 
           {/* Footer Hint */}
-          {suggestions.length > 0 && (
-            <div className="px-4 py-2 border-t border-border/50 bg-muted/30">
-              <p className="text-[10px] text-muted-foreground text-center">
+          {suggestions.length > 0 && !isLoading && (
+            <div className="px-5 py-3 border-t border-border/5 bg-muted/10">
+              <p className="text-[9px] font-bold text-muted-foreground text-center uppercase tracking-widest opacity-60">
                 {t("search.useArrowKeysToNavigate")}
               </p>
             </div>

@@ -79,7 +79,7 @@ export function FacilitiesDashboard({ hierarchy }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -112,7 +112,7 @@ export function FacilitiesDashboard({ hierarchy }) {
               {Math.round(
                 ((stats.statusData.find((s) => s.name === "Active")?.value || 0) /
                   stats.totalRooms) *
-                  100
+                100
               ) || 0}
               %
             </div>

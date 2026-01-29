@@ -88,22 +88,22 @@ export default function ExamDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {t("examinations.title")}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {t("examinations.manageSchedulesAssessments")}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
-          <Button variant="outline" onClick={loadData}>
+          <Button variant="outline" size="sm" onClick={loadData} className="flex-1 sm:flex-none">
             {t("examinations.refresh")}
           </Button>
           {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
-          <Button className="shad-button-primary" onClick={() => setScheduleOpen(true)}>
+          <Button className="shad-button-primary flex-1 sm:flex-none" size="sm" onClick={() => setScheduleOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> {t("examinations.scheduleExam")}
           </Button>
         </div>
@@ -237,18 +237,18 @@ export default function ExamDashboard() {
                         className="group relative rounded-lg border border-border/50 bg-card/50 hover:bg-card hover:border-primary/30 hover:shadow-md transition-all duration-200 p-4 animate-in fade-in slide-in-from-bottom-2"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-3">
                               <div className="mt-0.5 rounded-lg bg-primary/10 p-2 shrink-0">
                                 <BookOpen className="h-4 w-4 text-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-base text-foreground mb-1.5 group-hover:text-primary transition-colors">
+                                <h3 className="font-semibold text-base text-foreground mb-1 group-hover:text-primary transition-colors truncate">
                                   {exam.name}
                                 </h3>
-                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-1.5">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     <Calendar className="h-3.5 w-3.5" />
                                     <span>
                                       {isSameDay
@@ -261,7 +261,7 @@ export default function ExamDashboard() {
                                     </span>
                                   </div>
                                   {!isSameDay && (
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 shrink-0">
                                       <Clock className="h-3.5 w-3.5" />
                                       <span>
                                         {Math.ceil(
@@ -276,10 +276,10 @@ export default function ExamDashboard() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2.5 shrink-0">
+                          <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50">
                             <Badge
                               variant={isPlanned ? "default" : "secondary"}
-                              className={`text-xs font-medium px-2.5 py-1 ${isPlanned
+                              className={`text-xs font-medium px-2.5 py-1 shrink-0 ${isPlanned
                                 ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
                                 : "bg-muted text-muted-foreground"
                                 }`}
@@ -290,7 +290,7 @@ export default function ExamDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                              className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-1 sm:flex-none"
                               onClick={() => handleNavigateToTimetable(exam.id)}
                             >
                               <CalendarDays className="h-3.5 w-3.5 mr-1.5" />

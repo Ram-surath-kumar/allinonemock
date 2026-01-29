@@ -95,11 +95,11 @@ export function BankManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold tracking-tight">Bank Management</h2>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button>+ Add Bank Account</Button>
+            <Button size="sm" className="w-full sm:w-auto">+ Add Bank Account</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

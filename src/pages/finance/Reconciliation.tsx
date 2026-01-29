@@ -49,21 +49,21 @@ export function Reconciliation() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 px-5 py-6 md:px-10 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Payment Reconciliation</h2>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Match system receipts with bank statement entries.
           </p>
         </div>
-        <Button onClick={handleMatch} disabled={!selectedSystem || !selectedBank || loading}>
+        <Button size="sm" onClick={handleMatch} disabled={!selectedSystem || !selectedBank || loading} className="w-full sm:w-auto h-9">
           <ArrowRightLeft className="mr-2 h-4 w-4" />
           Match Selected
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* System Transactions */}
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader>

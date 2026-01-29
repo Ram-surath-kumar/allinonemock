@@ -261,14 +261,14 @@ export function Students() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[800px] mb-6">
-          <TabsTrigger value="directory" className="flex gap-2">
+        <TabsList className="flex w-full overflow-x-auto justify-start h-auto p-1 lg:grid lg:grid-cols-3 lg:w-[800px] mb-6 no-scrollbar">
+          <TabsTrigger value="directory" className="flex gap-2 flex-shrink-0">
             <Users className="h-4 w-4" /> {t("students.directory")}
           </TabsTrigger>
-          <TabsTrigger value="admissions" className="flex gap-2">
+          <TabsTrigger value="admissions" className="flex gap-2 flex-shrink-0">
             <GraduationCap className="h-4 w-4" /> {t("students.admissions")}
           </TabsTrigger>
-          <TabsTrigger value="communication" className="flex gap-2">
+          <TabsTrigger value="communication" className="flex gap-2 flex-shrink-0">
             <MessageSquare className="h-4 w-4" /> {t("students.messageCenter")}
           </TabsTrigger>
         </TabsList>
