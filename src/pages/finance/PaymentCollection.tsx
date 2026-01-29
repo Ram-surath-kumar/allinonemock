@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,11 +53,20 @@ import { useFinance } from "@/contexts/FinanceContext";
 export function PaymentCollection() {
   const { currentUser } = useAuth();
   const { refreshFinance } = useFinance();
+  const [searchParams] = useSearchParams(); // Hook to read query params
   const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [fees, setFees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Automatically open student search if triggered via action
+    if (searchParams.get("openDialog") === "collectFee") {
+      // Small delay to ensure render
+      setTimeout(() => setOpen(true), 100);
+    }
+  }, [searchParams]);
 
   // ... (rest of state)
 

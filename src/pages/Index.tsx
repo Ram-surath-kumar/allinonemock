@@ -232,21 +232,45 @@ function AppContent() {
     userId,
   ]);
 
-  const handleNavigate = (path) => {
+  const handleNavigate = (path, action, data) => {
+    let targetPath = path;
+
+    // Handle dialog actions by appending query param
+    if (action === "dialog" && data?.dialog) {
+      const separator = path.includes("?") ? "&" : "?";
+      targetPath = `${path}${separator}openDialog=${data.dialog}`;
+
+      // Special case for global Add User dialog which is managed in AppContent
+      if (data.dialog === "addUser") {
+        setAddUserDialogOpen(true);
+        // We still navigate to users page if not already there
+        if (!location.pathname.includes("/users")) {
+          targetPath = "/users";
+        } else {
+          return; // Already on users page and dialog open
+        }
+      }
+    }
+
     // For student routes, use the path directly or map to tab name
-    if (path.startsWith("/student/")) {
-      const tabName = pathToTab[path] || path.replace("/student/", "").replace(/-/g, "-");
+    if (targetPath.startsWith("/student/")) {
+      const tabName = pathToTab[targetPath.split("?")[0]] || targetPath.replace("/student/", "").replace(/-/g, "-");
+      const queryParams = targetPath.includes("?") ? "?" + targetPath.split("?")[1] : "";
+
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryParams}`);
       } else {
-        navigate(path);
+        navigate(targetPath);
       }
     } else {
-      const tabName = pathToTab[path] || "dashboard";
+      const basePath = targetPath.split("?")[0];
+      const tabName = pathToTab[basePath] || "dashboard";
+      const queryParams = targetPath.includes("?") ? "?" + targetPath.split("?")[1] : "";
+
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryParams}`);
       } else {
-        navigate(path);
+        navigate(targetPath);
       }
     }
   };

@@ -168,7 +168,7 @@ export const ACTION_REGISTRY: AppAction[] = [
         description: "Record a fee payment from a student",
         keywords: ["collect fee", "pay fee", "payment", "receive money"],
         category: "Finance",
-        path: "/finance",
+        path: "/finance?tab=collections",
         action: "dialog",
         actionData: { dialog: "collectFee" },
         icon: "CreditCard",
@@ -180,7 +180,7 @@ export const ACTION_REGISTRY: AppAction[] = [
         description: "Track and record school expenses",
         keywords: ["expenses", "spending", "bills", "add expense"],
         category: "Finance",
-        path: "/finance/expenses", // Assuming path
+        path: "/finance?tab=accounting", // Assuming expenses are in accounting
         action: "navigate",
         icon: "Receipt",
         adminOnly: true,
@@ -191,7 +191,7 @@ export const ACTION_REGISTRY: AppAction[] = [
         description: "View balance sheets and profit/loss",
         keywords: ["finance report", "balance sheet", "income statement"],
         category: "Finance",
-        path: "/finance/reports",
+        path: "/finance?tab=reports",
         action: "navigate",
         icon: "FileText",
         adminOnly: true,
