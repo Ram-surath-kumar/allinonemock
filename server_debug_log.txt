@@ -1884,3 +1884,5 @@
 [2026-01-29T08:56:43.760Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-01-29T08:56:44.979Z] [AUTH] Incoming Request: GET /api/users?status=active
 [2026-01-29T08:56:45.430Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-01-29T08:59:39.940Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-01-29T08:59:41.376Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
