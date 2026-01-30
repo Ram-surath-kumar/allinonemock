@@ -51,7 +51,7 @@ export function StudentAllocation({ onUpdate }) {
 
             if (routesRes.data) {
                 console.log('StudentAllocation: Setting routes', routesRes.data);
-                setRoutes(routesRes.data);
+                setRoutes(routesRes.data as any[]);
                 // Fetch registrations for each route
                 await fetchAllRegistrations(routesRes.data);
             } else if (routesRes.error) {
@@ -79,7 +79,7 @@ export function StudentAllocation({ onUpdate }) {
             for (const route of routesList) {
                 const response = await api.get(`/transport/route/${route.id}/students`);
                 if (response.data) {
-                    allRegistrations.push(...response.data.map(reg => ({ ...reg, route_id: route.id })));
+                    allRegistrations.push(...(response.data as any[]).map(reg => ({ ...reg, route_id: route.id })));
                 }
             }
             setRegistrations(allRegistrations);
@@ -103,7 +103,7 @@ export function StudentAllocation({ onUpdate }) {
         try {
             const response = await api.get(`/transport/routes/${route.id}/stops`);
             if (response.data) {
-                setRouteStops(response.data);
+                setRouteStops(response.data as any[]);
             } else {
                 setRouteStops([]);
             }

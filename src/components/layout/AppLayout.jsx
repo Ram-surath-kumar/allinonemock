@@ -10,7 +10,7 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isMobile = useIsMobile();
-  const isChatPage = currentPath === "/chat";
+  const isChatPage = currentPath && (currentPath === "/chat" || currentPath.includes("/chat"));
 
   // Auto-collapse sidebar when on chat page
   useEffect(() => {
@@ -53,8 +53,17 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
           onMenuClick={() => setSidebarOpen(true)}
           onNavigate={onNavigate}
         />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8" role="main">
-          <div className="max-w-screen-2xl mx-auto min-h-full animate-fade-in flex flex-col">
+        <main
+          className={cn(
+            "flex-1 overflow-x-hidden",
+            isChatPage ? "overflow-y-hidden p-0" : "overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8"
+          )}
+          role="main"
+        >
+          <div className={cn(
+            "max-w-screen-2xl mx-auto min-h-full animate-fade-in flex flex-col",
+            isChatPage ? "max-w-none h-full" : ""
+          )}>
             {children}
           </div>
         </main>

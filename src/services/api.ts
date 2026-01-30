@@ -1030,9 +1030,51 @@ class ApiClient {
     return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
   }
 
+  async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/chats?user_id=${userId}`);
+  }
+
+  async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
+    return this.request("/chat/groups", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async muteChat(chatId: string, userId: string, muted: boolean): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}/mute`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, muted }),
+    });
+  }
+
+  async deleteChat(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ user_id: userId }), // DELETE usually doesn't have body, but express supports it. Safer to use query or URL param if possible, but route expects body.
+    });
+  }
+
+  // Alternative delete with headers if body is stripped
+  async deleteChatWithBody(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async clearChat(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}/clear`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
   async sendChatMessage(data: {
     sender_id: string;
-    receiver_id: string;
+    receiver_id?: string;
+    group_id?: string;
     content: string;
     type: "text" | "image" | "file";
   }): Promise<ApiResponse<any>> {
@@ -1119,6 +1161,17 @@ class ApiClient {
     return this.request(`/tasks/${id}`, {
       method: "DELETE",
     });
+  }
+
+  async addGroupMembers(groupId: string, memberIds: string[]): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}/members`, {
+      method: "PUT",
+      body: JSON.stringify({ members: memberIds }),
+    });
+  }
+
+  async getGroupDetails(groupId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}`);
   }
 
   // Admission
