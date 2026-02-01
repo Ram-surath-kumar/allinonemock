@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Search, Bell, Lock, UserPlus, LogOut, Trash2 } from "lucide-react";
+import { X, Search, Bell, Lock, UserPlus, LogOut, Trash2, Edit2, Check } from "lucide-react";
 import { api } from "@/services/api";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface GroupInfoSidebarProps {
     groupId: string;
@@ -16,9 +18,15 @@ interface GroupInfoSidebarProps {
 }
 
 export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember }: GroupInfoSidebarProps) {
-    const [group, setGroup] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [group, setGroup] = useState<any>({
+        name: "Loading...",
+        members: [],
+        created_at: new Date().toISOString()
+    });
+    const [loading, setLoading] = useState(false);
     const [members, setMembers] = useState<any[]>([]);
+    const [isEditingDesc, setIsEditingDesc] = useState(false);
+    const [desc, setDesc] = useState("");
 
     useEffect(() => {
         const fetchGroup = async () => {
@@ -27,8 +35,8 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
                 const res = await api.getGroupDetails(groupId);
                 if (res.data) {
                     setGroup(res.data);
+                    setDesc(res.data.description || "");
                     // Fetch full user details for members
-                    // In a real app we would have an endpoint for this, forcing loop for now
                     const memberPromises = (res.data.members || []).map((id: string) =>
                         api.getUserById(id).then(r => r.data || { id, name: 'Unknown', role: 'member' })
                     );
@@ -43,6 +51,17 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
         };
         fetchGroup();
     }, [groupId]);
+
+    const handleSaveDescription = async () => {
+        try {
+            await api.updateGroupDescription(groupId, desc);
+            toast.success("Description updated");
+            setIsEditingDesc(false);
+            setGroup({ ...group, description: desc });
+        } catch (error) {
+            toast.error("Failed to update description");
+        }
+    };
 
     if (!group && !loading) return null;
 
@@ -78,13 +97,58 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
                         <div className="h-2 bg-muted/30 border-y border-border/50" />
 
                         {/* Description */}
-                        <div className="p-4">
-                            <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Description</h3>
-                            <p className="text-sm text-foreground/80">
-                                {group.description || "No description provided."}
-                            </p>
+                        <div className="p-4 bg-muted/10">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</h3>
+                                {isEditingDesc ? (
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-green-500 hover:text-green-600 hover:bg-green-100"
+                                            onClick={handleSaveDescription}
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-100"
+                                            onClick={() => {
+                                                setDesc(group.description || "");
+                                                setIsEditingDesc(false);
+                                            }}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                        onClick={() => setIsEditingDesc(true)}
+                                    >
+                                        <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                )}
+                            </div>
+
+                            {isEditingDesc ? (
+                                <Textarea
+                                    value={desc}
+                                    onChange={(e) => setDesc(e.target.value)}
+                                    className="min-h-[80px] text-sm bg-background"
+                                    placeholder="Add group description..."
+                                />
+                            ) : (
+                                <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                    {group.description || <span className="text-muted-foreground italic">No description provided.</span>}
+                                </p>
+                            )}
+
                             <div className="mt-3 text-xs text-muted-foreground">
-                                Created by {members.find(m => m.id === group.created_by)?.name || 'Admin'} on {format(new Date(group.created_at), 'dd/MM/yyyy')}
+                                Created by Admin on {format(new Date(group.created_at), 'dd/MM/yyyy')}
                             </div>
                         </div>
 
@@ -140,9 +204,6 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
                                                 <span className="text-sm font-medium truncate">
                                                     {member.id === currentUserId ? "You" : member.name}
                                                 </span>
-                                                {group.created_by === member.id && (
-                                                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">Group Admin</span>
-                                                )}
                                             </div>
                                             <p className="text-xs text-muted-foreground truncate">{member.email || "No status"}</p>
                                         </div>

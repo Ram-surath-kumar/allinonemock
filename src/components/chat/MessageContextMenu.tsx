@@ -73,7 +73,7 @@ export function MessageContextMenu({
                 align="start"
                 className="w-56 bg-popover/95 backdrop-blur-sm border-border/50"
             >
-                <DropdownMenuItem onClick={onInfo} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => onInfo(message)} className="gap-2 cursor-pointer">
                     <Info className="h-4 w-4" />
                     <span>Message info</span>
                 </DropdownMenuItem>

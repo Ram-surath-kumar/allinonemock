@@ -1041,6 +1041,20 @@ class ApiClient {
     });
   }
 
+  async updateGroupDescription(groupId: string, description: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}`, {
+      method: "PUT",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  async addGroupMembers(groupId: string, userIds: string[]): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ user_ids: userIds }),
+    });
+  }
+
   async muteChat(chatId: string, userId: string, muted: boolean): Promise<ApiResponse<any>> {
     return this.request(`/chat/chats/${chatId}/mute`, {
       method: "PUT",
@@ -1077,11 +1091,42 @@ class ApiClient {
     group_id?: string;
     content: string;
     type: "text" | "image" | "file";
+    reply_to_id?: string;
+    file_url?: string;
+    file_name?: string;
+    file_type?: string;
+    file_size?: number;
   }): Promise<ApiResponse<any>> {
     return this.request("/chat/messages", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async pinMessage(messageId: string, pinned: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}/pin`, {
+      method: "PUT",
+      body: JSON.stringify({ pinned }),
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
+  }
+
+  async starMessage(messageId: string, userId: string, starred: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}/star`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, starred }),
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
+  }
+
+  async deleteChatMessage(messageId: string, userId: string, deleteForEveryone: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}?user_id=${userId}&type=${deleteForEveryone ? 'everyone' : 'me'}`, {
+      method: "DELETE",
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
   }
 
   async markMessagesAsRead(userId: string, otherUserId: string): Promise<ApiResponse<any>> {
@@ -1163,12 +1208,6 @@ class ApiClient {
     });
   }
 
-  async addGroupMembers(groupId: string, memberIds: string[]): Promise<ApiResponse<any>> {
-    return this.request(`/chat/groups/${groupId}/members`, {
-      method: "PUT",
-      body: JSON.stringify({ members: memberIds }),
-    });
-  }
 
   async getGroupDetails(groupId: string): Promise<ApiResponse<any>> {
     return this.request(`/chat/groups/${groupId}`);

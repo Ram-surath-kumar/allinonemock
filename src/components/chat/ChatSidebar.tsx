@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Search, Sparkles, Users, VolumeX, Archive } from "lucide-react";
+import { MessageSquare, Search, Users, VolumeX, Archive, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { NewChatDialog } from "./NewChatDialog";
+import { CreateGroupDialog } from "./CreateGroupDialog";
 
 interface User {
     id: string;
@@ -62,6 +63,7 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+    const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
     const [filter, setFilter] = useState<'All' | 'Unread' | 'Groups'>('All');
 
     const filteredChats = chats.filter(chat => {
@@ -100,7 +102,7 @@ export function ChatSidebar({
     };
 
     return (
-        <div className={cn("flex flex-col h-full bg-background border-r border-border", isMobile ? "w-full" : "w-80")}>
+        <div className={cn("flex flex-col h-full bg-background", isMobile ? "w-full" : "w-full")}>
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2.5 bg-muted/30 shrink-0 h-16">
                 <div className="flex items-center gap-2">
@@ -114,10 +116,6 @@ export function ChatSidebar({
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground rounded-full" title="AI Assistant"
-                        onClick={() => window.dispatchEvent(new CustomEvent("toggle-ai-assistant"))}>
-                        <Sparkles className="h-5 w-5" /> {/* Changed from Bot to Sparkles */}
-                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"
@@ -127,8 +125,14 @@ export function ChatSidebar({
                     >
                         <MessageSquare className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground rounded-full" title="Menu">
-                        <Users className="h-5 w-5" /> {/* Changed from MoreVertical to Users */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground rounded-full"
+                        title="Create Group"
+                        onClick={() => setIsCreateGroupOpen(true)}
+                    >
+                        <Users className="h-5 w-5" />
                     </Button>
                 </div>
             </div>
@@ -238,6 +242,23 @@ export function ChatSidebar({
                     )}
                 </div>
             </ScrollArea>
+
+            {/* Dialogs */}
+            <NewChatDialog
+                open={isNewChatOpen}
+                onOpenChange={setIsNewChatOpen}
+                users={users}
+                currentUser={currentUser}
+                onStartChat={handleStartChat}
+                onGroupCreated={onGroupCreated}
+            />
+
+            <CreateGroupDialog
+                open={isCreateGroupOpen}
+                onOpenChange={setIsCreateGroupOpen}
+                onGroupCreated={onGroupCreated}
+                currentUserId={currentUser.id}
+            />
         </div>
     );
 }

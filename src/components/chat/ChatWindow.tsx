@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Paperclip, Phone, Send, Video, Sparkles, X, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Paperclip, Phone, Send, Video, Sparkles, X, FileText, Image as ImageIcon, Pin as PinIcon } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 import { ChatActionsMenu } from "./ChatActionsMenu";
 import { ChatBubble } from "./ChatBubble";
@@ -11,9 +11,11 @@ import { AttachmentMenu } from "./AttachmentMenu";
 import { AttachmentPreview } from "./AttachmentPreview";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import { MessageInfoDialog } from "./MessageInfoDialog";
+import { StarredMessagesDialog } from "./StarredMessagesDialog";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { api } from "@/services/api";
 
 interface Message {
     id: string;
@@ -64,6 +66,7 @@ interface ChatWindowProps {
     chats: ChatTab[];
     onAddReaction: (messageId: string, emoji: string) => void;
     onRemoveReaction: (messageId: string, emoji: string) => void;
+    onRefreshMessages?: () => void;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -83,7 +86,8 @@ export function ChatWindow({
     onCall,
     chats = [],
     onAddReaction,
-    onRemoveReaction
+    onRemoveReaction,
+    onRefreshMessages
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -97,6 +101,7 @@ export function ChatWindow({
     const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
     const [infoMessage, setInfoMessage] = useState<Message | null>(null);
     const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+    const [isStarredOpen, setIsStarredOpen] = useState(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -136,19 +141,40 @@ export function ChatWindow({
         setForwardMessage(message);
     };
 
-    const handlePin = (message: Message) => {
-        // TODO: Implement pin logic with API
-        toast.success(message.pinned ? "Message unpinned" : "Message pinned");
+    const handlePin = async (message: Message) => {
+        try {
+            const newPinned = !message.pinned;
+            await api.pinMessage(message.id, newPinned);
+            toast.success(newPinned ? "Message pinned" : "Message unpinned");
+            onRefreshMessages?.();
+        } catch (error) {
+            toast.error("Failed to update pin status");
+        }
     };
 
-    const handleStar = (message: Message) => {
-        // TODO: Implement star logic with API
-        toast.success(message.starred ? "Message unstarred" : "Message starred");
+    const handleStar = async (message: Message) => {
+        try {
+            const newStarred = !message.starred;
+            await api.starMessage(message.id, currentUser.id, newStarred);
+            toast.success(newStarred ? "Message starred" : "Message unstarred");
+            onRefreshMessages?.();
+        } catch (error) {
+            toast.error("Failed to update star status");
+        }
     };
 
-    const handleDelete = (message: Message, deleteForEveryone: boolean) => {
-        // TODO: Implement delete logic with API
-        toast.success(deleteForEveryone ? "Message deleted for everyone" : "Message deleted");
+    const handleDelete = async (message: Message, deleteForEveryone: boolean) => {
+        try {
+            const res = await api.deleteChatMessage(message.id, currentUser.id, deleteForEveryone);
+            if (res.error) {
+                toast.error(res.error);
+                return;
+            }
+            toast.success(deleteForEveryone ? "Message deleted for everyone" : "Message deleted");
+            onRefreshMessages?.();
+        } catch (error: any) {
+            toast.error(error.message || "Failed to delete message");
+        }
     };
 
     const handleInfo = (message: Message) => {
@@ -197,21 +223,16 @@ export function ChatWindow({
     const isGroup = activeChat.type === 'group' || (activeChat.id && activeChat.id.startsWith('group-'));
     const status = activeChat.userId ? statusMap[activeChat.userId] : null;
 
-    const getStatusText = () => {
-        if (isGroup) {
-            // In a real app, show member count or online members
-            return "Click for group info";
+    const pinnedMessages = messages.filter(m => m.pinned);
+    const latestPinned = pinnedMessages[pinnedMessages.length - 1];
+
+    const scrollToMessage = (messageId: string) => {
+        const element = document.getElementById(`msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('animate-highlight');
+            setTimeout(() => element.classList.remove('animate-highlight'), 2000);
         }
-        if (!status) return "Offline";
-        if (status.isOnline) return "Online";
-        if (status.lastSeen) {
-            try {
-                return `Last seen ${formatDistanceToNow(new Date(status.lastSeen), { addSuffix: true })} `;
-            } catch {
-                return "Offline";
-            }
-        }
-        return "Offline";
     };
 
     return (
@@ -240,7 +261,13 @@ export function ChatWindow({
                         <div className="min-w-0">
                             <h4 className="font-medium text-sm truncate">{activeChat.userName}</h4>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
-                                <span className="truncate">{getStatusText()}</span>
+                                <span className="truncate">
+                                    {isGroup ? "Click for group info" : (
+                                        !status ? "Offline" :
+                                            status.isOnline ? "Online" :
+                                                status.lastSeen ? `Last seen ${formatDistanceToNow(new Date(status.lastSeen), { addSuffix: true })}` : "Offline"
+                                    )}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -256,22 +283,52 @@ export function ChatWindow({
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted" title="Search">
                             <Sparkles className="h-5 w-5" />
                         </Button>
-
-                        <ChatActionsMenu
-                            isGroup={!!isGroup}
-                            isMuted={!!activeChat.muted}
-                            onMute={() => onMute(!activeChat.muted)}
-                            onClear={onClear}
-                            onDelete={onDelete}
-                            onViewInfo={() => setShowGroupInfo(true)}
-                        />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <ChatActionsMenu
+                                isGroup={!!isGroup}
+                                isMuted={!!activeChat.muted}
+                                onMute={() => onMute(!activeChat.muted)}
+                                onClear={onClear}
+                                onDelete={onDelete}
+                                onViewInfo={() => setShowGroupInfo(true)}
+                                onViewStarred={() => setIsStarredOpen(true)}
+                            />
+                        </div>
                     </div>
                 </div>
+
+                {/* Pinned Messages Bar */}
+                {latestPinned && (
+                    <div
+                        className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/50 animate-in slide-in-from-top duration-300 cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => scrollToMessage(latestPinned.id)}
+                    >
+                        <div className="flex items-center gap-2 min-w-0">
+                            <PinIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-primary">Pinned Message</p>
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                    {latestPinned.type === 'text' ? latestPinned.content : `[${latestPinned.type}]`}
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                scrollToMessage(latestPinned.id);
+                            }}
+                        >
+                            VIEW
+                        </Button>
+                    </div>
+                )}
 
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4 bg-[url('https://camo.githubusercontent.com/85effea159ba5a05e263a23ccbf47535b54630e46631ad0524451a5e1140081d/68747470733a2f2f692e696d6775722e636f6d2f5a5a557878366d2e706e67')] bg-repeat bg-opacity-5">
                     <div className="flex flex-col gap-1 min-h-0" ref={scrollRef}>
-                        {/* Date separators could go here */}
                         {messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 opacity-50">
                                 <Avatar className="h-16 w-16 mb-4 grayscale opacity-50">
@@ -284,32 +341,30 @@ export function ChatWindow({
                             </div>
                         ) : (
                             messages.map((msg, i) => {
-                                // Determine if we should show avatar (if different sender from prev or long gap)
                                 const prevMsg = messages[i - 1];
                                 const showAvatar = !prevMsg || prevMsg.sender_id !== msg.sender_id;
                                 const showName = isGroup && showAvatar;
 
                                 return (
-                                    <ChatBubble
-                                        key={msg.id || i}
-                                        message={msg}
-                                        isMe={msg.sender_id === currentUser.id}
-                                        senderName={activeChat.userName}
-                                        senderAvatar={activeChat.userAvatar}
-                                        showAvatar={showAvatar}
-                                        showName={showName}
-                                        currentUserId={currentUser.id}
-                                        onReply={handleReply}
-                                        onCopy={handleCopy}
-                                        onReact={handleReact}
-                                        onForward={handleForward}
-                                        onPin={handlePin}
-                                        onStar={handleStar}
-                                        onDelete={handleDelete}
-                                        onInfo={handleInfo}
-                                        onAddReaction={handleAddReaction}
-                                        onRemoveReaction={handleRemoveReaction}
-                                    />
+                                    <div key={msg.id} id={`msg-${msg.id}`} className="scroll-mt-20">
+                                        <ChatBubble
+                                            message={msg}
+                                            isMe={msg.sender_id === currentUser.id}
+                                            showAvatar={showAvatar}
+                                            showName={showName}
+                                            onReply={handleReply}
+                                            onCopy={handleCopy}
+                                            onReact={handleReact}
+                                            onForward={handleForward}
+                                            onPin={handlePin}
+                                            onStar={handleStar}
+                                            onDelete={handleDelete}
+                                            onInfo={handleInfo}
+                                            onAddReaction={handleAddReaction}
+                                            onRemoveReaction={handleRemoveReaction}
+                                            currentUserId={currentUser.id}
+                                        />
+                                    </div>
                                 );
                             })
                         )}
@@ -458,6 +513,14 @@ export function ChatWindow({
                     groupMembers={[]} // TODO: Pass actual group members
                 />
             )}
+
+            {/* Starred Messages Dialog */}
+            <StarredMessagesDialog
+                open={isStarredOpen}
+                onOpenChange={setIsStarredOpen}
+                messages={messages}
+                currentUserId={currentUser.id}
+            />
         </div>
     );
 }

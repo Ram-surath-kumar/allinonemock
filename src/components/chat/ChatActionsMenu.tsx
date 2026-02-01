@@ -6,7 +6,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, BellOff, Bell, Eraser, Info } from "lucide-react";
+import { MoreVertical, Trash2, BellOff, Bell, Eraser, Info, Star } from "lucide-react";
 
 interface ChatActionsMenuProps {
     isGroup: boolean;
@@ -15,6 +15,7 @@ interface ChatActionsMenuProps {
     onClear: () => void;
     onDelete: () => void;
     onViewInfo?: () => void;
+    onViewStarred?: () => void;
 }
 
 export function ChatActionsMenu({
@@ -23,7 +24,8 @@ export function ChatActionsMenu({
     onMute,
     onClear,
     onDelete,
-    onViewInfo
+    onViewInfo,
+    onViewStarred
 }: ChatActionsMenuProps) {
     return (
         <DropdownMenu>
@@ -51,6 +53,10 @@ export function ChatActionsMenu({
                     Clear History
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onViewStarred}>
+                    <Star className="h-4 w-4 mr-2" />
+                    Starred Messages
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     {isGroup ? "Leave Group" : "Delete Conversation"}

@@ -394,6 +394,9 @@ export function MultiTabChat() {
               chats={chats}
               onAddReaction={handleAddReaction}
               onRemoveReaction={handleRemoveReaction}
+              onRefreshMessages={() => {
+                if (activeChat) loadMessages(activeChat, true);
+              }}
             />
           ) : (
             <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-muted/5 select-none animate-in fade-in duration-500">

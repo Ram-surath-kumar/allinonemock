@@ -241,8 +241,56 @@ router.post('/groups', (req, res) => {
 
     groups.push(newGroup);
     writeGroups(groups);
-
+    // Create system message for group creation
+    // ...
     res.json({ data: newGroup, error: null });
+});
+
+// Update Group Description
+router.put('/groups/:id', (req, res) => {
+    const { id } = req.params;
+    const { description } = req.body;
+
+    const groups = readGroups();
+    const groupIndex = groups.findIndex(g => g.id === id);
+
+    if (groupIndex === -1) {
+        return res.status(404).json({ error: 'Group not found' });
+    }
+
+    groups[groupIndex].description = description;
+    writeGroups(groups);
+
+    res.json({ data: groups[groupIndex], error: null });
+});
+
+// Add Member to Group
+router.post('/groups/:id/members', (req, res) => {
+    const { id } = req.params;
+    const { user_id } = req.body; // user_id can be string or array
+
+    const groups = readGroups();
+    const groupIndex = groups.findIndex(g => g.id === id);
+
+    if (groupIndex === -1) {
+        return res.status(404).json({ error: 'Group not found' });
+    }
+
+    const group = groups[groupIndex];
+    if (!group.members) group.members = [];
+
+    const userIdsToAdd = Array.isArray(user_id) ? user_id : [user_id];
+    let addedCount = 0;
+
+    userIdsToAdd.forEach(uid => {
+        if (!group.members.includes(uid)) {
+            group.members.push(uid);
+            addedCount++;
+        }
+    });
+
+    writeGroups(groups);
+    res.json({ data: group, added: addedCount, error: null });
 });
 
 // Add members to a group
@@ -373,16 +421,42 @@ router.get('/messages', (req, res) => {
         return res.status(400).json({ error: 'Missing parameters' });
     }
 
+    // Filter out messages deleted for this user
+    filtered = filtered.filter(m => !m.deleted_for || !m.deleted_for.includes(user_id));
+
+    // Add 'starred' property for this user
+    filtered = filtered.map(m => ({
+        ...m,
+        starred: m.starred_by && m.starred_by.includes(user_id)
+    }));
+
     filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     res.json({ data: filtered, error: null });
 });
 
 // Send a message (Direct or Group)
 router.post('/messages', (req, res) => {
-    const { sender_id, receiver_id, group_id, content, type } = req.body;
+    const { sender_id, receiver_id, group_id, content, type, reply_to_id, file_url, file_name, file_type, file_size } = req.body;
 
     if (!sender_id || !content || (!receiver_id && !group_id)) {
         return res.status(400).json({ data: null, error: 'Invalid message data' });
+    }
+
+    // Resolve reply_to object if reply_to_id is present
+    let reply_to = null;
+    const messages = readMessages();
+
+    if (reply_to_id) {
+        const parentMsg = messages.find(m => m.id === reply_to_id);
+        if (parentMsg) {
+            reply_to = {
+                id: parentMsg.id,
+                sender_id: parentMsg.sender_id,
+                content: parentMsg.content,
+                type: parentMsg.type,
+                file_name: parentMsg.file_name
+            };
+        }
     }
 
     const newMessage = {
@@ -394,10 +468,17 @@ router.post('/messages', (req, res) => {
         type: type || 'text',
         read: false,
         read_by: [], // For groups
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        reply_to_id: reply_to_id || null,
+        reply_to: reply_to || null,
+        pinned: false,
+        starred_by: [], // Array of user_ids who starred this message
+        file_url: file_url || null,
+        file_name: file_name || null,
+        file_type: file_type || null,
+        file_size: file_size || null
     };
 
-    const messages = readMessages();
     messages.push(newMessage);
     writeMessages(messages);
 
@@ -405,6 +486,93 @@ router.post('/messages', (req, res) => {
     // Complex logic omitted for simplicity, but in real app we'd 'revive' the chat for them.
 
     res.json({ data: newMessage, error: null });
+});
+
+// Pin/Unpin Message
+router.put('/messages/:id/pin', (req, res) => {
+    const { id } = req.params;
+    const { pinned } = req.body; // true/false
+
+    const messages = readMessages();
+    const msgIndex = messages.findIndex(m => m.id === id);
+
+    if (msgIndex === -1) {
+        return res.status(404).json({ error: 'Message not found' });
+    }
+
+    messages[msgIndex].pinned = pinned;
+    writeMessages(messages);
+
+    res.json({ data: messages[msgIndex], error: null });
+});
+
+// Star/Unstar Message
+router.put('/messages/:id/star', (req, res) => {
+    const { id } = req.params;
+    const { user_id, starred } = req.body;
+
+    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+
+    const messages = readMessages();
+    const msgIndex = messages.findIndex(m => m.id === id);
+
+    if (msgIndex === -1) {
+        return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const msg = messages[msgIndex];
+    if (!msg.starred_by) msg.starred_by = [];
+
+    if (starred) {
+        if (!msg.starred_by.includes(user_id)) msg.starred_by.push(user_id);
+    } else {
+        msg.starred_by = msg.starred_by.filter(uid => uid !== user_id);
+    }
+
+    // Decorate response for the user
+    const responseMsg = { ...msg, starred: starred };
+    writeMessages(messages);
+
+    res.json({ data: responseMsg, error: null });
+});
+
+// Delete Message
+router.delete('/messages/:id', (req, res) => {
+    const { id } = req.params;
+    const { user_id, type } = req.query; // type: 'me' or 'everyone'
+
+    if (!user_id || !type) return res.status(400).json({ error: 'user_id and type are required' });
+
+    const messages = readMessages();
+    const msgIndex = messages.findIndex(m => m.id === id);
+
+    if (msgIndex === -1) {
+        return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const msg = messages[msgIndex];
+
+    if (type === 'everyone') {
+        // Validation: Only sender or admin can delete for everyone
+        if (msg.sender_id !== user_id) { // Add admin check if needed
+            return res.status(403).json({ error: 'Not authorized to delete for everyone' });
+        }
+
+        // Hard delete or Soft delete content?
+        // WhatsApp style: "This message was deleted"
+        msg.content = "This message was deleted";
+        msg.type = "system"; // or keep text but mark deleted
+        msg.is_deleted = true;
+        msg.deleted_for_everyone = true;
+        msg.file_url = null; // Remove attachments
+    } else {
+        // Delete for me
+        if (!msg.deleted_for) msg.deleted_for = [];
+        if (!msg.deleted_for.includes(user_id)) msg.deleted_for.push(user_id);
+    }
+
+    writeMessages(messages);
+    res.json({ success: true, id });
 });
 
 // Mark messages as read

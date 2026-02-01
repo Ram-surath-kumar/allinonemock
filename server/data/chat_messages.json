@@ -165,11 +165,14 @@
     "id": "1769631606677",
     "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
     "receiver_id": "5685db0f-def1-4683-9a80-21e961f39183",
-    "content": "Hello",
-    "type": "text",
+    "content": "This message was deleted",
+    "type": "system",
     "read": true,
     "created_at": "2026-01-28T20:20:06.677Z",
-    "read_at": "2026-01-30T11:35:59.100Z"
+    "read_at": "2026-01-30T11:35:59.100Z",
+    "is_deleted": true,
+    "deleted_for_everyone": true,
+    "file_url": null
   },
   {
     "id": "1769632036151",
@@ -185,21 +188,30 @@
     "id": "1769632042806",
     "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
     "receiver_id": "5685db0f-def1-4683-9a80-21e961f39183",
-    "content": "Test",
-    "type": "text",
+    "content": "This message was deleted",
+    "type": "system",
     "read": true,
     "created_at": "2026-01-28T20:27:22.806Z",
-    "read_at": "2026-01-30T11:35:59.100Z"
+    "read_at": "2026-01-30T11:35:59.100Z",
+    "deleted_for": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ],
+    "is_deleted": true,
+    "deleted_for_everyone": true,
+    "file_url": null
   },
   {
     "id": "1769668016281",
     "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
     "receiver_id": "5685db0f-def1-4683-9a80-21e961f39183",
-    "content": "hi",
-    "type": "text",
+    "content": "This message was deleted",
+    "type": "system",
     "read": true,
     "created_at": "2026-01-29T06:26:56.282Z",
-    "read_at": "2026-01-30T11:35:59.100Z"
+    "read_at": "2026-01-30T11:35:59.100Z",
+    "is_deleted": true,
+    "deleted_for_everyone": true,
+    "file_url": null
   },
   {
     "id": "1769668214795",
@@ -209,7 +221,10 @@
     "type": "text",
     "read": true,
     "created_at": "2026-01-29T06:30:14.795Z",
-    "read_at": "2026-01-30T11:35:59.100Z"
+    "read_at": "2026-01-30T11:35:59.100Z",
+    "deleted_for": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
   },
   {
     "id": "1769668643088",
@@ -274,7 +289,10 @@
     "type": "text",
     "read": false,
     "read_by": [],
-    "created_at": "2026-01-29T12:47:26.989Z"
+    "created_at": "2026-01-29T12:47:26.989Z",
+    "starred_by": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
   },
   {
     "id": "1769690857939",
@@ -380,11 +398,14 @@
     "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
     "receiver_id": "f7044bf5-2a86-48df-a2ef-4901b325e4ab",
     "group_id": null,
-    "content": "supeer",
-    "type": "text",
+    "content": "This message was deleted",
+    "type": "system",
     "read": false,
     "read_by": [],
-    "created_at": "2026-01-30T11:18:20.120Z"
+    "created_at": "2026-01-30T11:18:20.120Z",
+    "is_deleted": true,
+    "deleted_for_everyone": true,
+    "file_url": null
   },
   {
     "id": "1769772970751",
@@ -396,7 +417,10 @@
     "read": true,
     "read_by": [],
     "created_at": "2026-01-30T11:36:10.751Z",
-    "read_at": "2026-01-30T11:36:57.941Z"
+    "read_at": "2026-01-30T11:36:57.941Z",
+    "deleted_for": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
   },
   {
     "id": "1769773039124",
@@ -419,5 +443,193 @@
     "read": false,
     "read_by": [],
     "created_at": "2026-01-30T11:40:12.883Z"
+  },
+  {
+    "id": "1769964050468",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "df7c31c6-b800-4a78-b3f4-581efef705ec",
+    "group_id": null,
+    "content": "oru pera varalaru",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T16:40:50.470Z"
+  },
+  {
+    "id": "1769964567783",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "df7c31c6-b800-4a78-b3f4-581efef705ec",
+    "group_id": null,
+    "content": "ok",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T16:49:27.783Z"
+  },
+  {
+    "id": "1769965312592",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "df7c31c6-b800-4a78-b3f4-581efef705ec",
+    "group_id": null,
+    "content": "d",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T17:01:52.592Z",
+    "reply_to_id": "1769690846989",
+    "reply_to": {
+      "id": "1769690846989",
+      "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+      "content": "😊😊😊hey",
+      "type": "text"
+    },
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1769965868363",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "hi",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T17:11:08.363Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1769969517999",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": null,
+    "group_id": "group-1769966775187",
+    "content": "hi",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:11:58.000Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1769969523889",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "ho",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:12:03.889Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1769970298761",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "ho",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:24:58.762Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "deleted_for": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
+  },
+  {
+    "id": "1769970453236",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "😄",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:27:33.236Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1769972012957",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "This message was deleted",
+    "type": "system",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:53:32.958Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "is_deleted": true,
+    "deleted_for_everyone": true
+  },
+  {
+    "id": "1769972277505",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "hi",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-01T18:57:57.505Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": true,
+    "starred_by": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
   }
 ]
