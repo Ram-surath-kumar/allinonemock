@@ -69,3 +69,6 @@ export function Dashboard({ onAddUser, onNavigate }: DashboardProps) {
     </DashboardProvider>
   );
 }
+
+// Also export as default for compatibility
+export default Dashboard;

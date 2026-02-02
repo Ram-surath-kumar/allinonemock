@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { getDashboardData, DashboardData } from "@/services/dashboard";
+import { events, REFRESH_DASHBOARD } from "@/lib/events";
 
 interface DashboardContextType {
   dashboardData: DashboardData | null;
@@ -17,7 +18,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshDashboard = async () => {
+  const refreshDashboard = useCallback(async () => {
     if (!currentUser) {
       setDashboardData(null);
       return;
@@ -46,13 +47,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]);
 
   // Only fetch when user is available
   useEffect(() => {
     if (currentUser) {
       refreshDashboard();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
   // Listen for global refresh events
@@ -62,17 +64,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshDashboard();
     };
 
-    // Import dynamically to avoid circular dependencies if any (though standard import is fine here)
-    import("@/lib/events").then(({ events, REFRESH_DASHBOARD }) => {
-      events.on(REFRESH_DASHBOARD, handleRefresh);
-    });
+    events.on(REFRESH_DASHBOARD, handleRefresh);
 
     return () => {
-      import("@/lib/events").then(({ events, REFRESH_DASHBOARD }) => {
-        events.off(REFRESH_DASHBOARD, handleRefresh);
-      });
+      events.off(REFRESH_DASHBOARD, handleRefresh);
     };
-  }, [currentUser]); // Re-bind if user changes (though mostly stable)
+  }, [refreshDashboard]);
 
   return (
     <DashboardContext.Provider value={{ dashboardData, loading, error, refreshDashboard }}>

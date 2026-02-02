@@ -1030,16 +1030,123 @@ class ApiClient {
     return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
   }
 
+  async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/chats?user_id=${userId}`);
+  }
+
+  async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
+    return this.request("/chat/groups", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateGroupDescription(groupId: string, description: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}`, {
+      method: "PUT",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  async addGroupMembers(groupId: string, userIds: string[]): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ user_ids: userIds }),
+    });
+  }
+
+  async leaveGroup(groupId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}/leave`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async addReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, user_name: userName, emoji }),
+    });
+  }
+
+  async removeReaction(messageId: string, userId: string, emoji: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/messages/${messageId}/reactions/${emoji}?user_id=${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async muteChat(chatId: string, userId: string, muted: boolean): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}/mute`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, muted }),
+    });
+  }
+
+  async deleteChat(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ user_id: userId }), // DELETE usually doesn't have body, but express supports it. Safer to use query or URL param if possible, but route expects body.
+    });
+  }
+
+  // Alternative delete with headers if body is stripped
+  async deleteChatWithBody(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async clearChat(chatId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}/clear`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
   async sendChatMessage(data: {
     sender_id: string;
-    receiver_id: string;
+    receiver_id?: string;
+    group_id?: string;
     content: string;
     type: "text" | "image" | "file";
+    reply_to_id?: string;
+    file_url?: string;
+    file_name?: string;
+    file_type?: string;
+    file_size?: number;
   }): Promise<ApiResponse<any>> {
     return this.request("/chat/messages", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async pinMessage(messageId: string, pinned: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}/pin`, {
+      method: "PUT",
+      body: JSON.stringify({ pinned }),
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
+  }
+
+  async starMessage(messageId: string, userId: string, starred: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}/star`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, starred }),
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
+  }
+
+  async deleteChatMessage(messageId: string, userId: string, deleteForEveryone: boolean): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}?user_id=${userId}&type=${deleteForEveryone ? 'everyone' : 'me'}`, {
+      method: "DELETE",
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
   }
 
   async markMessagesAsRead(userId: string, otherUserId: string): Promise<ApiResponse<any>> {
@@ -1119,6 +1226,11 @@ class ApiClient {
     return this.request(`/tasks/${id}`, {
       method: "DELETE",
     });
+  }
+
+
+  async getGroupDetails(groupId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}`);
   }
 
   // Admission

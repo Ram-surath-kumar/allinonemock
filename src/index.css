@@ -5,6 +5,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* Ensure native checkboxes are square and styled consistently */
+  input[type="checkbox"] {
+    @apply h-4 w-4 aspect-square rounded-sm border-2 border-input bg-background;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  input[type="checkbox"]:checked {
+    @apply bg-primary border-primary;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-size: 14px 14px;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  input[type="checkbox"]:hover {
+    @apply border-primary/80 bg-accent;
+  }
+  
+  input[type="checkbox"]:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2;
+  }
+  
+  input[type="checkbox"]:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+}
+
+@layer base {
   :root {
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
@@ -49,11 +81,11 @@
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 226 71% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 88%;
+    --sidebar-accent: 210 40% 98%;
+    --sidebar-accent-foreground: 226 71% 40%;
+    --sidebar-border: 214 32% 94%;
     --sidebar-ring: 226 71% 40%;
-    --sidebar-muted: 215 16% 47%;
+    --sidebar-muted: 215 16% 55%;
 
     /* Modern 2025 UI tokens */
     --gradient-primary: linear-gradient(135deg, hsl(226 71% 40%), hsl(226 71% 55%));

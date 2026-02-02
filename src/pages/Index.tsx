@@ -1,14 +1,21 @@
 import { useState, useEffect, Suspense, lazy } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Login } from "@/pages/Login";
-import { ROLE_LABELS } from "@/types/erp";
 
 
 // Lazy load pages with better code splitting
-const Dashboard = lazy(() =>
-  import("@/pages/Dashboard").then((module) => ({ default: module.Dashboard }))
+const Dashboard = lazy(() => 
+  import("@/pages/Dashboard").then(module => {
+    // Handle both named and default exports
+    if (module.Dashboard) {
+      return { default: module.Dashboard };
+    }
+    if (module.default) {
+      return { default: module.default };
+    }
+    throw new Error("Dashboard component not found in module");
+  })
 );
 const Chat = lazy(() =>
   import("@/pages/Chat").then((module) => ({ default: module.Chat }))
@@ -68,12 +75,6 @@ const Facilities = lazy(() =>
 const Transportation = lazy(() =>
   import("@/pages/Transportation").then((module) => ({ default: module.default }))
 );
-const Events = lazy(() =>
-  import("@/pages/Events").then((module) => ({ default: module.Events }))
-);
-const Tasks = lazy(() =>
-  import("@/pages/Tasks").then((module) => ({ default: module.Tasks }))
-);
 
 // Import AcademicGovernance
 const AcademicGovernance = lazy(() =>
@@ -101,6 +102,20 @@ function AppContent() {
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Dialog states for various actions
+  const [dialogStates, setDialogStates] = useState<Record<string, boolean>>({
+    addUser: false,
+    addUserAI: false,
+    addStudent: false,
+    addApplicant: false,
+    collectFee: false,
+    addHostel: false,
+    allocateRoom: false,
+    addRoom: false,
+    addBook: false,
+    scheduleExam: false,
+  });
 
   // Map tab names to paths
   const tabToPath = {
@@ -232,47 +247,73 @@ function AppContent() {
     userId,
   ]);
 
-  const handleNavigate = (path, action, data) => {
-    let targetPath = path;
-
-    // Handle dialog actions by appending query param
-    if (action === "dialog" && data?.dialog) {
-      const separator = path.includes("?") ? "&" : "?";
-      targetPath = `${path}${separator}openDialog=${data.dialog}`;
-
+  const handleNavigate = (path: string, action?: string, actionData?: Record<string, unknown>) => {
+    // Handle dialog actions
+    if (action === "dialog" && actionData?.dialog) {
+      const dialogName = String(actionData.dialog);
       // Special case for global Add User dialog which is managed in AppContent
-      if (data.dialog === "addUser") {
+      if (dialogName === "addUser") {
         setAddUserDialogOpen(true);
         // We still navigate to users page if not already there
         if (!location.pathname.includes("/users")) {
-          targetPath = "/users";
-        } else {
-          return; // Already on users page and dialog open
+          const tabName = pathToTab["/users"] || "users";
+          if (currentUser?.organization && currentUser.user_id) {
+            navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+          } else {
+            navigate("/users");
+          }
         }
+        return;
       }
-    }
-
-    // For student routes, use the path directly or map to tab name
-    if (targetPath.startsWith("/student/")) {
-      const tabName = pathToTab[targetPath.split("?")[0]] || targetPath.replace("/student/", "").replace(/-/g, "-");
-      const queryParams = targetPath.includes("?") ? "?" + targetPath.split("?")[1] : "";
-
+      
+      // Navigate to the page first
+      const tabName = pathToTab[path as keyof typeof pathToTab] || path.replace("/", "") || "dashboard";
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryParams}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
       } else {
-        navigate(targetPath);
+        navigate(path);
+      }
+      // Open dialog after navigation
+      setTimeout(() => {
+        setDialogStates(prev => ({ ...prev, [dialogName]: true }));
+      }, 100);
+      return;
+    }
+    
+    // Handle focus actions (like notifications panel)
+    if (action === "focus" && actionData?.section) {
+      // Navigate to the page and focus on section
+      const tabName = pathToTab[path] || path.replace("/", "") || "dashboard";
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
+      }
+      // Focus logic can be handled by the page component
+      return;
+    }
+    
+    // Regular navigation
+    if (path.startsWith("/student/")) {
+      const tabName = pathToTab[path] || path.replace("/student/", "").replace(/-/g, "-");
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
       }
     } else {
-      const basePath = targetPath.split("?")[0];
-      const tabName = pathToTab[basePath] || "dashboard";
-      const queryParams = targetPath.includes("?") ? "?" + targetPath.split("?")[1] : "";
-
+      const tabName = pathToTab[path] || "dashboard";
       if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}${queryParams}`);
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
       } else {
-        navigate(targetPath);
+        navigate(path);
       }
     }
+  };
+  
+  // Helper to update dialog state
+  const setDialogOpen = (dialogName: string, open: boolean) => {
+    setDialogStates(prev => ({ ...prev, [dialogName]: open }));
   };
 
   // Get current path from URL
@@ -325,8 +366,7 @@ function AppContent() {
   const currentPath = getCurrentPath();
 
   const handleOpenAddUserDialog = () => {
-    handleNavigate("/users");
-    setAddUserDialogOpen(true);
+    handleNavigate("/users", "dialog", { dialog: "addUser" });
   };
 
   const getPageTitle = () => {
@@ -407,7 +447,13 @@ function AppContent() {
       case "/users":
         return (
           <Suspense fallback={<PageLoader />}>
-            <UserManagement dialogOpen={addUserDialogOpen} setDialogOpen={setAddUserDialogOpen} />
+            <UserManagement 
+              dialogOpen={dialogStates.addUser || addUserDialogOpen} 
+              setDialogOpen={(open) => {
+                setAddUserDialogOpen(open);
+                setDialogOpen("addUser", open);
+              }}
+            />
           </Suspense>
         );
       case "/students":

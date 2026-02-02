@@ -8,9 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { GrowthChartModal } from "@/components/dashboard/GrowthChartModal";
 import { StaffBreakdownModal } from "@/components/dashboard/StaffBreakdownModal";
 import {
-  getDashboardStats,
   getGrowthData,
-  getConsolidatedGrowthData,
 } from "@/services/dashboard";
 import type { DashboardStats } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,19 +36,20 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, ListFilter, Circle, CheckCircle } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 interface AdminDashboardProps {
-  onAddUser: () => void;
+  onAddUser?: () => void;
+  onNavigate?: (path: string) => void;
 }
 
-export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & { onNavigate?: (path: string) => void }) {
+export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps) {
   const { currentUser } = useAuth();
   const { t } = useI18n();
-  const { dashboardData, loading: dashboardLoading, refreshDashboard } = useDashboard();
+  const { dashboardData, loading: dashboardLoading } = useDashboard();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [changeTexts, setChangeTexts] = useState<{
@@ -92,6 +91,7 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
     if (isTaskDialogOpen) {
       loadCreatedTasks();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTaskDialogOpen, currentUser]);
 
   const loadUsers = async () => {
@@ -176,19 +176,11 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
         const feeCollection =
           typeof dashboardStats.feeCollection === "number" ? dashboardStats.feeCollection : 0;
 
-        console.log("AdminDashboard - Extracted Stats:", {
-          totalStudents,
-          totalStaff,
-          attendanceRate,
-          feeCollection,
-          feeCollectionPercentage,
-        });
-
-        // Governance Data
-        const placements = dashboardStats.placements || null;
-        const compliance = dashboardStats.compliance || null;
-        const pendingApprovals = dashboardStats.pendingApprovals || 0;
-        const systemVersion = dashboardStats.systemVersion || "v1.0.0";
+        // Governance Data (unused but kept for future use)
+        // const placements = dashboardStats.placements || null;
+        // const compliance = dashboardStats.compliance || null;
+        // const pendingApprovals = dashboardStats.pendingApprovals || 0;
+        // const systemVersion = dashboardStats.systemVersion || "v1.0.0";
 
         setStats({
           totalStudents,
@@ -212,6 +204,7 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
       fetchChangeTexts();
       fetchSparklineData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats]);
 
   const fetchChangeTexts = async () => {
@@ -401,30 +394,22 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
 
       {/* Task Assignment Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-        {/* @ts-expect-error - DialogContent accepts children but TypeScript doesn't recognize it from JSX component */}
         <DialogContent className="max-w-md sm:max-w-2xl">
           <Tabs defaultValue="new" className="w-full">
-            {/* @ts-expect-error - TabsList accepts children but TypeScript doesn't recognize it from JSX component */}
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
               <TabsTrigger value="new">Assign New</TabsTrigger>
-              {/* @ts-expect-error - TabsTrigger accepts children but TypeScript doesn't recognize it from JSX component */}
               <TabsTrigger value="history">Tasks Created</TabsTrigger>
             </TabsList>
 
-            {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
             <TabsContent value="new" className="space-y-6">
               <DialogHeader className="px-0">
-                {/* @ts-expect-error - DialogTitle accepts children but TypeScript doesn't recognize it from JSX component */}
                 <DialogTitle>Assign Task to Member</DialogTitle>
-                {/* @ts-expect-error - DialogDescription accepts children but TypeScript doesn't recognize it from JSX component */}
                 <DialogDescription>
                   Create a new task for a student or staff member.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid gap-2">
-                  {/* @ts-expect-error - Label accepts children but TypeScript doesn't recognize it from JSX component */}
                   <Label htmlFor="task_title">Task Title</Label>
                   <Input
                     id="task_title"
@@ -434,11 +419,9 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  {/* @ts-expect-error - Label accepts children but TypeScript doesn't recognize it from JSX component */}
                   <Label>Assign To</Label>
                   <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                     <PopoverTrigger asChild>
-                      {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                       <Button
                         variant="outline"
                         role="combobox"
@@ -451,20 +434,13 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    {/* @ts-expect-error - PopoverContent accepts children but TypeScript doesn't recognize it from JSX component */}
                     <PopoverContent className="w-[400px] p-0">
-                      {/* @ts-expect-error - Command accepts children but TypeScript doesn't recognize it from JSX component */}
                       <Command>
-                        {/* @ts-expect-error - CommandInput accepts placeholder prop but TypeScript doesn't recognize it from JSX component */}
                         <CommandInput placeholder="Search member..." />
-                        {/* @ts-expect-error - CommandList accepts children but TypeScript doesn't recognize it from JSX component */}
                         <CommandList>
-                          {/* @ts-expect-error - CommandEmpty accepts children but TypeScript doesn't recognize it from JSX component */}
                           <CommandEmpty>No member found.</CommandEmpty>
-                          {/* @ts-expect-error - CommandGroup accepts children but TypeScript doesn't recognize it from JSX component */}
                           <CommandGroup>
                             {users.map((user) => (
-                              /* @ts-expect-error - CommandItem accepts children but TypeScript doesn't recognize it from JSX component */
                               <CommandItem
                                 key={user.id}
                                 value={user.name}
@@ -498,7 +474,6 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
                   </Popover>
                 </div>
                 <div className="grid gap-2">
-                  {/* @ts-expect-error - Label accepts children but TypeScript doesn't recognize it from JSX component */}
                   <Label htmlFor="due_date">Due Date</Label>
                   <Input
                     id="due_date"
@@ -508,10 +483,8 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
                   />
                 </div>
                 <div className="grid gap-2">
-                  {/* @ts-expect-error - Label accepts children but TypeScript doesn't recognize it from JSX component */}
                   <Label htmlFor="description">Description</Label>
                   <Textarea
-                    // @ts-expect-error - Textarea accepts props but TypeScript doesn't recognize them from JSX component
                     id="description"
                     value={taskFormData.description}
                     onChange={(e) =>
@@ -523,16 +496,13 @@ export function AdminDashboard({ onAddUser, onNavigate }: AdminDashboardProps & 
                 </div>
               </div>
               <DialogFooter className="px-0">
-                {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                 <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
                   Cancel
                 </Button>
-                {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
                 <Button onClick={handleSaveTask}>Assign Task</Button>
               </DialogFooter>
             </TabsContent>
 
-            {/* @ts-expect-error - TabsContent accepts children but TypeScript doesn't recognize it from JSX component */}
             <TabsContent value="history" className="max-h-[60vh] overflow-y-auto space-y-3">
               <div className="space-y-1 mb-4">
                 <h4 className="font-medium leading-none">Tasks Created by You</h4>

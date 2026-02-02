@@ -26,15 +26,15 @@ export default function Transportation() {
         try {
             // Fetch routes
             const routesResponse = await api.get('/transport/routes');
-            const routes = routesResponse.data || [];
+            const routes = (routesResponse.data as any[]) || [];
 
             // Fetch vehicles
             const vehiclesResponse = await api.get('/transport/vehicles');
-            const vehicles = vehiclesResponse.data || [];
+            const vehicles = (vehiclesResponse.data as any[]) || [];
 
             // Fetch students (registrations)
             const studentsResponse = await api.get('/transport/registrations');
-            const students = studentsResponse.data || [];
+            const students = (studentsResponse.data as any[]) || [];
 
             setStats({
                 totalRoutes: routes.length,

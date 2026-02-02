@@ -257,5 +257,43 @@
     "type": "text",
     "read": false,
     "created_at": "2026-01-29T06:38:03.324Z"
+  },
+  {
+    "id": "1770046351055",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "5685db0f-def1-4683-9a80-21e961f39183",
+    "group_id": null,
+    "content": "test. msg",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T15:32:31.055Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1770046398008",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "2f965c7f-23b2-481d-9f97-7ac7e7451d42",
+    "group_id": null,
+    "content": "the",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T15:33:18.008Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
   }
 ]
