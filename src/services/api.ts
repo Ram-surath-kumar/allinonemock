@@ -1055,6 +1055,26 @@ class ApiClient {
     });
   }
 
+  async leaveGroup(groupId: string, userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/groups/${groupId}/leave`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async addReaction(messageId: string, userId: string, userName: string, emoji: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, user_name: userName, emoji }),
+    });
+  }
+
+  async removeReaction(messageId: string, userId: string, emoji: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/messages/${messageId}/reactions/${emoji}?user_id=${userId}`, {
+      method: "DELETE",
+    });
+  }
+
   async muteChat(chatId: string, userId: string, muted: boolean): Promise<ApiResponse<any>> {
     return this.request(`/chat/chats/${chatId}/mute`, {
       method: "PUT",

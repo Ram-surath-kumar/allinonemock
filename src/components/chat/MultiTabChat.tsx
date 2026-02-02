@@ -301,6 +301,14 @@ export function MultiTabChat() {
     }
   };
 
+  const handleLeaveGroup = () => {
+    setActiveChat(null);
+    loadChats();
+    if (currentUser?.organization) {
+      navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat`);
+    }
+  };
+
   const handleGroupCreated = () => {
     loadChats();
   };
@@ -325,10 +333,19 @@ export function MultiTabChat() {
     }));
 
     try {
-      await api.post(`/chat/messages/${messageId}/reactions`, { emoji });
+      await api.addReaction(messageId, currentUser.id, currentUser.name, emoji);
     } catch (error) {
       console.error("Failed to add reaction", error);
-      // Revert on failure (could improve this)
+      // Revert on failure
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            reactions: (msg.reactions || []).filter(r => !(r.user_id === currentUser.id && r.emoji === emoji))
+          };
+        }
+        return msg;
+      }));
     }
   };
 
@@ -347,10 +364,19 @@ export function MultiTabChat() {
     }));
 
     try {
-      await api.delete(`/chat/messages/${messageId}/reactions/${emoji}`);
-      // Note: API might need to be adjusted based on actual implementation
+      await api.removeReaction(messageId, currentUser.id, emoji);
     } catch (error) {
       console.error("Failed to remove reaction", error);
+      // Revert on failure
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            reactions: [...(msg.reactions || []), { emoji, user_id: currentUser.id, user_name: currentUser.name }]
+          };
+        }
+        return msg;
+      }));
     }
   };
 
@@ -397,6 +423,7 @@ export function MultiTabChat() {
               onRefreshMessages={() => {
                 if (activeChat) loadMessages(activeChat, true);
               }}
+              onLeaveGroup={handleLeaveGroup}
             />
           ) : (
             <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-muted/5 select-none animate-in fade-in duration-500">

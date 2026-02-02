@@ -15,23 +15,21 @@ interface GroupInfoSidebarProps {
     onClose: () => void;
     currentUserId: string;
     onAddMember: () => void;
+    onLeaveGroup?: () => void;
 }
 
-export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember }: GroupInfoSidebarProps) {
-    const [group, setGroup] = useState<any>({
-        name: "Loading...",
-        members: [],
-        created_at: new Date().toISOString()
-    });
-    const [loading, setLoading] = useState(false);
+export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember, onLeaveGroup }: GroupInfoSidebarProps) {
+    const [group, setGroup] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [members, setMembers] = useState<any[]>([]);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [desc, setDesc] = useState("");
+    const [isLeaving, setIsLeaving] = useState(false);
 
     useEffect(() => {
         const fetchGroup = async () => {
             try {
-                setLoading(true);
+                setIsLoading(true);
                 const res = await api.getGroupDetails(groupId);
                 if (res.data) {
                     setGroup(res.data);
@@ -46,7 +44,7 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
             } catch (error) {
                 console.error("Failed to load group info", error);
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
         fetchGroup();
@@ -63,7 +61,22 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
         }
     };
 
-    if (!group && !loading) return null;
+    const handleLeaveGroup = async () => {
+        if (!confirm("Are you sure you want to leave this group?")) return;
+
+        setIsLeaving(true);
+        try {
+            await api.leaveGroup(groupId, currentUserId);
+            toast.success("You have left the group");
+            onLeaveGroup?.();
+        } catch (error) {
+            toast.error("Failed to leave group");
+        } finally {
+            setIsLeaving(false);
+        }
+    };
+
+    if (!group && !isLoading) return null;
 
     return (
         <div className="w-80 h-full border-l border-border bg-background flex flex-col animate-in slide-in-from-right duration-300">
@@ -76,7 +89,7 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
             </div>
 
             <ScrollArea className="flex-1">
-                {loading ? (
+                {isLoading ? (
                     <div className="p-8 text-center text-muted-foreground">Loading...</div>
                 ) : (
                     <div className="pb-8">
@@ -215,9 +228,14 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember 
                         <div className="h-2 bg-muted/30 border-y border-border/50 mt-4" />
 
                         <div className="p-2 space-y-1">
-                            <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20">
-                                <LogOut className="h-5 w-5 mr-3" />
-                                Exit Group
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 border-red-200 dark:border-red-900/50"
+                                onClick={handleLeaveGroup}
+                                disabled={isLeaving}
+                            >
+                                <LogOut className="h-4 w-4 mr-2" />
+                                {isLeaving ? "Leaving..." : "Exit Group"}
                             </Button>
                             <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20">
                                 <Trash2 className="h-5 w-5 mr-3" />

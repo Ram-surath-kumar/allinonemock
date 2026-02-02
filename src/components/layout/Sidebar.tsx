@@ -33,6 +33,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const DropdownMenuContentAny = DropdownMenuContent as any;
+const DropdownMenuItemAny = DropdownMenuItem as any;
 import { api } from "@/services/api";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -307,8 +310,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       ref={sidebarRef}
       className={cn(
         "flex h-screen flex-col shadow-depth-2 border-r border-sidebar-border",
-        "bg-sidebar backdrop-blur-xl transition-[width] duration-300 ease-out",
-        "dark:bg-sidebar/80 dark:glass-modern",
+        "bg-sidebar transition-[width] duration-300 ease-out",
+        "bg-white/95 backdrop-blur-md dark:bg-sidebar/80 dark:glass-modern",
         collapsed ? "w-16" : "w-64"
       )}
       role="navigation"
@@ -318,8 +321,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       <div
         className={cn(
           "flex items-center border-b border-sidebar-border",
-          "bg-sidebar/50 dark:bg-sidebar/50 backdrop-blur-sm",
-          collapsed ? "justify-center px-2 py-4" : "gap-3 px-4 py-4"
+          "bg-white/40 dark:bg-sidebar/50 backdrop-blur-sm shadow-sm z-10",
+          collapsed ? "justify-center px-2 py-5" : "gap-3 px-5 py-5"
         )}
       >
         <div
@@ -348,11 +351,11 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
             collapsed ? "" : "delay-50"
           )}
         >
-          <div className="whitespace-nowrap pl-3">
-            <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground">
+          <div className="whitespace-nowrap pl-2">
+            <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground uppercase">
               {currentUser?.organization?.org_name || "College Name"}
             </h1>
-            <p className="text-xs text-sidebar-muted font-medium">powered by loopverse</p>
+            <p className="text-[10px] text-sidebar-muted font-bold uppercase tracking-widest mt-0.5 opacity-60">powered by loopverse</p>
           </div>
         </div>
       </div>
@@ -372,10 +375,10 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
                 "transition-all duration-200",
                 "hover:scale-[1.02] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-sidebar-primary focus-visible:outline-offset-2",
                 "active:scale-95 transition-all duration-200",
-                collapsed ? "justify-center w-full py-4" : "justify-start w-full gap-4 px-4 py-4",
+                collapsed ? "justify-center w-full py-4" : "justify-start w-full gap-4 px-4 py-3.5",
                 collapsed && isActive ? "px-2.5" : collapsed ? "px-1.5" : "",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-sidebar-primary/20 ring-1 ring-sidebar-primary/50"
                   : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-sm"
               )}
               title={collapsed ? item.label : undefined}
@@ -427,8 +430,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
             <button
               className={cn(
                 "flex w-full items-center rounded-xl text-left",
-                "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98]",
-                collapsed ? "justify-center px-0 py-3" : "justify-start gap-3 px-3 py-3"
+                "transition-all duration-200 hover:bg-sidebar-accent active:scale-[0.98] ring-inset hover:ring-1 hover:ring-sidebar-border",
+                collapsed ? "justify-center px-0 py-3" : "justify-start gap-4 px-3 py-4"
               )}
             >
               <div
@@ -463,7 +466,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
               </div>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 glass-modern">
+          <DropdownMenuContentAny align="end" className="w-64 glass-modern">
             <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               {t("sidebar.switchRole")}
             </div>
@@ -477,7 +480,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
               </div>
             ) : (
               allUsers.map((user) => (
-                <DropdownMenuItem
+                <DropdownMenuItemAny
                   key={user.id}
                   onClick={() => handleUserSwitch(user)}
                   className={cn(
@@ -496,14 +499,14 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
                       </p>
                     </div>
                   </div>
-                </DropdownMenuItem>
+                </DropdownMenuItemAny>
               ))
             )}
-            <DropdownMenuItem onClick={logout} className="text-destructive">
+            <DropdownMenuItemAny onClick={logout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               {t("sidebar.signOut")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+            </DropdownMenuItemAny>
+          </DropdownMenuContentAny>
         </DropdownMenu>
       </div>
     </aside>

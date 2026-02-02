@@ -321,6 +321,46 @@ router.put('/groups/:id/members', (req, res) => {
     res.json({ data: groups[groupIndex], error: null });
 });
 
+// Leave a Group
+router.post('/groups/:id/leave', (req, res) => {
+    const { id } = req.params;
+    const { user_id } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const groups = readGroups();
+    const groupIndex = groups.findIndex(g => g.id === id);
+
+    if (groupIndex === -1) {
+        return res.status(404).json({ error: 'Group not found' });
+    }
+
+    const group = groups[groupIndex];
+    if (!group.members) group.members = [];
+
+    // Remove user from members
+    group.members = group.members.filter(uid => uid !== user_id);
+
+    writeGroups(groups);
+
+    // Add a system message about user leaving
+    const messages = readMessages();
+    const systemMsg = {
+        id: `sys-${Date.now()}`,
+        group_id: id,
+        sender_id: 'system',
+        content: `A member has left the group`,
+        type: 'system',
+        created_at: new Date().toISOString()
+    };
+    messages.push(systemMsg);
+    writeMessages(messages);
+
+    res.json({ success: true, data: group, error: null });
+});
+
 // Get Group Details
 router.get('/groups/:id', (req, res) => {
     const { id } = req.params;
@@ -573,6 +613,60 @@ router.delete('/messages/:id', (req, res) => {
 
     writeMessages(messages);
     res.json({ success: true, id });
+});
+
+// Add Reaction to Message
+router.post('/messages/:id/reactions', (req, res) => {
+    const { id } = req.params;
+    const { user_id, user_name, emoji } = req.body;
+
+    if (!user_id || !emoji) {
+        return res.status(400).json({ error: 'user_id and emoji are required' });
+    }
+
+    const messages = readMessages();
+    const msgIndex = messages.findIndex(m => m.id === id);
+
+    if (msgIndex === -1) {
+        return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const msg = messages[msgIndex];
+    if (!msg.reactions) msg.reactions = [];
+
+    // Check if user already reacted with this emoji
+    const existing = msg.reactions.find(r => r.user_id === user_id && r.emoji === emoji);
+    if (!existing) {
+        msg.reactions.push({ user_id, user_name, emoji });
+        writeMessages(messages);
+    }
+
+    res.json({ data: msg, error: null });
+});
+
+// Remove Reaction from Message
+router.delete('/messages/:id/reactions/:emoji', (req, res) => {
+    const { id, emoji } = req.params;
+    const { user_id } = req.query;
+
+    if (!user_id) {
+        return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const messages = readMessages();
+    const msgIndex = messages.findIndex(m => m.id === id);
+
+    if (msgIndex === -1) {
+        return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const msg = messages[msgIndex];
+    if (msg.reactions) {
+        msg.reactions = msg.reactions.filter(r => !(r.user_id === user_id && r.emoji === emoji));
+        writeMessages(messages);
+    }
+
+    res.json({ data: msg, error: null });
 });
 
 // Mark messages as read

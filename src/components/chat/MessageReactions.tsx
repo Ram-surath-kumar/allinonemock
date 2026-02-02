@@ -67,10 +67,17 @@ export function MessageReactions({
         } else {
             onAddReaction(message.id, emoji);
         }
+
+        onClosePicker?.();
     };
 
     return (
-        <div className="relative">
+        <div
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+        >
             {/* Quick Reactions Bar */}
             {showPicker && !showFullPicker && (
                 <div className="absolute bottom-full mb-2 left-0 z-50 bg-popover border border-border rounded-full shadow-lg px-2 py-1.5 flex items-center gap-1">

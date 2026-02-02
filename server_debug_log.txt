@@ -2216,3 +2216,131 @@
 [2026-02-01T18:58:05.822Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-02-01T18:58:06.631Z] [AUTH] Incoming Request: GET /api/users?status=active
 [2026-02-01T18:58:07.588Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:56:02.815Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T10:56:03.613Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:56:03.929Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T10:56:04.569Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:57:47.034Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T10:57:47.742Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:57:50.022Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T10:57:50.677Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:58:22.563Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T10:58:23.226Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:58:23.498Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T10:58:23.963Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:58:24.420Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T10:58:24.916Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:58:25.247Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T10:58:25.733Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T10:58:36.273Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T10:58:36.747Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:11.299Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:00:12.083Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:13.245Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:00:13.920Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:20.376Z] [AUTH] Incoming Request: GET /api/users/9ad73f26-d83a-48df-815c-db4b01ff7cb7
+[2026-02-02T11:00:20.383Z] [AUTH] Incoming Request: GET /api/users/cd13a89a-7c66-4502-b6af-a790f8cd2c8d
+[2026-02-02T11:00:20.390Z] [AUTH] Incoming Request: GET /api/users/1454caf7-60ba-489f-83ea-51e65fecbe36
+[2026-02-02T11:00:20.396Z] [AUTH] Incoming Request: GET /api/users/cff3208f-9c9a-4729-9d41-aad2d3e075b1
+[2026-02-02T11:00:21.016Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:21.036Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:21.090Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:21.176Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:57.281Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:00:57.941Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:00:58.790Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:00:59.380Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:02:54.462Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:02:54.550Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-02T11:03:19.120Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:03:20.169Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:03:21.307Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:03:21.803Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:03:23.960Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:03:24.505Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:03:53.204Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:03:54.513Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:03:55.592Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:03:56.146Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:04:48.660Z] [AUTH] Incoming Request: GET /api/users/9ad73f26-d83a-48df-815c-db4b01ff7cb7
+[2026-02-02T11:04:48.669Z] [AUTH] Incoming Request: GET /api/users/cd13a89a-7c66-4502-b6af-a790f8cd2c8d
+[2026-02-02T11:04:48.676Z] [AUTH] Incoming Request: GET /api/users/1454caf7-60ba-489f-83ea-51e65fecbe36
+[2026-02-02T11:04:48.682Z] [AUTH] Incoming Request: GET /api/users/cff3208f-9c9a-4729-9d41-aad2d3e075b1
+[2026-02-02T11:04:49.463Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:04:49.529Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:04:49.532Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:04:49.533Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:08:05.402Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:08:06.756Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:08:07.014Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:08:07.528Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:08:07.978Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:08:08.572Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:08:09.212Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:08:09.679Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:08.016Z] [AUTH] Incoming Request: GET /api/users/9ad73f26-d83a-48df-815c-db4b01ff7cb7
+[2026-02-02T11:12:08.041Z] [AUTH] Incoming Request: GET /api/users/1454caf7-60ba-489f-83ea-51e65fecbe36
+[2026-02-02T11:12:08.050Z] [AUTH] Incoming Request: GET /api/users/cd13a89a-7c66-4502-b6af-a790f8cd2c8d
+[2026-02-02T11:12:08.059Z] [AUTH] Incoming Request: GET /api/users/cff3208f-9c9a-4729-9d41-aad2d3e075b1
+[2026-02-02T11:12:08.595Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:08.647Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:08.678Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:08.734Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:33.423Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:12:33.891Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:12:34.616Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:12:35.173Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:13:14.270Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:13:15.249Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:13:17.362Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:13:17.777Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:13:44.027Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:13:44.648Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:13:45.695Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:13:46.159Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:14:07.372Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:14:08.008Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:14:09.256Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:14:11.505Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:14:25.663Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:14:26.474Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:19:43.254Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:19:44.974Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:19:52.337Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:19:53.540Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:20:12.522Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:20:13.392Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:20:15.859Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:20:16.323Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:21:52.986Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20011
+[2026-02-02T11:21:53.648Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:22:43.480Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:22:44.200Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:22:45.281Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20011
+[2026-02-02T11:22:45.776Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:22:46.148Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:22:46.804Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:22:53.706Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:22:54.310Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:22:55.955Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20001
+[2026-02-02T11:22:56.623Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:28:40.585Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:28:41.219Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:28:41.528Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:28:41.994Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:28:42.547Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:28:43.035Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:28:43.285Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-02T11:28:43.667Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:36:39.497Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:36:40.887Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:36:42.350Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:36:43.301Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:44:18.774Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:44:19.724Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:44:21.160Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:44:21.664Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:44:49.700Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-02T11:44:51.048Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-02T11:44:51.971Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-02T11:44:52.468Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

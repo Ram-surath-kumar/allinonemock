@@ -34,7 +34,7 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-[280px] p-0 bg-sidebar text-sidebar-foreground border-r-0">
+          <SheetContent side="left" className="w-[280px] p-0 bg-sidebar text-sidebar-foreground border-r-0 glass-modern">
             <Sidebar
               currentPath={currentPath}
               onNavigate={(path) => {

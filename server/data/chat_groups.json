@@ -3,7 +3,6 @@
     "id": "group-1769690898429",
     "name": "the gang ",
     "members": [
-      "cd13a89a-7c66-4502-b6af-a790f8cd2c8d",
       "a378fa77-939e-46e2-bb4d-93618047252f",
       "1454caf7-60ba-489f-83ea-51e65fecbe36",
       "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
@@ -39,5 +38,17 @@
     "created_by": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
     "created_at": "2026-02-01T17:26:15.188Z",
     "description": "hh"
+  },
+  {
+    "id": "group-1770029999940",
+    "name": "ogggg",
+    "members": [
+      "cd13a89a-7c66-4502-b6af-a790f8cd2c8d",
+      "1454caf7-60ba-489f-83ea-51e65fecbe36",
+      "cff3208f-9c9a-4729-9d41-aad2d3e075b1"
+    ],
+    "icon": null,
+    "created_by": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "created_at": "2026-02-02T10:59:59.940Z"
   }
 ]

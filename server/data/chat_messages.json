@@ -631,5 +631,208 @@
     "file_name": null,
     "file_type": null,
     "file_size": null
+  },
+  {
+    "id": "1770030054055",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": null,
+    "group_id": "group-1770029999940",
+    "content": "😄",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:00:54.057Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1770030109223",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": null,
+    "group_id": "group-1770029999940",
+    "content": "This message was deleted",
+    "type": "system",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:01:49.223Z",
+    "reply_to_id": "1770030054055",
+    "reply_to": {
+      "id": "1770030054055",
+      "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+      "content": "😄",
+      "type": "text",
+      "file_name": null
+    },
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "is_deleted": true,
+    "deleted_for_everyone": true
+  },
+  {
+    "id": "1770030118390",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": null,
+    "group_id": "group-1770029999940",
+    "content": "😄",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:01:58.390Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "deleted_for": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
+  },
+  {
+    "id": "1770030167660",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": null,
+    "group_id": "group-1770029999940",
+    "content": "dei",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:02:47.660Z",
+    "reply_to_id": "1770030054055",
+    "reply_to": {
+      "id": "1770030054055",
+      "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+      "content": "😄",
+      "type": "text",
+      "file_name": null
+    },
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1770030227753",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "dd",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:03:47.754Z",
+    "reply_to_id": "1769972277505",
+    "reply_to": {
+      "id": "1769972277505",
+      "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+      "content": "hi",
+      "type": "text",
+      "file_name": null
+    },
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "sys-1770030700176",
+    "group_id": "group-1769690898429",
+    "sender_id": "system",
+    "content": "A member has left the group",
+    "type": "system",
+    "created_at": "2026-02-02T11:11:40.177Z"
+  },
+  {
+    "id": "sys-1770030734097",
+    "group_id": "group-1770029999940",
+    "sender_id": "system",
+    "content": "A member has left the group",
+    "type": "system",
+    "created_at": "2026-02-02T11:12:14.098Z"
+  },
+  {
+    "id": "sys-1770030743333",
+    "group_id": "group-1770029999940",
+    "sender_id": "system",
+    "content": "A member has left the group",
+    "type": "system",
+    "created_at": "2026-02-02T11:12:23.333Z"
+  },
+  {
+    "id": "1770030788341",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "a378fa77-939e-46e2-bb4d-93618047252f",
+    "group_id": null,
+    "content": "no",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-02T11:13:08.342Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
+  },
+  {
+    "id": "1770031357286",
+    "sender_id": "9744886c-87e8-45d1-9f51-b46eb1b965d2",
+    "receiver_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "group_id": null,
+    "content": "deiiiiii",
+    "type": "text",
+    "read": true,
+    "read_by": [],
+    "created_at": "2026-02-02T11:22:37.286Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "read_at": "2026-02-02T11:23:08.312Z",
+    "reactions": [
+      {
+        "user_id": "user-1234",
+        "user_name": "Test User",
+        "emoji": "heart"
+      },
+      {
+        "user_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+        "user_name": "Administrator",
+        "emoji": "heart"
+      },
+      {
+        "user_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+        "user_name": "Administrator",
+        "emoji": "❤️"
+      },
+      {
+        "user_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+        "user_name": "Administrator",
+        "emoji": "👍"
+      }
+    ]
   }
 ]

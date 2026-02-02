@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,7 @@ export function ChatBubble({
     onRemoveReaction,
     currentUserId,
 }: ChatBubbleProps) {
+    const [showPicker, setShowPicker] = useState(false);
     const time = format(new Date(message.created_at), "HH:mm");
 
     const renderContent = () => {
@@ -160,13 +162,15 @@ export function ChatBubble({
                     )}
                 </div>
 
-                {message.reactions && message.reactions.length > 0 && onRemoveReaction && (
+                {((message.reactions && message.reactions.length > 0) || showPicker) && onAddReaction && onRemoveReaction && (
                     <div className="mt-1">
                         <MessageReactions
                             message={message}
                             currentUserId={currentUserId || ''}
                             onAddReaction={onAddReaction!}
                             onRemoveReaction={onRemoveReaction}
+                            showPicker={showPicker}
+                            onClosePicker={() => setShowPicker(false)}
                         />
                     </div>
                 )}
@@ -196,7 +200,10 @@ export function ChatBubble({
                 isMe={isMe}
                 onReply={() => onReply?.(message)}
                 onCopy={onCopy || (() => { })}
-                onReact={() => onReact?.(message)}
+                onReact={() => {
+                    setShowPicker(!showPicker);
+                    onReact?.(message);
+                }}
                 onForward={() => onForward?.(message)}
                 onPin={() => onPin?.(message)}
                 onStar={() => onStar?.(message)}

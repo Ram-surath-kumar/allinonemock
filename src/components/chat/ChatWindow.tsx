@@ -67,6 +67,7 @@ interface ChatWindowProps {
     onAddReaction: (messageId: string, emoji: string) => void;
     onRemoveReaction: (messageId: string, emoji: string) => void;
     onRefreshMessages?: () => void;
+    onLeaveGroup?: () => void;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -87,7 +88,8 @@ export function ChatWindow({
     chats = [],
     onAddReaction,
     onRemoveReaction,
-    onRefreshMessages
+    onRefreshMessages,
+    onLeaveGroup
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -477,6 +479,7 @@ export function ChatWindow({
                     currentUserId={currentUser.id}
                     onClose={() => setShowGroupInfo(false)}
                     onAddMember={() => setIsAddMembersOpen(true)}
+                    onLeaveGroup={onLeaveGroup}
                     key={groupInfoKey}
                 />
             )}
