@@ -255,7 +255,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
 router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async (req, res) => {
   const fs = await import('fs');
   const path = await import('path');
-  const logFile = path.join(process.cwd(), 'server', 'server_debug.log');
+  const logFile = path.join(process.cwd(), 'server_debug_log.txt');
 
   const log = (msg) => {
     const timestamp = new Date().toISOString();
@@ -417,7 +417,7 @@ router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async 
     try {
       const fs = await import('fs');
       const path = await import('path');
-      const logFile = path.join(process.cwd(), 'server', 'server_debug.log');
+      const logFile = path.join(process.cwd(), 'server_debug_log.txt');
       fs.appendFileSync(logFile, `[ERROR] Catch block: ${error.message}\n`);
     } catch (e) { }
 

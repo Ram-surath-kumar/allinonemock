@@ -1,11 +1,12 @@
 import express from 'express';
 import { supabaseAdmin } from '../common.js';
 import { handleError, sendSuccess } from '../common.js';
+import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get activities
-router.get('/', async (req, res) => {
+router.get('/', authenticateUser, async (req, res) => {
   try {
     const { limit } = req.query;
     let query = supabaseAdmin.from('activities').select('*');
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create activity/activities
-router.post('/', async (req, res) => {
+router.post('/', authenticateUser, async (req, res) => {
   try {
     // Support both single object and array of objects for bulk insert
     const isArray = Array.isArray(req.body);
