@@ -101,6 +101,20 @@ function AppContent() {
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Dialog states for various actions
+  const [dialogStates, setDialogStates] = useState<Record<string, boolean>>({
+    addUser: false,
+    addUserAI: false,
+    addStudent: false,
+    addApplicant: false,
+    collectFee: false,
+    addHostel: false,
+    allocateRoom: false,
+    addRoom: false,
+    addBook: false,
+    scheduleExam: false,
+  });
 
   // Map tab names to paths
   const tabToPath = {
@@ -232,8 +246,38 @@ function AppContent() {
     userId,
   ]);
 
-  const handleNavigate = (path) => {
-    // For student routes, use the path directly or map to tab name
+  const handleNavigate = (path: string, action?: string, actionData?: any) => {
+    // Handle dialog actions
+    if (action === "dialog" && actionData?.dialog) {
+      const dialogName = actionData.dialog;
+      // Navigate to the page first
+      const tabName = pathToTab[path] || path.replace("/", "") || "dashboard";
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
+      }
+      // Open dialog after navigation
+      setTimeout(() => {
+        setDialogStates(prev => ({ ...prev, [dialogName]: true }));
+      }, 100);
+      return;
+    }
+    
+    // Handle focus actions (like notifications panel)
+    if (action === "focus" && actionData?.section) {
+      // Navigate to the page and focus on section
+      const tabName = pathToTab[path] || path.replace("/", "") || "dashboard";
+      if (currentUser?.organization && currentUser.user_id) {
+        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
+      } else {
+        navigate(path);
+      }
+      // Focus logic can be handled by the page component
+      return;
+    }
+    
+    // Regular navigation
     if (path.startsWith("/student/")) {
       const tabName = pathToTab[path] || path.replace("/student/", "").replace(/-/g, "-");
       if (currentUser?.organization && currentUser.user_id) {
@@ -249,6 +293,11 @@ function AppContent() {
         navigate(path);
       }
     }
+  };
+  
+  // Helper to update dialog state
+  const setDialogOpen = (dialogName: string, open: boolean) => {
+    setDialogStates(prev => ({ ...prev, [dialogName]: open }));
   };
 
   // Get current path from URL
@@ -301,8 +350,7 @@ function AppContent() {
   const currentPath = getCurrentPath();
 
   const handleOpenAddUserDialog = () => {
-    handleNavigate("/users");
-    setAddUserDialogOpen(true);
+    handleNavigate("/users", "dialog", { dialog: "addUser" });
   };
 
   const getPageTitle = () => {
@@ -383,13 +431,24 @@ function AppContent() {
       case "/users":
         return (
           <Suspense fallback={<PageLoader />}>
-            <UserManagement dialogOpen={addUserDialogOpen} setDialogOpen={setAddUserDialogOpen} />
+            <UserManagement 
+              dialogOpen={dialogStates.addUser || addUserDialogOpen} 
+              setDialogOpen={(open) => {
+                setAddUserDialogOpen(open);
+                setDialogOpen("addUser", open);
+              }}
+              aiDialogOpen={dialogStates.addUserAI}
+              setAiDialogOpen={(open) => setDialogOpen("addUserAI", open)}
+            />
           </Suspense>
         );
       case "/students":
         return (
           <Suspense fallback={<PageLoader />}>
-            <Students />
+            <Students 
+              addStudentDialogOpen={dialogStates.addStudent}
+              setAddStudentDialogOpen={(open: boolean) => setDialogOpen("addStudent", open)}
+            />
           </Suspense>
         );
       case "/attendance":
@@ -456,25 +515,39 @@ function AppContent() {
       case "/finance":
         return (
           <Suspense fallback={<PageLoader />}>
-            <Finance />
+            <Finance 
+              collectFeeDialogOpen={dialogStates.collectFee}
+              setCollectFeeDialogOpen={(open: boolean) => setDialogOpen("collectFee", open)}
+            />
           </Suspense>
         );
       case "/hostel":
         return (
           <Suspense fallback={<PageLoader />}>
-            <HostelDashboard />
+            <HostelDashboard 
+              addHostelDialogOpen={dialogStates.addHostel}
+              setAddHostelDialogOpen={(open: boolean) => setDialogOpen("addHostel", open)}
+              allocateRoomDialogOpen={dialogStates.allocateRoom}
+              setAllocateRoomDialogOpen={(open: boolean) => setDialogOpen("allocateRoom", open)}
+            />
           </Suspense>
         );
       case "/exam":
         return (
           <Suspense fallback={<PageLoader />}>
-            <ExamDashboard />
+            <ExamDashboard 
+              scheduleExamDialogOpen={dialogStates.scheduleExam}
+              setScheduleExamDialogOpen={(open: boolean) => setDialogOpen("scheduleExam", open)}
+            />
           </Suspense>
         );
       case "/library":
         return (
           <Suspense fallback={<PageLoader />}>
-            <LibraryDashboard />
+            <LibraryDashboard 
+              addBookDialogOpen={dialogStates.addBook}
+              setAddBookDialogOpen={(open: boolean) => setDialogOpen("addBook", open)}
+            />
           </Suspense>
         );
       case "/transport":
@@ -486,13 +559,19 @@ function AppContent() {
       case "/admissions":
         return (
           <Suspense fallback={<PageLoader />}>
-            <Admissions />
+            <Admissions 
+              addApplicantDialogOpen={dialogStates.addApplicant}
+              setAddApplicantDialogOpen={(open: boolean) => setDialogOpen("addApplicant", open)}
+            />
           </Suspense>
         );
       case "/facilities":
         return (
           <Suspense fallback={<PageLoader />}>
-            <Facilities />
+            <Facilities 
+              addRoomDialogOpen={dialogStates.addRoom}
+              setAddRoomDialogOpen={(open: boolean) => setDialogOpen("addRoom", open)}
+            />
           </Suspense>
         );
       case "/settings":

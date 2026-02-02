@@ -158,7 +158,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
 
   return (
     <header
-      className="flex h-[76px] items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
+      className="flex h-[64px] items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
       role="banner"
     >
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
@@ -178,11 +178,11 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
         {!mobileSearchOpen && (
           <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
             <div className="min-w-0 flex-1 h-full flex flex-col justify-center">
-              <h1 className="text-base md:text-lg font-bold text-foreground truncate leading-tight uppercase tracking-wide">
+              <h1 className="text-sm md:text-base font-bold text-foreground truncate leading-tight uppercase tracking-wide">
                 {title}
               </h1>
               {currentUser && (
-                <p className="hidden xs:block text-[11px] font-medium text-muted-foreground truncate leading-tight mt-1 opacity-70">
+                <p className="hidden xs:block text-[10px] font-medium text-muted-foreground truncate leading-tight mt-0.5 opacity-70">
                   {t("header.welcomeBack", { name: currentUser.name })}
                 </p>
               )}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, Play, FileText, Image as ImageIcon, Download, Paperclip, Pin, Star, X } from "lucide-react";
+import { Check, CheckCheck, Play, FileText, Image as ImageIcon, Download, Paperclip, Pin, Star, X, MoreVertical } from "lucide-react";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageReactions } from "./MessageReactions";
 
@@ -160,21 +160,54 @@ export function ChatBubble({
                             <Check className="h-3 w-3" />
                         )
                     )}
+                    
+                    {/* 3-dot menu icon - only visible on hover */}
+                    <MessageContextMenu
+                        message={message}
+                        isMe={isMe}
+                        onReply={() => onReply?.(message)}
+                        onCopy={onCopy || (() => { })}
+                        onReact={() => {
+                            setShowPicker(!showPicker);
+                            onReact?.(message);
+                        }}
+                        onForward={() => onForward?.(message)}
+                        onPin={() => onPin?.(message)}
+                        onStar={() => onStar?.(message)}
+                        onDelete={onDelete || (() => { })}
+                        onInfo={() => onInfo?.(message)}
+                    >
+                        <button
+                            type="button"
+                            className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
+                                isMe ? "hover:bg-white/10" : "hover:bg-black/5"
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Message options"
+                        >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                    </MessageContextMenu>
                 </div>
-
-                {((message.reactions && message.reactions.length > 0) || showPicker) && onAddReaction && onRemoveReaction && (
-                    <div className="mt-1">
-                        <MessageReactions
-                            message={message}
-                            currentUserId={currentUserId || ''}
-                            onAddReaction={onAddReaction!}
-                            onRemoveReaction={onRemoveReaction}
-                            showPicker={showPicker}
-                            onClosePicker={() => setShowPicker(false)}
-                        />
-                    </div>
-                )}
             </div>
+
+            {/* Reactions displayed below the message bubble */}
+            {((message.reactions && message.reactions.length > 0) || showPicker) && onAddReaction && onRemoveReaction && (
+                <div className={cn(
+                    "mt-1.5",
+                    isMe ? "flex justify-end" : "flex justify-start"
+                )}>
+                    <MessageReactions
+                        message={message}
+                        currentUserId={currentUserId || ''}
+                        onAddReaction={onAddReaction!}
+                        onRemoveReaction={onRemoveReaction}
+                        showPicker={showPicker}
+                        onClosePicker={() => setShowPicker(false)}
+                    />
+                </div>
+            )}
         </div>
     );
 
@@ -194,24 +227,7 @@ export function ChatBubble({
                 <div className="w-8 shrink-0" />
             )}
 
-            {/* Context Menu (Commented out for now) */}
-            <MessageContextMenu
-                message={message}
-                isMe={isMe}
-                onReply={() => onReply?.(message)}
-                onCopy={onCopy || (() => { })}
-                onReact={() => {
-                    setShowPicker(!showPicker);
-                    onReact?.(message);
-                }}
-                onForward={() => onForward?.(message)}
-                onPin={() => onPin?.(message)}
-                onStar={() => onStar?.(message)}
-                onDelete={onDelete || (() => { })}
-                onInfo={() => onInfo?.(message)}
-            >
-                {bubbleContent}
-            </MessageContextMenu>
+            {bubbleContent}
         </div>
     );
 }

@@ -321,14 +321,14 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       <div
         className={cn(
           "flex items-center border-b border-sidebar-border",
-          "bg-white/40 dark:bg-sidebar/50 backdrop-blur-sm shadow-sm z-10",
-          collapsed ? "justify-center px-2 py-5" : "gap-3 px-5 py-5"
+          "bg-white/40 dark:bg-sidebar/50 backdrop-blur-sm shadow-sm z-10 h-[64px]",
+          collapsed ? "justify-center px-2 py-3" : "gap-3 px-5 py-3"
         )}
       >
         <div
           className={cn(
             "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-md shrink-0 transition-transform duration-300 hover:scale-105 hover:shadow-glow overflow-hidden",
-            collapsed ? "h-10 w-10" : "h-11 w-11"
+            collapsed ? "h-9 w-9" : "h-10 w-10"
           )}
           aria-hidden="true"
         >
@@ -336,11 +336,11 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
             <img
               src={currentUser.organization.org_logo}
               alt={currentUser.organization.org_name || "College Logo"}
-              className={cn("object-cover", collapsed ? "h-10 w-10" : "h-11 w-11")}
+              className={cn("object-cover", collapsed ? "h-9 w-9" : "h-10 w-10")}
             />
           ) : (
             <GraduationCap
-              className={cn("text-sidebar-primary-foreground", collapsed ? "h-5 w-5" : "h-6 w-6")}
+              className={cn("text-sidebar-primary-foreground", collapsed ? "h-4 w-4" : "h-5 w-5")}
             />
           )}
         </div>
@@ -352,10 +352,10 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
           )}
         >
           <div className="whitespace-nowrap pl-2">
-            <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground uppercase">
+            <h1 className="text-xs font-bold tracking-tight text-sidebar-foreground uppercase leading-tight">
               {currentUser?.organization?.org_name || "College Name"}
             </h1>
-            <p className="text-[10px] text-sidebar-muted font-bold uppercase tracking-widest mt-0.5 opacity-60">powered by loopverse</p>
+            <p className="text-[9px] text-sidebar-muted font-bold uppercase tracking-widest mt-0.5 opacity-60 leading-tight">powered by loopverse</p>
           </div>
         </div>
       </div>
