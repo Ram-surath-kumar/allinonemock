@@ -1914,3 +1914,7 @@
 [2026-02-03T13:08:36.246Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-02-03T13:08:42.128Z] [AUTH] Incoming Request: GET /api/users?role=student
 [2026-02-03T13:08:42.624Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:17:20.335Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:17:32.299Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:24:10.947Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-03T13:24:21.269Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed

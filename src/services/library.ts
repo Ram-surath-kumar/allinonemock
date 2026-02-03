@@ -91,3 +91,13 @@ export async function addBook(bookData: Partial<Book>): Promise<Book> {
     throw error;
   }
 }
+
+export async function deleteBook(id: string): Promise<void> {
+  try {
+    const response = await api.deleteLibraryBook(id);
+    if (response.error) throw new Error(response.error);
+  } catch (error) {
+    console.error("Error deleting book:", error);
+    throw error;
+  }
+}

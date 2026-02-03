@@ -802,6 +802,12 @@ class ApiClient {
     });
   }
 
+  async deleteLibraryBook(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/library/books/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async getLibraryMember(id: string): Promise<ApiResponse<any>> {
     return this.request<any>(`/library/members/${id}`);
   }

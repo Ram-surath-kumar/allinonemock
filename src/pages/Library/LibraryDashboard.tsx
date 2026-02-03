@@ -13,9 +13,19 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Book, LibraryMember, fetchBooks, issueBook, returnBook, getMember, addBook } from '@/services/library';
-import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle, Upload, Sparkles } from 'lucide-react';
+import { Book, LibraryMember, fetchBooks, issueBook, returnBook, getMember, addBook, deleteBook } from '@/services/library';
+import { Search, BookOpen, RefreshCw, UserCheck, AlertCircle, Upload, Sparkles, Trash2 } from 'lucide-react';
 import { analyzeBookCover } from '@/services/gemini';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RippleLoader } from "@/components/ui/RippleLoader";
@@ -25,6 +35,9 @@ export default function LibraryDashboard() {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Circulation State
     const [memberId, setMemberId] = useState('');
@@ -186,6 +199,37 @@ export default function LibraryDashboard() {
             loadBooks();
         } catch (error: any) {
             toast({ title: "Error", description: error.message || "Failed to add book", variant: "destructive" });
+        }
+    };
+    const handleDeleteBook = (book: Book) => {
+        setBookToDelete(book);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!bookToDelete) return;
+
+        setDeleting(true);
+        try {
+            await deleteBook(bookToDelete.id);
+            toast({
+                title: "Book Deleted",
+                description: `"${bookToDelete.title}" has been removed from the library.`,
+            });
+            // Update local state instantly
+            setBooks(books.filter(b => b.id !== bookToDelete.id));
+        } catch (error: any) {
+            toast({
+                title: "Delete Failed",
+                description: error.message || "Failed to delete book",
+                variant: "destructive"
+            });
+            // Reload from server just in case
+            loadBooks();
+        } finally {
+            setDeleting(false);
+            setIsDeleteDialogOpen(false);
+            setBookToDelete(null);
         }
     };
 
@@ -383,12 +427,13 @@ export default function LibraryDashboard() {
                                             <TableHead>Author</TableHead>
                                             <TableHead>Publisher</TableHead>
                                             <TableHead>Category</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="h-64">
+                                                <TableCell colSpan={6} className="h-64">
                                                     <RippleLoader />
                                                 </TableCell>
                                             </TableRow>
@@ -400,11 +445,21 @@ export default function LibraryDashboard() {
                                                     <TableCell>{book.author}</TableCell>
                                                     <TableCell>{book.publisher || '-'}</TableCell>
                                                     <TableCell>{book.category_id || '-'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                            onClick={() => handleDeleteBook(book)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                                                     No books found.
                                                 </TableCell>
                                             </TableRow>
@@ -497,6 +552,27 @@ export default function LibraryDashboard() {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete <strong>{bookToDelete?.title}</strong> and all its associated copies from the library system. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            {deleting ? "Deleting..." : "Permanently Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -320,5 +320,32 @@ router.post('/return', async (req, res) => {
   }
 });
 
+// Delete a book
+router.delete('/books/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Delete associated book copies first (to avoid FK constraints if they exist)
+    const { error: copiesError } = await supabaseAdmin
+      .from('book_copies')
+      .delete()
+      .eq('book_id', id);
+
+    if (copiesError) throw copiesError;
+
+    // 2. Delete the book record
+    const { error: bookError } = await supabaseAdmin
+      .from('books')
+      .delete()
+      .eq('id', id);
+
+    if (bookError) throw bookError;
+
+    sendSuccess(res, { message: 'Book and its copies deleted successfully' });
+  } catch (error) {
+    handleError(error, res, 'Failed to delete book');
+  }
+});
+
 export default router;
 
