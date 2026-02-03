@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 interface Message {
     id: string;
     content: string;
+    type?: "text" | "image" | "file" | "system";
+    file_name?: string;
     created_at: string;
     read_by?: string[];
 }
@@ -64,7 +66,9 @@ export function MessageInfoDialog({
                 <div className="space-y-4">
                     {/* Message Preview */}
                     <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm line-clamp-3">{message.content}</p>
+                        <p className="text-sm line-clamp-3">
+                            {message.type === "image" ? "[Image]" : message.type === "file" ? `[File] ${message.file_name || ""}` : message.content}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             {formatDate(message.created_at, "PPp")}
                         </p>

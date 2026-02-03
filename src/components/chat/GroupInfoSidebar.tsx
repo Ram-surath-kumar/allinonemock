@@ -16,33 +16,56 @@ interface GroupInfoSidebarProps {
     currentUserId: string;
     onAddMember: () => void;
     onLeaveGroup?: () => void;
+    isMobile?: boolean;
 }
 
-export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember, onLeaveGroup }: GroupInfoSidebarProps) {
+export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember, onLeaveGroup, isMobile }: GroupInfoSidebarProps) {
     const [group, setGroup] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [members, setMembers] = useState<any[]>([]);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [desc, setDesc] = useState("");
     const [isLeaving, setIsLeaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchGroup = async () => {
+            const cleanId = groupId.replace('group-', '');
             try {
                 setIsLoading(true);
-                const res = await api.getGroupDetails(groupId);
+                setError(null);
+                const res = await api.getGroupDetails(cleanId);
                 if (res.data) {
                     setGroup(res.data);
                     setDesc(res.data.description || "");
-                    // Fetch full user details for members
-                    const memberPromises = (res.data.members || []).map((id: string) =>
-                        api.getUserById(id).then(r => r.data || { id, name: 'Unknown', role: 'member' })
-                    );
-                    const memberData = await Promise.all(memberPromises);
-                    setMembers(memberData);
+
+                    // If backend returns group_members with nested users, use them
+                    if (res.data.group_members && Array.isArray(res.data.group_members)) {
+                        const mappedMembers = res.data.group_members
+                            .filter((gm: any) => gm && gm.user_id) // Ensure gm exists
+                            .map((gm: any) => ({
+                                id: gm.user_id,
+                                name: gm.users?.name || 'Unknown',
+                                avatar: gm.users?.avatar,
+                                email: gm.users?.email || ''
+                            }));
+                        setMembers(mappedMembers);
+                    } else if (res.data.members) {
+                        // Fallback: Fetch full user details for members if only IDs provided
+                        const memberPromises = (res.data.members || []).map((id: string) =>
+                            api.getUserById(id).then(r => r.data || { id, name: 'Unknown', role: 'member' })
+                        );
+                        const memberData = await Promise.all(memberPromises);
+                        setMembers(memberData.filter(Boolean));
+                    }
+                } else {
+                    setGroup(null);
+                    setError(res.error || "Group not found");
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to load group info", error);
+                setError(error.message || "Failed to load group details");
+                toast.error("Failed to load group details");
             } finally {
                 setIsLoading(false);
             }
@@ -51,8 +74,9 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
     }, [groupId]);
 
     const handleSaveDescription = async () => {
+        const cleanId = groupId.replace('group-', '');
         try {
-            await api.updateGroupDescription(groupId, desc);
+            await api.updateGroupDescription(cleanId, desc);
             toast.success("Description updated");
             setIsEditingDesc(false);
             setGroup({ ...group, description: desc });
@@ -65,8 +89,9 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
         if (!confirm("Are you sure you want to leave this group?")) return;
 
         setIsLeaving(true);
+        const cleanId = groupId.replace('group-', '');
         try {
-            await api.leaveGroup(groupId, currentUserId);
+            await api.leaveGroup(cleanId, currentUserId);
             toast.success("You have left the group");
             onLeaveGroup?.();
         } catch (error) {
@@ -76,10 +101,35 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
         }
     };
 
-    if (!group && !isLoading) return null;
+    if (!group && !isLoading) {
+        return (
+            <div className="w-80 h-full border-l border-border bg-background flex flex-col items-center justify-center p-8 text-center">
+                <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-4 left-4">
+                    <X className="h-5 w-5" />
+                </Button>
+                <div className="bg-red-50 text-red-500 p-4 rounded-lg mb-4">
+                    <Trash2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm font-medium">Failed to load group details</p>
+                    {error && <p className="text-[10px] mt-1 opacity-70 break-all">{error}</p>}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                    Retry
+                </Button>
+            </div>
+        );
+    }
 
     return (
-        <div className="w-80 h-full border-l border-border bg-background flex flex-col animate-in slide-in-from-right duration-300">
+        <div className={cn(
+            "w-80 h-full border-l border-border bg-background flex flex-col animate-in slide-in-from-right duration-300 z-50",
+            isMobile && "fixed inset-y-0 right-0 shadow-2xl"
+        )}>
+            {isMobile && (
+                <div
+                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[-1] animate-in fade-in duration-300"
+                    onClick={onClose}
+                />
+            )}
             {/* Header */}
             <div className="h-16 flex items-center px-4 border-b border-border bg-muted/30 shrink-0">
                 <Button variant="ghost" size="icon" onClick={onClose} className="mr-2">
@@ -96,12 +146,12 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
                         {/* Group Profile */}
                         <div className="flex flex-col items-center py-8 px-4 bg-background">
                             <Avatar className="h-32 w-32 mb-4 shadow-sm border-4 border-muted/20">
-                                <AvatarImage src={group.icon} />
+                                <AvatarImage src={group?.icon} />
                                 <AvatarFallback className="text-4xl bg-primary/10 text-primary">
-                                    {group.name?.substring(0, 2).toUpperCase()}
+                                    {group?.name?.substring(0, 2).toUpperCase() || 'GR'}
                                 </AvatarFallback>
                             </Avatar>
-                            <h2 className="text-xl font-semibold text-center mb-1">{group.name}</h2>
+                            <h2 className="text-xl font-semibold text-center mb-1">{group?.name || 'Group'}</h2>
                             <p className="text-sm text-muted-foreground">
                                 Group · {members.length} members
                             </p>
@@ -161,7 +211,7 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
                             )}
 
                             <div className="mt-3 text-xs text-muted-foreground">
-                                Created by Admin on {format(new Date(group.created_at), 'dd/MM/yyyy')}
+                                Created by Admin on {group?.created_at ? format(new Date(group.created_at), 'dd/MM/yyyy') : 'N/A'}
                             </div>
                         </div>
 
@@ -204,12 +254,12 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
                             </div>
 
                             <div className="space-y-1">
-                                {members.map(member => (
+                                {members.filter(m => m && m.id).map(member => (
                                     <div key={member.id} className="flex items-center gap-3 p-2 -mx-2 hover:bg-muted/50 rounded-lg cursor-pointer group">
                                         <Avatar className="h-10 w-10 border border-border/30">
                                             <AvatarImage src={member.profile_picture || member.avatar} />
                                             <AvatarFallback className="text-xs">
-                                                {member.name?.substring(0, 2).toUpperCase()}
+                                                {member.name?.substring(0, 2).toUpperCase() || '??'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">

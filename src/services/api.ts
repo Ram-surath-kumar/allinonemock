@@ -195,7 +195,7 @@ class ApiClient {
   }
 
   // Generic methods for flexibility
-  public async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
+  public async get<T>(endpoint: string, params?: Record<string, string>, useCache: boolean = true): Promise<ApiResponse<T>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -203,27 +203,27 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request<T>(`${endpoint}${query ? `?${query}` : ""}`);
+    return this.request<T>(`${endpoint}${query ? `?${query}` : ""}`, {}, useCache);
   }
 
-  public async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  public async post<T>(endpoint: string, data?: any, useCache: boolean = false): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "POST",
       body: JSON.stringify(data),
-    });
+    }, useCache);
   }
 
-  public async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  public async put<T>(endpoint: string, data?: any, useCache: boolean = false): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "PUT",
       body: JSON.stringify(data),
-    });
+    }, useCache);
   }
 
-  public async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+  public async delete<T>(endpoint: string, useCache: boolean = false): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "DELETE",
-    });
+    }, useCache);
   }
 
   // Users
@@ -1027,11 +1027,11 @@ class ApiClient {
 
   // Chat Messaging
   async getChatMessages(userId: string, otherUserId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
+    return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`, {}, false);
   }
 
   async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/chats?user_id=${userId}`);
+    return this.request(`/chat/chats?user_id=${userId}`, {}, false);
   }
 
   async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
@@ -1230,7 +1230,7 @@ class ApiClient {
 
 
   async getGroupDetails(groupId: string): Promise<ApiResponse<any>> {
-    return this.request(`/chat/groups/${groupId}`);
+    return this.request(`/chat/groups/${groupId}`, {}, false);
   }
 
   // Admission

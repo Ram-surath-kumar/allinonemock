@@ -47,20 +47,44 @@ export function AddMembersDialog({
     const fetchUsers = async () => {
         setLoading(true);
         try {
+            // 1. Fetch group details to get actual current members
+            const groupRes = await api.getGroupDetails(groupId);
+            let membersList = currentMemberIds;
+
+            if (groupRes.data) {
+                if (groupRes.data.group_members) {
+                    membersList = groupRes.data.group_members.map((m: any) => m.user_id);
+                } else if (groupRes.data.members) {
+                    membersList = groupRes.data.members;
+                }
+            }
+
+            // 2. Fetch all users
             const res = await api.getUsers();
             if (res.data) {
                 // Filter out users who are already members
-                const availableUsers = res.data.filter((u: any) => !currentMemberIds.includes(u.id));
-                // simplified mapping
+                const availableUsers = res.data.filter((u: any) => !membersList.includes(u.id));
                 setUsers(availableUsers.map((u: any) => ({
                     id: u.id,
                     name: u.name,
-                    avatar: u.profile_picture,
+                    avatar: u.profile_picture || u.avatar,
                     email: u.email
                 })));
             }
         } catch (error) {
-            console.error("Failed to fetch users", error);
+            console.error("Failed to fetch users or group info", error);
+            // Fallback to basic user fetch if group details fail
+            try {
+                const res = await api.getUsers();
+                if (res.data) {
+                    setUsers(res.data.map((u: any) => ({
+                        id: u.id,
+                        name: u.name,
+                        avatar: u.profile_picture || u.avatar,
+                        email: u.email
+                    })));
+                }
+            } catch (e) { }
         } finally {
             setLoading(false);
         }
