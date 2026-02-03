@@ -1030,8 +1030,8 @@ class ApiClient {
     return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
   }
 
-  async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/chats?user_id=${userId}`);
+  async getRecentConversations(userId: string, useCache: boolean = true): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/chats?user_id=${userId}`, {}, useCache);
   }
 
   async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
@@ -1102,6 +1102,13 @@ class ApiClient {
     return this.request(`/chat/chats/${chatId}/clear`, {
       method: "POST",
       body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  async archiveChat(chatId: string, userId: string, archived: boolean): Promise<ApiResponse<any>> {
+    return this.request(`/chat/chats/${chatId}/archive`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, archived }),
     });
   }
 

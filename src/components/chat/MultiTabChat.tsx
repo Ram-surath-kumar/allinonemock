@@ -17,6 +17,7 @@ interface ChatTab {
   lastMessage?: string;
   lastMessageTime?: string;
   muted?: boolean;
+  isArchived?: boolean;
 }
 
 interface Message {
@@ -30,6 +31,8 @@ interface Message {
   reactions?: Array<{ emoji: string; user_id: string; user_name?: string }>;
   reply_to_id?: string;
   reply_to?: Message;
+  pinned?: boolean;
+  starred?: boolean;
 }
 
 interface UserStatus {
@@ -77,10 +80,10 @@ export function MultiTabChat() {
       const timer = setTimeout(() => {
         // Reload chats to update names with newly loaded users
         loadChats(true); // Silent reload to update names
-        
+
         // Also update active chat name if it's "Unknown" or "Loading..."
         if (activeChat && (activeChat.userName === 'Unknown' || activeChat.userName === 'Loading...')) {
-          const user = users.find(u => 
+          const user = users.find(u =>
             u.id === activeChat.userId ||
             String(u.user_id) === String(activeChat.userId) ||
             String(u.loopid) === String(activeChat.userId)
@@ -94,12 +97,12 @@ export function MultiTabChat() {
             });
           }
         }
-        
+
         // Update all chats in state that have "Unknown" names
         setChats(prevChats => {
           return prevChats.map(chat => {
             if (chat.userName === 'Unknown' || chat.userName === 'Loading...') {
-              const user = users.find(u => 
+              const user = users.find(u =>
                 u.id === chat.userId ||
                 String(u.user_id) === String(chat.userId) ||
                 String(u.loopid) === String(chat.userId)
@@ -117,7 +120,7 @@ export function MultiTabChat() {
           });
         });
       }, 50);
-      
+
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,7 +130,7 @@ export function MultiTabChat() {
   useEffect(() => {
     if (currentUser) {
       const interval = setInterval(() => {
-        loadChats(true); // silent update
+        loadChats(true, false); // silent update, bypass cache
         updateUserStatuses();
         if (activeChat) {
           // Don't reload messages if we just sent one (within last 10 seconds) or have pending temp messages
@@ -144,12 +147,12 @@ export function MultiTabChat() {
   // URL Sync: Handle opening chat from URL
   useEffect(() => {
     if (!currentUser) return;
-    
+
     // Check if we have a chatUserId in the URL (from route /:orgName/:userId/chat/:chatUserId)
     // Note: chatUserId is the numeric user_id (loopid), not the UUID id
     if (chatUserId) {
       const targetLoopId = chatUserId; // This is the numeric user_id/loopid from URL
-      
+
       // If users haven't loaded yet, create temporary chat and open it immediately
       if (users.length === 0) {
         // Create a temporary chat to open immediately (will be updated when users load)
@@ -160,24 +163,24 @@ export function MultiTabChat() {
           type: 'direct',
           unreadCount: 0
         };
-        
+
         // Only set if not already set or different
         if (!activeChat || activeChat.userId !== tempChat.userId) {
           setActiveChat(tempChat);
         }
-        
+
         // Trigger users load
         loadUsers();
         return; // Will retry when users load
       }
-      
+
       // Match by user_id (loopid) or loopid field, converting to string for comparison
-      let user = users.find(u => 
-        String(u.user_id) === String(targetLoopId) || 
+      let user = users.find(u =>
+        String(u.user_id) === String(targetLoopId) ||
         String(u.loopid) === String(targetLoopId) ||
         u.id === targetLoopId // Fallback to UUID match
       );
-      
+
       // If user not found, try to find in chats (chats use UUID id as userId)
       if (!user) {
         const existingChat = chats.find(c => {
@@ -185,13 +188,13 @@ export function MultiTabChat() {
           const chatUser = users.find(u => u.id === c.userId);
           return chatUser && (String(chatUser.user_id) === String(targetLoopId) || String(chatUser.loopid) === String(targetLoopId));
         });
-        
+
         if (existingChat && existingChat.userName !== 'Unknown') {
           // Use existing chat data if we have name
           if (!activeChat || activeChat.userId !== existingChat.userId) {
             setActiveChat(existingChat);
             loadMessages(existingChat);
-            
+
             // Update URL to use loopid - find user by UUID
             const chatUser = users.find(u => u.id === existingChat.userId);
             if (currentUser?.organization && chatUser) {
@@ -206,7 +209,7 @@ export function MultiTabChat() {
         // User not found - keep temp chat open, will update when found
         return;
       }
-      
+
       // Find existing chat or create temp one with proper user info
       // Chats use UUID id, so we need to find by matching the user's UUID
       const existing = chats.find(c => c.userId === user!.id);
@@ -218,18 +221,18 @@ export function MultiTabChat() {
         type: 'direct' as const,
         unreadCount: 0
       };
-      
+
       // Update chat name if we now have user info
       if (user && chatToOpen.userName === 'Unknown') {
         chatToOpen.userName = user.name;
         chatToOpen.userAvatar = user.avatar;
       }
-      
+
       // Only set active chat if it's different to avoid unnecessary re-renders
       if (!activeChat || activeChat.userId !== chatToOpen.userId || activeChat.id.startsWith('temp-chat-')) {
         setActiveChat(chatToOpen);
         loadMessages(chatToOpen);
-        
+
         // Update URL to use loopid instead of UUID (if URL currently has UUID)
         if (currentUser?.organization && user) {
           const loopId = user.user_id || user.loopid;
@@ -242,8 +245,8 @@ export function MultiTabChat() {
       // Fallback for old URL format
       const targetId = tab.split("/")[1];
       // Try matching by loopid first, then UUID
-      const user = users.find(u => 
-        String(u.user_id) === String(targetId) || 
+      const user = users.find(u =>
+        String(u.user_id) === String(targetId) ||
         String(u.loopid) === String(targetId) ||
         u.id === targetId
       );
@@ -260,7 +263,7 @@ export function MultiTabChat() {
         if (!activeChat || activeChat.userId !== chatToOpen.userId) {
           setActiveChat(chatToOpen);
           loadMessages(chatToOpen);
-          
+
           // Update URL to use loopid instead of UUID
           if (currentUser?.organization && user) {
             const loopId = user.user_id || user.loopid;
@@ -321,9 +324,9 @@ export function MultiTabChat() {
     setStatusMap(statuses);
   };
 
-  const loadChats = async (silent = false) => {
+  const loadChats = async (silent = false, useCache = true) => {
     if (!currentUser) return;
-    
+
     // If users haven't loaded yet and this is not a silent update, wait for users
     if (users.length === 0 && !silent) {
       // Wait a bit for users to load, then retry
@@ -334,9 +337,9 @@ export function MultiTabChat() {
       }, 100);
       return;
     }
-    
+
     try {
-      const response = await api.getRecentConversations(currentUser.id);
+      const response = await api.getRecentConversations(currentUser.id, useCache);
       if (response.data) {
         // Map API response to ChatTab info
         const mappedChats = response.data.map((c: any) => {
@@ -344,25 +347,25 @@ export function MultiTabChat() {
           let name = c.name;
           let avatar = c.avatar;
           let userId = c.userId; // Preserve original userId
-          
+
           if (c.type === 'direct') {
             // Match by UUID id (which is what c.userId should be)
             let user = users.find(u => u.id === c.userId);
-            
+
             if (!user && users.length > 0) {
               // If not found by UUID, try matching by user_id/loopid (in case API returns loopid or different format)
-              user = users.find(u => 
-                String(u.user_id) === String(c.userId) || 
+              user = users.find(u =>
+                String(u.user_id) === String(c.userId) ||
                 String(u.loopid) === String(c.userId) ||
                 u.id === c.userId
               );
-              
+
               if (user) {
                 // Update userId to UUID for consistency
                 userId = user.id;
               }
             }
-            
+
             if (user) {
               name = user.name;
               avatar = user.avatar;
@@ -403,19 +406,19 @@ export function MultiTabChat() {
   useEffect(() => {
     if (activeChat && activeChat.userId && users.length > 0 && chatUserId) {
       const targetLoopId = chatUserId;
-      
+
       // Match by UUID id (which is what chat.userId uses)
       let user = users.find(u => u.id === activeChat.userId);
-      
+
       // If not found by UUID, try to match by user_id/loopid if activeChat.userId is a loopid
       if (!user) {
-        user = users.find(u => 
-          String(u.user_id) === String(activeChat.userId) || 
+        user = users.find(u =>
+          String(u.user_id) === String(activeChat.userId) ||
           String(u.loopid) === String(activeChat.userId) ||
           String(u.user_id) === String(targetLoopId) ||
           String(u.loopid) === String(targetLoopId)
         );
-        
+
         // If found by loopid, update the chat to use UUID
         if (user) {
           const updatedChat: ChatTab = {
@@ -431,7 +434,7 @@ export function MultiTabChat() {
           return;
         }
       }
-      
+
       // Update name if it's still "Loading..." or "Unknown"
       if (user && (activeChat.userName === 'Unknown' || activeChat.userName === 'Loading...' || !activeChat.userName)) {
         setActiveChat({
@@ -453,8 +456,8 @@ export function MultiTabChat() {
         // If chat.userId is a loopid (not UUID), find the actual UUID
         if (chat.userId && !chat.userId.includes('-') && users.length > 0) {
           // Likely a loopid, find the user
-          const user = users.find(u => 
-            String(u.user_id) === String(chat.userId) || 
+          const user = users.find(u =>
+            String(u.user_id) === String(chat.userId) ||
             String(u.loopid) === String(chat.userId)
           );
           if (user) {
@@ -485,31 +488,31 @@ export function MultiTabChat() {
 
       if (msgRes.data && Array.isArray(msgRes.data)) {
         // Sort messages by created_at to ensure correct order
-        const sortedMessages = [...msgRes.data].sort((a, b) => 
+        const sortedMessages = [...msgRes.data].sort((a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
-        
+
         // Merge with existing messages to preserve optimistic updates
         setMessages(prev => {
           // If we have pending temp messages or recently sent a message, merge instead of replace
           const timeSinceLastMessage = Date.now() - lastMessageSentTime;
           const hasPendingMessages = pendingTempMessages.size > 0;
-          
+
           if ((timeSinceLastMessage < 10000 || hasPendingMessages) && prev.length > 0) {
             // Keep temp messages that are still pending
-            const tempMessages = prev.filter(m => 
+            const tempMessages = prev.filter(m =>
               m.id.startsWith('temp-') && pendingTempMessages.has(m.id)
             );
-            
+
             // Get server message IDs and content for comparison
             const serverMessageIds = new Set(sortedMessages.map(m => m.id));
             const serverMessageMap = new Map(sortedMessages.map(m => [m.id, m]));
-            
+
             // Check if any temp messages match server messages by content and timestamp
             // (in case server uses different ID)
             const matchedTempIds = new Set<string>();
             tempMessages.forEach(tempMsg => {
-              const matched = sortedMessages.find(serverMsg => 
+              const matched = sortedMessages.find(serverMsg =>
                 serverMsg.sender_id === tempMsg.sender_id &&
                 serverMsg.content === tempMsg.content &&
                 Math.abs(new Date(serverMsg.created_at).getTime() - new Date(tempMsg.created_at).getTime()) < 5000
@@ -518,10 +521,10 @@ export function MultiTabChat() {
                 matchedTempIds.add(tempMsg.id);
               }
             });
-            
+
             // Remove matched temp messages (they're now in server response)
             const unmatchedTempMessages = tempMessages.filter(m => !matchedTempIds.has(m.id));
-            
+
             // Update pending temp messages - remove matched ones
             if (matchedTempIds.size > 0) {
               setPendingTempMessages(prevPending => {
@@ -530,10 +533,10 @@ export function MultiTabChat() {
                 return updated;
               });
             }
-            
+
             // Combine: unmatched temp messages + server messages
             const combined = [...unmatchedTempMessages, ...sortedMessages];
-            
+
             // Remove duplicates by id, but preserve reactions from existing messages
             const unique = combined.reduce((acc, msg) => {
               const existingIndex = acc.findIndex(m => m.id === msg.id);
@@ -546,26 +549,26 @@ export function MultiTabChat() {
                   ...msg,
                   // Preserve reactions from existing message if server doesn't have them or if existing has more recent reactions
                   reactions: existingMsg.reactions && existingMsg.reactions.length > 0
-                    ? (msg.reactions && msg.reactions.length > 0 
-                        ? msg.reactions // Use server reactions if available
-                        : existingMsg.reactions) // Fall back to existing reactions
+                    ? (msg.reactions && msg.reactions.length > 0
+                      ? msg.reactions // Use server reactions if available
+                      : existingMsg.reactions) // Fall back to existing reactions
                     : (msg.reactions || []) // Use server reactions or empty array
                 };
                 acc[existingIndex] = mergedMsg;
               }
               return acc;
             }, [] as Message[]);
-            
-            return unique.sort((a, b) => 
+
+            return unique.sort((a, b) =>
               new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             );
           }
-          
+
           // Normal case: merge with existing to preserve reactions
           if (prev.length > 0) {
             // Create a map of existing messages with their reactions
             const existingMap = new Map(prev.map(m => [m.id, m]));
-            
+
             // Merge: use server messages but preserve reactions from existing
             return sortedMessages.map(serverMsg => {
               const existingMsg = existingMap.get(serverMsg.id);
@@ -581,7 +584,7 @@ export function MultiTabChat() {
               return serverMsg;
             });
           }
-          
+
           return sortedMessages;
         });
       }
@@ -599,7 +602,7 @@ export function MultiTabChat() {
       // Find the user to get their loopid
       const user = users.find(u => u.id === chat.userId);
       const loopId = user?.user_id || user?.loopid || chat.userId; // Fallback to UUID if loopid not found
-      
+
       // Only update URL for 1:1 for now as routing logic expects userId
       // For groups, we might need new route /chat/group/:groupId
       navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat/${loopId}`, { replace: true });
@@ -638,7 +641,7 @@ export function MultiTabChat() {
       reply_to_id: replyTo?.id,
       reply_to: replyTo || undefined
     };
-    
+
     // Track this temp message as pending
     setPendingTempMessages(prev => new Set(prev).add(tempMsgId));
     setMessages(prev => [...prev, tempMsg]);
@@ -674,7 +677,7 @@ export function MultiTabChat() {
           starred: response.data.starred_by?.includes(currentUser.id),
           reactions: response.data.reactions || []
         };
-        
+
         setMessages(prev => {
           // Remove temp message
           const filtered = prev.filter(m => m.id !== tempMsgId);
@@ -683,20 +686,20 @@ export function MultiTabChat() {
           if (!exists) {
             // Add new message and sort by timestamp
             const updated = [...filtered, newMessage];
-            return updated.sort((a, b) => 
+            return updated.sort((a, b) =>
               new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             );
           }
           return filtered;
         });
-        
+
         // Remove from pending temp messages
         setPendingTempMessages(prev => {
           const updated = new Set(prev);
           updated.delete(tempMsgId);
           return updated;
         });
-        
+
         // Update chats sidebar without reloading all messages
         loadChats(true);
       } else {
@@ -704,7 +707,7 @@ export function MultiTabChat() {
         // Add a delay to ensure server has processed the message
         setTimeout(() => {
           loadMessages(activeChat, true);
-          loadChats(true);
+          loadChats(true, false);
         }, 500);
       }
     } catch (error) {
@@ -719,44 +722,74 @@ export function MultiTabChat() {
     }
   };
 
-  const handleMute = async (muted: boolean) => {
-    if (!currentUser || !activeChat) return;
+  const handleMute = async (chatId: string, muted: boolean) => {
+    if (!currentUser) return;
     try {
-      await api.muteChat(activeChat.id, currentUser.id, muted);
+      await api.muteChat(chatId, currentUser.id, muted);
       toast.success(muted ? "Chat muted" : "Chat unmuted");
-      setActiveChat(prev => prev ? { ...prev, muted } : null);
-      loadChats(true);
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, muted } : c));
+      if (activeChat?.id === chatId) {
+        setActiveChat(prev => prev ? { ...prev, muted } : null);
+      }
+      loadChats(true, false);
     } catch (error) {
       toast.error("Failed to update settings");
     }
   };
 
-  const handleClear = async () => {
-    if (!currentUser || !activeChat) return;
+  const handleClear = async (chatId: string) => {
+    if (!currentUser) return;
     try {
-      await api.clearChat(activeChat.id, currentUser.id);
+      await api.clearChat(chatId, currentUser.id);
       toast.success("Chat history cleared");
-      setMessages([]);
+      if (activeChat?.id === chatId) {
+        setMessages([]);
+      }
     } catch (error) {
       toast.error("Failed to clear chat");
     }
   };
 
-  const handleDelete = async () => {
-    if (!currentUser || !activeChat) return;
+  const handleDelete = async (chatId: string) => {
+    if (!currentUser) return;
     if (!confirm("Are you sure you want to delete this conversation?")) return;
 
     try {
-      await api.deleteChat(activeChat.id, currentUser.id);
+      await api.deleteChat(chatId, currentUser.id);
       toast.success("Conversation deleted");
-      setActiveChat(null);
-      loadChats();
-      // Navigate base
-      if (currentUser.organization) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat`);
+      if (activeChat?.id === chatId) {
+        setActiveChat(null);
+        if (currentUser.organization) {
+          navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat`);
+        }
       }
+      loadChats(true, false);
     } catch (error) {
       toast.error("Failed to delete chat");
+    }
+  };
+
+  const handleArchiveChat = async (chatId: string, archived: boolean) => {
+    if (!currentUser) return;
+
+    // 1. Optimistic Update
+    setChats(prev => prev.map(c => c.id === chatId ? { ...c, isArchived: archived } : c));
+    if (activeChat?.id === chatId) {
+      setActiveChat(prev => prev ? { ...prev, isArchived: archived } : null);
+    }
+
+    try {
+      await api.archiveChat(chatId, currentUser.id, archived);
+      toast.success(archived ? "Chat archived" : "Chat unarchived");
+      // Load chats without background overlay to keep it smooth, bypass cache
+      loadChats(true, false);
+    } catch (error) {
+      // Revert on failure
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, isArchived: !archived } : c));
+      if (activeChat?.id === chatId) {
+        setActiveChat(prev => prev ? { ...prev, isArchived: !archived } : null);
+      }
+      toast.error("Failed to update chat status");
     }
   };
 
@@ -795,7 +828,7 @@ export function MultiTabChat() {
       const response = await api.addReaction(messageId, currentUser.id, currentUser.name, emoji);
       // Update with server response to ensure reactions are synced
       if (response?.data?.reactions) {
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === messageId ? { ...msg, reactions: response.data.reactions } : msg
         ));
       }
@@ -832,7 +865,7 @@ export function MultiTabChat() {
       const response = await api.removeReaction(messageId, currentUser.id, emoji);
       // Update with server response to ensure reactions are synced
       if (response?.data?.reactions !== undefined) {
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === messageId ? { ...msg, reactions: response.data.reactions || [] } : msg
         ));
       }
@@ -864,6 +897,9 @@ export function MultiTabChat() {
           statusMap={statusMap}
           className="h-full"
           onGroupCreated={handleGroupCreated}
+          onArchiveChat={handleArchiveChat}
+          onMuteChat={handleMute}
+          onDeleteChat={handleDelete}
         />
       </div>
 
@@ -884,9 +920,10 @@ export function MultiTabChat() {
               }}
               isMobile={isMobile}
               statusMap={statusMap}
-              onMute={handleMute}
-              onClear={handleClear}
-              onDelete={handleDelete}
+              onMute={(muted) => activeChat && handleMute(activeChat.id, muted)}
+              onClear={() => activeChat && handleClear(activeChat.id)}
+              onDelete={() => activeChat && handleDelete(activeChat.id)}
+              onArchive={handleArchiveChat}
               onCall={(type) => toast.info(`${type} calling not implemented yet`)}
               chats={chats}
               onAddReaction={handleAddReaction}

@@ -6,14 +6,16 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, BellOff, Bell, Eraser, Info, Star } from "lucide-react";
+import { MoreVertical, Trash2, BellOff, Bell, Eraser, Info, Star, Archive } from "lucide-react";
 
 interface ChatActionsMenuProps {
     isGroup: boolean;
     isMuted: boolean;
+    isArchived?: boolean;
     onMute: () => void;
     onClear: () => void;
     onDelete: () => void;
+    onArchive?: () => void;
     onViewInfo?: () => void;
     onViewStarred?: () => void;
 }
@@ -21,9 +23,11 @@ interface ChatActionsMenuProps {
 export function ChatActionsMenu({
     isGroup,
     isMuted,
+    isArchived,
     onMute,
     onClear,
     onDelete,
+    onArchive,
     onViewInfo,
     onViewStarred
 }: ChatActionsMenuProps) {
@@ -47,6 +51,10 @@ export function ChatActionsMenu({
                 <DropdownMenuItem onClick={onMute}>
                     {isMuted ? <Bell className="h-4 w-4 mr-2" /> : <BellOff className="h-4 w-4 mr-2" />}
                     {isMuted ? "Unmute Notifications" : "Mute Notifications"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onArchive}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    {isArchived ? "Unarchive Chat" : "Archive Chat"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onClear}>
                     <Eraser className="h-4 w-4 mr-2" />

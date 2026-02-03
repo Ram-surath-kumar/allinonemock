@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Paperclip, Phone, Send, Video, Sparkles, X, FileText, Image as ImageIcon, Pin as PinIcon } from "lucide-react";
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChatActionsMenu } from "./ChatActionsMenu";
 import { ChatBubble } from "./ChatBubble";
 import { AttachmentMenu } from "./AttachmentMenu";
@@ -43,6 +44,7 @@ interface ChatTab {
     userAvatar?: string;
     type?: 'direct' | 'group';
     muted?: boolean;
+    isArchived?: boolean;
 }
 
 interface UserStatus {
@@ -62,6 +64,7 @@ interface ChatWindowProps {
     onMute: (muted: boolean) => void;
     onClear: () => void;
     onDelete: () => void;
+    onArchive: (chatId: string, archived: boolean) => void;
     onCall: (type: 'audio' | 'video') => void;
     chats: ChatTab[];
     onAddReaction: (messageId: string, emoji: string) => void;
@@ -84,6 +87,7 @@ export function ChatWindow({
     onMute,
     onClear,
     onDelete,
+    onArchive,
     onCall,
     chats = [],
     onAddReaction,
@@ -282,16 +286,24 @@ export function ChatWindow({
                             <Phone className="h-5 w-5" />
                         </Button>
                         <div className="w-px h-6 bg-border mx-1" />
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted" title="Search">
-                            <Sparkles className="h-5 w-5" />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 text-indigo-600 hover:text-indigo-700 hover:bg-gradient-to-tr hover:from-indigo-500/20 hover:to-purple-500/20 transition-all duration-300 group"
+                            title="AI Assistant"
+                            onClick={() => window.dispatchEvent(new CustomEvent("toggle-ai-assistant"))}
+                        >
+                            <Sparkles className="h-5 w-5 animate-pulse-slow group-hover:scale-110 transition-transform" />
                         </Button>
                         <div className="flex items-center gap-1.5 min-w-0">
                             <ChatActionsMenu
                                 isGroup={!!isGroup}
                                 isMuted={!!activeChat.muted}
+                                isArchived={!!activeChat.isArchived}
                                 onMute={() => onMute(!activeChat.muted)}
                                 onClear={onClear}
                                 onDelete={onDelete}
+                                onArchive={() => onArchive(activeChat.id, !activeChat.isArchived)}
                                 onViewInfo={() => setShowGroupInfo(true)}
                                 onViewStarred={() => setIsStarredOpen(true)}
                             />
@@ -413,31 +425,56 @@ export function ChatWindow({
 
                     <div className="px-4 py-3 bg-muted/30 border-t border-border">
                         <div className="flex items-end gap-2 max-w-4xl mx-auto relative z-20">
-                            <div className="relative">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-10 w-10 text-muted-foreground hover:text-foreground shrink-0 rounded-full"
-                                    title="Emoji"
-                                    onClick={() => setIsEmojiOpen(!isEmojiOpen)}
+                            <Popover open={isEmojiOpen} onOpenChange={setIsEmojiOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-10 w-10 text-muted-foreground hover:text-foreground shrink-0 rounded-full"
+                                        title="Emoji"
+                                        type="button"
+                                    >
+                                        <span className="text-xl">😊</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    side="top"
+                                    align="start"
+                                    className="w-[350px] p-0 border-none shadow-xl bg-background rounded-xl"
+                                    sideOffset={15}
                                 >
-                                    <span className="text-xl">😊</span>
-                                </Button>
-                                {isEmojiOpen && (
-                                    <div className="absolute bottom-12 left-0 shadow-xl rounded-xl z-50">
-                                        <div className="fixed inset-0 z-40" onClick={() => setIsEmojiOpen(false)} />
-                                        <div className="relative z-50">
-                                            <EmojiPicker
-                                                onEmojiClick={(emojiData) => {
-                                                    setInputValue(prev => prev + emojiData.emoji);
-                                                }}
-                                                width={300}
-                                                height={400}
-                                            />
-                                        </div>
+                                    <div className="emoji-picker-wrapper">
+                                        <style>{`
+                                            .emoji-picker-wrapper button {
+                                                min-height: 0 !important;
+                                            }
+                                            .epr-emoji-category-label {
+                                                height: auto !important;
+                                            }
+                                        `}</style>
+                                        <EmojiPicker
+                                            onEmojiClick={(emojiData) => {
+                                                setInputValue(prev => prev + emojiData.emoji);
+                                            }}
+                                            width={350}
+                                            height={450}
+                                            lazyLoadEmojis={true}
+                                            previewConfig={{ showPreview: false }}
+                                            searchDisabled={false}
+                                            skinTonesDisabled={false}
+                                            theme={Theme.AUTO}
+                                            style={{
+                                                backgroundColor: "var(--background)",
+                                                borderColor: "var(--border)",
+                                                "--epr-bg-color": "var(--background)",
+                                                "--epr-category-label-bg-color": "var(--background)",
+                                                "--epr-text-color": "var(--foreground)",
+                                                border: "none"
+                                            } as any}
+                                        />
                                     </div>
-                                )}
-                            </div>
+                                </PopoverContent>
+                            </Popover>
 
                             <AttachmentMenu
                                 onFileSelect={handleFileSelect}

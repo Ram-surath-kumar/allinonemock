@@ -63,7 +63,10 @@
     "type": "text",
     "read": true,
     "created_at": "2026-01-28T20:02:28.316Z",
-    "read_at": "2026-01-28T20:05:50.282Z"
+    "read_at": "2026-01-28T20:05:50.282Z",
+    "starred_by": [
+      "9ad73f26-d83a-48df-815c-db4b01ff7cb7"
+    ]
   },
   {
     "id": "1769630551802",
@@ -73,7 +76,8 @@
     "type": "text",
     "read": true,
     "created_at": "2026-01-28T20:02:31.802Z",
-    "read_at": "2026-01-28T20:05:50.282Z"
+    "read_at": "2026-01-28T20:05:50.282Z",
+    "pinned": false
   },
   {
     "id": "1769630661923",
@@ -93,7 +97,14 @@
     "type": "text",
     "read": true,
     "created_at": "2026-01-28T20:04:39.620Z",
-    "read_at": "2026-01-28T20:05:50.282Z"
+    "read_at": "2026-01-28T20:05:50.282Z",
+    "reactions": [
+      {
+        "user_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+        "user_name": "Administrator",
+        "emoji": "🫢"
+      }
+    ]
   },
   {
     "id": "1769630735060",
@@ -103,7 +114,14 @@
     "type": "text",
     "read": true,
     "created_at": "2026-01-28T20:05:35.060Z",
-    "read_at": "2026-01-28T20:05:50.282Z"
+    "read_at": "2026-01-28T20:05:50.282Z",
+    "reactions": [
+      {
+        "user_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+        "user_name": "Administrator",
+        "emoji": "😀"
+      }
+    ]
   },
   {
     "id": "1769630764807",
@@ -111,8 +129,9 @@
     "receiver_id": "2f965c7f-23b2-481d-9f97-7ac7e7451d42",
     "content": "Hii",
     "type": "text",
-    "read": false,
-    "created_at": "2026-01-28T20:06:04.807Z"
+    "read": true,
+    "created_at": "2026-01-28T20:06:04.807Z",
+    "read_at": "2026-02-03T10:45:20.017Z"
   },
   {
     "id": "1769631295106",
@@ -284,7 +303,7 @@
     "group_id": null,
     "content": "the",
     "type": "text",
-    "read": false,
+    "read": true,
     "read_by": [],
     "created_at": "2026-02-02T15:33:18.008Z",
     "reply_to_id": null,
@@ -294,6 +313,49 @@
     "file_url": null,
     "file_name": null,
     "file_type": null,
-    "file_size": null
+    "file_size": null,
+    "read_at": "2026-02-03T10:45:20.017Z"
+  },
+  {
+    "id": "1770115509561",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "2f965c7f-23b2-481d-9f97-7ac7e7451d42",
+    "group_id": null,
+    "content": "nanbaa",
+    "type": "text",
+    "read": true,
+    "read_by": [],
+    "created_at": "2026-02-03T10:45:09.561Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "read_at": "2026-02-03T10:45:20.017Z",
+    "reactions": []
+  },
+  {
+    "id": "1770115541717",
+    "sender_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "receiver_id": "2f965c7f-23b2-481d-9f97-7ac7e7451d42",
+    "group_id": null,
+    "content": "sameer",
+    "type": "text",
+    "read": true,
+    "read_by": [],
+    "created_at": "2026-02-03T10:45:41.717Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null,
+    "read_at": "2026-02-03T10:46:43.140Z",
+    "reactions": []
   }
 ]

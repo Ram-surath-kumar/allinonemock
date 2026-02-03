@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Check, CheckCheck, Play, FileText, Image as ImageIcon, Download, Paperclip, Pin, Star, X, MoreVertical } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { MessageReactions } from "./MessageReactions";
 
@@ -122,89 +123,110 @@ export function ChatBubble({
                 </span>
             )}
 
-            <div className={cn(
-                "relative group px-3 py-2 rounded-2xl shadow-sm transition-all duration-200",
-                isMe
-                    ? "bg-primary text-primary-foreground rounded-tr-none hover:bg-primary/95"
-                    : "bg-muted text-foreground rounded-tl-none hover:bg-muted/80",
-                message.type !== "text" && "p-1.5"
-            )}>
-                {/* Reply UI */}
-                {message.reply_to && (
+            <Popover open={showPicker} onOpenChange={setShowPicker}>
+                <PopoverTrigger asChild>
                     <div className={cn(
-                        "mb-2 p-2 rounded-lg border-l-4 text-xs bg-black/5 flex flex-col gap-0.5",
-                        isMe ? "border-primary-foreground/30" : "border-primary/30"
+                        "relative group px-3 py-2 rounded-2xl shadow-sm transition-all duration-200 cursor-pointer",
+                        isMe
+                            ? "bg-primary text-primary-foreground rounded-tr-none hover:bg-primary/95"
+                            : "bg-muted text-foreground rounded-tl-none hover:bg-muted/80",
+                        message.type !== "text" && "p-1.5"
                     )}>
-                        <span className="font-bold opacity-80">
-                            {message.reply_to.sender_id === (isMe ? message.sender_id : "someone") ? "You" : "Sender"}
-                        </span>
-                        <span className="truncate opacity-70 italic">
-                            {message.reply_to.content}
-                        </span>
-                    </div>
-                )}
+                        {/* Reply UI */}
+                        {message.reply_to && (
+                            <div className={cn(
+                                "mb-2 p-2 rounded-lg border-l-4 text-xs bg-black/5 flex flex-col gap-0.5",
+                                isMe ? "border-primary-foreground/30" : "border-primary/30"
+                            )}>
+                                <span className="font-bold opacity-80">
+                                    {message.reply_to.sender_id === (isMe ? message.sender_id : "someone") ? "You" : "Sender"}
+                                </span>
+                                <span className="truncate opacity-70 italic">
+                                    {message.reply_to.content}
+                                </span>
+                            </div>
+                        )}
 
-                {renderContent()}
+                        {renderContent()}
 
-                <div className={cn(
-                    "flex items-center gap-1.5 mt-1 self-end select-none",
-                    isMe ? "text-primary-foreground/70" : "text-muted-foreground"
-                )}>
-                    {message.starred && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}
-                    {message.pinned && <Pin className="h-3 w-3" />}
-                    <span className="text-[10px] tabular-nums font-medium">{time}</span>
-                    {isMe && (
-                        message.read ? (
-                            <CheckCheck className="h-3 w-3 text-emerald-400" />
-                        ) : (
-                            <Check className="h-3 w-3" />
-                        )
-                    )}
-                    
-                    {/* 3-dot menu icon - only visible on hover */}
-                    <MessageContextMenu
-                        message={message}
-                        isMe={isMe}
-                        onReply={() => onReply?.(message)}
-                        onCopy={onCopy || (() => { })}
-                        onReact={() => {
-                            setShowPicker(!showPicker);
-                            onReact?.(message);
-                        }}
-                        onForward={() => onForward?.(message)}
-                        onPin={() => onPin?.(message)}
-                        onStar={() => onStar?.(message)}
-                        onDelete={onDelete || (() => { })}
-                        onInfo={() => onInfo?.(message)}
-                    >
-                        <button
-                            type="button"
-                            className={cn(
-                                "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
-                                isMe ? "hover:bg-white/10" : "hover:bg-black/5"
+                        <div className={cn(
+                            "flex items-center gap-1.5 mt-1 self-end select-none",
+                            isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}>
+                            {message.starred && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}
+                            {message.pinned && <Pin className="h-3 w-3" />}
+                            <span className="text-[10px] tabular-nums font-medium">{time}</span>
+                            {isMe && (
+                                message.read ? (
+                                    <CheckCheck className="h-3 w-3 text-emerald-400" />
+                                ) : (
+                                    <Check className="h-3 w-3" />
+                                )
                             )}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label="Message options"
-                        >
-                            <MoreVertical className="h-3.5 w-3.5" />
-                        </button>
-                    </MessageContextMenu>
-                </div>
-            </div>
 
-            {/* Reactions displayed below the message bubble */}
-            {((message.reactions && message.reactions.length > 0) || showPicker) && onAddReaction && onRemoveReaction && (
+                            {/* 3-dot menu icon - only visible on hover */}
+                            <MessageContextMenu
+                                message={message}
+                                isMe={isMe}
+                                onReply={() => onReply?.(message)}
+                                onCopy={onCopy || (() => { })}
+                                onReact={() => {
+                                    setShowPicker(true);
+                                    onReact?.(message);
+                                }}
+                                onForward={() => onForward?.(message)}
+                                onPin={() => onPin?.(message)}
+                                onStar={() => onStar?.(message)}
+                                onDelete={onDelete || (() => { })}
+                                onInfo={() => onInfo?.(message)}
+                            >
+                                <button
+                                    type="button"
+                                    className={cn(
+                                        "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
+                                        isMe ? "hover:bg-white/10" : "hover:bg-black/5"
+                                    )}
+                                    // onClick={(e) => e.stopPropagation()} // Removed so triggers correctly
+                                    aria-label="Message options"
+                                >
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                            </MessageContextMenu>
+                        </div>
+                    </div>
+                </PopoverTrigger>
+                <PopoverContent
+                    side="top"
+                    align={isMe ? "end" : "start"}
+                    className="p-0 border-none bg-transparent shadow-none w-auto"
+                    sideOffset={5}
+                >
+                    <MessageReactions
+                        message={message}
+                        currentUserId={currentUserId || ''}
+                        onAddReaction={onAddReaction!}
+                        onRemoveReaction={onRemoveReaction!}
+                        showPicker={showPicker}
+                        onClosePicker={() => setShowPicker(false)}
+                        isFloating={true}
+                    />
+                </PopoverContent>
+            </Popover>
+
+            {/* Reactions displayed below the message bubble (the small tags) */}
+            {((message.reactions && message.reactions.length > 0)) && onAddReaction && onRemoveReaction && (
                 <div className={cn(
-                    "mt-1.5",
+                    "mt-1.5 px-1",
                     isMe ? "flex justify-end" : "flex justify-start"
                 )}>
                     <MessageReactions
                         message={message}
                         currentUserId={currentUserId || ''}
                         onAddReaction={onAddReaction!}
-                        onRemoveReaction={onRemoveReaction}
-                        showPicker={showPicker}
-                        onClosePicker={() => setShowPicker(false)}
+                        onRemoveReaction={onRemoveReaction!}
+                        showPicker={false}
+                        onClosePicker={() => { }}
+                        isFloating={false}
                     />
                 </div>
             )}

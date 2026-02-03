@@ -127,7 +127,8 @@ router.get('/chats', (req, res) => {
     const messages = readMessages();
     const groups = readGroups();
     const settings = readSettings();
-    const userSettings = settings[user_id] || { muted: [], deleted: [], cleared: {} };
+    const userSettings = settings[user_id] || { muted: [], deleted: [], archived: [], cleared: {} };
+    if (!userSettings.archived) userSettings.archived = [];
 
     // Group 1:1 messages by conversation
     const conversations = {};
@@ -160,7 +161,8 @@ router.get('/chats', (req, res) => {
                 unreadCount,
                 lastMessage: lastMsg ? lastMsg.content : 'No messages yet',
                 lastMessageTime: lastMsg ? lastMsg.created_at : group.created_at,
-                muted: userSettings.muted.includes(group.id)
+                muted: userSettings.muted.includes(group.id),
+                isArchived: userSettings.archived.includes(group.id)
             };
         }
     });
@@ -181,7 +183,8 @@ router.get('/chats', (req, res) => {
                     messages: [],
                     unreadCount: 0,
                     lastMessage: null,
-                    muted: userSettings.muted.includes(chatId)
+                    muted: userSettings.muted.includes(chatId),
+                    isArchived: userSettings.archived.includes(chatId)
                 };
             }
 
@@ -430,6 +433,25 @@ router.post('/chats/:id/clear', (req, res) => {
     if (!settings[user_id]) settings[user_id] = { muted: [], deleted: [], cleared: {} };
 
     settings[user_id].cleared[id] = new Date().toISOString();
+
+    writeSettings(settings);
+    res.json({ success: true });
+});
+
+// Archive/Unarchive Chat
+router.put('/chats/:id/archive', (req, res) => {
+    const { id } = req.params;
+    const { user_id, archived } = req.body; // archived: true/false
+
+    const settings = readSettings();
+    if (!settings[user_id]) settings[user_id] = { muted: [], deleted: [], archived: [], cleared: {} };
+    if (!settings[user_id].archived) settings[user_id].archived = [];
+
+    if (archived) {
+        if (!settings[user_id].archived.includes(id)) settings[user_id].archived.push(id);
+    } else {
+        settings[user_id].archived = settings[user_id].archived.filter(a => a !== id);
+    }
 
     writeSettings(settings);
     res.json({ success: true });
