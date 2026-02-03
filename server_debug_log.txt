@@ -1918,3 +1918,83 @@
 [2026-02-03T13:17:32.299Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-02-03T13:24:10.947Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
 [2026-02-03T13:24:21.269Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:36:48.493Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:36:49.473Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:36:50.753Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-03T13:36:52.257Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:38:03.321Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:38:13.832Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:38:34.097Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:38:35.353Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:38:37.021Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-03T13:38:39.325Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:35.734Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-02-03T13:39:36.691Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:37.049Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-03T13:39:40.247Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:42.207Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:39:42.224Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:39:42.960Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:39:44.903Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:46.246Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:39:47.020Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:48.489Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20013
+[2026-02-03T13:39:51.025Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:51.935Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:39:51.951Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:39:53.106Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:39:53.122Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:40:17.032Z] [AUTH] Incoming Request: POST /api/users/by-departments
+[2026-02-03T13:40:17.627Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:40:26.587Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-03T13:40:27.450Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:41:15.302Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-03T13:41:15.921Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:41:23.597Z] [AUTH] Incoming Request: GET /api/users?org_id=1&user_id=20010
+[2026-02-03T13:41:24.351Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:42:08.459Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:42:15.023Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:42:19.956Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:42:22.107Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:42:53.215Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:42:57.152Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:43:13.176Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:43:23.775Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:43:33.206Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:43:43.878Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:43:53.170Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:44:06.085Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:44:13.172Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:44:16.573Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:44:33.179Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:44:35.798Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:45:26.200Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:45:36.837Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:46:26.185Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:46:36.820Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:47:23.345Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:47:33.974Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:47:34.025Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:47:44.750Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:47:53.198Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:47:53.252Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:48:13.201Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:48:23.865Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:48:32.334Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:48:42.966Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:48:53.194Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:49:02.882Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:49:13.248Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:49:13.274Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:49:33.182Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:49:33.199Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:50:26.208Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:50:36.902Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:51:26.196Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:51:36.913Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:52:26.206Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:52:36.860Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:53:26.209Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:53:26.708Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T13:54:26.211Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-03T13:54:29.798Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

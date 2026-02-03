@@ -274,8 +274,9 @@
     "receiver_id": "df7c31c6-b800-4a78-b3f4-581efef705ec",
     "content": "Hi BRO",
     "type": "text",
-    "read": false,
-    "created_at": "2026-01-29T06:38:03.324Z"
+    "read": true,
+    "created_at": "2026-01-29T06:38:03.324Z",
+    "read_at": "2026-02-03T13:42:19.928Z"
   },
   {
     "id": "1770046351055",
@@ -357,5 +358,24 @@
     "file_size": null,
     "read_at": "2026-02-03T10:46:43.140Z",
     "reactions": []
+  },
+  {
+    "id": "1770126152334",
+    "sender_id": "df7c31c6-b800-4a78-b3f4-581efef705ec",
+    "receiver_id": "9ad73f26-d83a-48df-815c-db4b01ff7cb7",
+    "group_id": null,
+    "content": "mama seema",
+    "type": "text",
+    "read": false,
+    "read_by": [],
+    "created_at": "2026-02-03T13:42:32.334Z",
+    "reply_to_id": null,
+    "reply_to": null,
+    "pinned": false,
+    "starred_by": [],
+    "file_url": null,
+    "file_name": null,
+    "file_type": null,
+    "file_size": null
   }
 ]
