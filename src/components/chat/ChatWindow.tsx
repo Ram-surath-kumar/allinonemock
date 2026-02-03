@@ -17,12 +17,13 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/services/api";
+import { supabase } from "@/lib/supabase";
 
 interface Message {
     id: string;
     sender_id: string;
     content: string;
-    type: "text" | "image" | "file";
+    type: "text" | "image" | "file" | "system";
     created_at: string;
     read?: boolean;
     read_by?: string[];
@@ -57,7 +58,7 @@ interface ChatWindowProps {
     activeChat: ChatTab;
     messages: Message[];
     currentUser: { id: string; name: string };
-    onSendMessage: (content: string, type: "text" | "image" | "file", replyTo?: Message | null) => void;
+    onSendMessage: (content: string, type: "text" | "image" | "file", replyTo?: Message | null, fileMetadata?: any) => void;
     onBack: () => void;
     isMobile: boolean;
     statusMap: Record<string, UserStatus>;
@@ -71,6 +72,7 @@ interface ChatWindowProps {
     onRemoveReaction: (messageId: string, emoji: string) => void;
     onRefreshMessages?: () => void;
     onLeaveGroup?: () => void;
+    users?: Array<{ id: string; name: string; }>;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -93,7 +95,8 @@ export function ChatWindow({
     onAddReaction,
     onRemoveReaction,
     onRefreshMessages,
-    onLeaveGroup
+    onLeaveGroup,
+    users = []
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -104,6 +107,7 @@ export function ChatWindow({
     // New state for message actions
     const [replyTo, setReplyTo] = useState<Message | null>(null);
     const [attachments, setAttachments] = useState<File[]>([]);
+    const [uploading, setUploading] = useState(false);
     const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
     const [infoMessage, setInfoMessage] = useState<Message | null>(null);
     const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
@@ -118,15 +122,13 @@ export function ChatWindow({
     }, [messages, activeChat.id]);
 
     const handleSend = () => {
-        if (!inputValue.trim()) return;
-        onSendMessage(inputValue, "text", replyTo);
-        setInputValue("");
+        handleSendWithAttachments();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleSendWithAttachments();
         }
     };
 
@@ -211,18 +213,50 @@ export function ChatWindow({
         setForwardMessage(null);
     };
 
-    const handleSendWithAttachments = () => {
+    const handleSendWithAttachments = async () => {
         if (!inputValue.trim() && attachments.length === 0) return;
 
-        // TODO: Upload files and get URLs
         if (attachments.length > 0) {
-            toast.info("Uploading files...");
-            // For now, just send text
+            setUploading(true);
+            try {
+                // Currently only supporting one attachment at a time for simplicity in DB schema
+                const file = attachments[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}${Date.now()}.${fileExt}`;
+                const filePath = `chat/${fileName}`;
+
+                const { data, error } = await supabase.storage
+                    .from('chat-attachments')
+                    .upload(filePath, file);
+
+                if (error) throw error;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('chat-attachments')
+                    .getPublicUrl(filePath);
+
+                const fileType = file.type.startsWith('image/') ? 'image' : 'file';
+                const metadata = {
+                    file_url: publicUrl,
+                    file_name: file.name,
+                    file_type: file.type,
+                    file_size: file.size
+                };
+
+                onSendMessage(inputValue, fileType as any, replyTo, metadata);
+                setAttachments([]);
+            } catch (error: any) {
+                console.error("Upload error:", error);
+                toast.error("Failed to upload attachment: " + error.message);
+                return;
+            } finally {
+                setUploading(false);
+            }
+        } else {
+            onSendMessage(inputValue, "text", replyTo);
         }
 
-        onSendMessage(inputValue, attachments.length > 0 ? "file" : "text", replyTo);
         setInputValue("");
-        setAttachments([]);
         setReplyTo(null);
     };
 
@@ -247,17 +281,28 @@ export function ChatWindow({
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30 shrink-0 h-16">
                     <div
-                        className="flex items-center gap-3 overflow-hidden cursor-pointer hover:bg-muted/50 p-1 -ml-1 pr-3 rounded-lg transition-colors"
+                        className="flex items-center gap-3 overflow-hidden cursor-pointer hover:bg-muted/50 p-1 -ml-1 pr-3 rounded-lg transition-colors group/header"
                         title="View Info"
-                        onClick={() => setShowGroupInfo(!showGroupInfo)}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setShowGroupInfo(!showGroupInfo);
+                        }}
                     >
                         {isMobile && (
-                            <Button variant="ghost" size="icon" className="shrink-0 -ml-1 mr-1" onClick={(e) => { e.stopPropagation(); onBack(); }}>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 -ml-1 mr-1"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onBack();
+                                }}
+                            >
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
                         )}
 
-                        <Avatar className="h-10 w-10 border border-border/50">
+                        <Avatar className="h-10 w-10 border border-border/50 shrink-0">
                             <AvatarImage src={activeChat.userAvatar} />
                             <AvatarFallback className="text-sm bg-primary/10 text-primary font-medium">
                                 {activeChat.userName ? activeChat.userName.substring(0, 2).toUpperCase() : '??'}
@@ -265,10 +310,10 @@ export function ChatWindow({
                         </Avatar>
 
                         <div className="min-w-0">
-                            <h4 className="font-medium text-sm truncate">{activeChat.userName}</h4>
+                            <h4 className="font-medium text-sm truncate group-hover/header:text-primary transition-colors">{activeChat.userName}</h4>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
                                 <span className="truncate">
-                                    {isGroup ? "Click for group info" : (
+                                    {isGroup ? "View group info" : (
                                         !status ? "Offline" :
                                             status.isOnline ? "Online" :
                                                 status.lastSeen ? `Last seen ${formatDistanceToNow(new Date(status.lastSeen), { addSuffix: true })}` : "Offline"
@@ -377,6 +422,17 @@ export function ChatWindow({
                                             onAddReaction={handleAddReaction}
                                             onRemoveReaction={handleRemoveReaction}
                                             currentUserId={currentUser.id}
+                                            deliveryStatus={
+                                                msg.read ? 'read' :
+                                                    (activeChat.type !== 'group' &&
+                                                        activeChat.userId &&
+                                                        statusMap[activeChat.userId]?.isOnline) ? 'delivered' : 'sent'
+                                            }
+                                            senderName={
+                                                msg.sender_id === currentUser.id ? 'You' :
+                                                    (users.find(u => u.id === msg.sender_id)?.name ||
+                                                        (activeChat.type !== 'group' && activeChat.userId === msg.sender_id ? activeChat.userName : null))
+                                            }
                                         />
                                     </div>
                                 );
@@ -500,9 +556,15 @@ export function ChatWindow({
                                     (inputValue.trim() || attachments.length > 0) ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" : "bg-transparent text-muted-foreground hover:bg-muted"
                                 )}
                                 onClick={handleSendWithAttachments}
-                                disabled={!inputValue.trim() && attachments.length === 0}
+                                disabled={(!inputValue.trim() && attachments.length === 0) || uploading}
                             >
-                                {(inputValue.trim() || attachments.length > 0) ? <Send className="h-5 w-5 ml-0.5" /> : <Phone className="h-5 w-5" />}
+                                {uploading ? (
+                                    <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full" />
+                                ) : (inputValue.trim() || attachments.length > 0) ? (
+                                    <Send className="h-5 w-5 ml-0.5" />
+                                ) : (
+                                    <Phone className="h-5 w-5" />
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -512,11 +574,12 @@ export function ChatWindow({
             {/* Group Info Sidebar */}
             {showGroupInfo && isGroup && (
                 <GroupInfoSidebar
-                    groupId={activeChat.id}
+                    groupId={activeChat.id.replace('group-', '')}
                     currentUserId={currentUser.id}
                     onClose={() => setShowGroupInfo(false)}
                     onAddMember={() => setIsAddMembersOpen(true)}
                     onLeaveGroup={onLeaveGroup}
+                    isMobile={isMobile}
                     key={groupInfoKey}
                 />
             )}
@@ -526,8 +589,8 @@ export function ChatWindow({
                 <AddMembersDialog
                     open={isAddMembersOpen}
                     onOpenChange={setIsAddMembersOpen}
-                    groupId={activeChat.id}
-                    currentMemberIds={[]}
+                    groupId={activeChat.id.replace('group-', '')}
+                    currentMemberIds={messages.filter(m => m.sender_id).map(m => m.sender_id)} // Fallback if members not passed
                     onMembersAdded={() => setGroupInfoKey(k => k + 1)}
                 />
             )}

@@ -1,331 +1,271 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { supabaseAdmin } from '../common.js';
+import { supabaseAdmin, handleError, sendSuccess } from '../common.js';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const MESSAGES_FILE = path.join(__dirname, '../data/chat_messages.json');
-const CALLS_FILE = path.join(__dirname, '../data/chat_calls.json');
-const GROUPS_FILE = path.join(__dirname, '../data/chat_groups.json');
-const SETTINGS_FILE = path.join(__dirname, '../data/chat_settings.json');
-
-const readMessages = () => {
-    try {
-        if (!fs.existsSync(MESSAGES_FILE)) {
-            const dir = path.dirname(MESSAGES_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(MESSAGES_FILE, '[]');
-            return [];
-        }
-        const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading messages:', error);
-        return [];
-    }
-};
-
-const writeMessages = (data) => {
-    try {
-        fs.writeFileSync(MESSAGES_FILE, JSON.stringify(data, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Error writing messages:', error);
-        return false;
-    }
-};
-
-const readCalls = () => {
-    try {
-        if (!fs.existsSync(CALLS_FILE)) {
-            const dir = path.dirname(CALLS_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(CALLS_FILE, '[]');
-            return [];
-        }
-        const data = fs.readFileSync(CALLS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading calls:', error);
-        return [];
-    }
-};
-
-const writeCalls = (data) => {
-    try {
-        fs.writeFileSync(CALLS_FILE, JSON.stringify(data, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Error writing calls:', error);
-        return false;
-    }
-};
-
-const readGroups = () => {
-    try {
-        if (!fs.existsSync(GROUPS_FILE)) {
-            const dir = path.dirname(GROUPS_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(GROUPS_FILE, '[]');
-            return [];
-        }
-        const data = fs.readFileSync(GROUPS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading groups:', error);
-        return [];
-    }
-};
-
-const writeGroups = (data) => {
-    try {
-        fs.writeFileSync(GROUPS_FILE, JSON.stringify(data, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Error writing groups:', error);
-        return false;
-    }
-};
-
-const readSettings = () => {
-    try {
-        if (!fs.existsSync(SETTINGS_FILE)) {
-            const dir = path.dirname(SETTINGS_FILE);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(SETTINGS_FILE, '{}');
-            return {};
-        }
-        const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading settings:', error);
-        return {};
-    }
-};
-
-const writeSettings = (data) => {
-    try {
-        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Error writing settings:', error);
-        return false;
-    }
-};
 
 // Get all recent chats for a user (Consolidated endpoint: 1:1 and Groups)
-router.get('/chats', (req, res) => {
+router.get('/chats', async (req, res) => {
     const { user_id } = req.query;
 
     if (!user_id) {
         return res.status(400).json({ data: null, error: 'user_id is required' });
     }
 
-    const messages = readMessages();
-    const groups = readGroups();
-    const settings = readSettings();
-    const userSettings = settings[user_id] || { muted: [], deleted: [], archived: [], cleared: {} };
-    if (!userSettings.archived) userSettings.archived = [];
+    try {
+        // 1. Get User Settings
+        let { data: settings, error: settingsError } = await supabaseAdmin
+            .from('chat_settings')
+            .select('*')
+            .eq('user_id', user_id)
+            .maybeSingle();
 
-    // Group 1:1 messages by conversation
-    const conversations = {};
+        if (settingsError) throw settingsError;
 
-    // 1. Process Groups
-    groups.forEach(group => {
-        if (group.members.includes(user_id) && !userSettings.deleted.includes(group.id)) {
-            // Find last message for this group
-            // In a real DB, we'd query this efficiently. Here filter all messages.
-            const groupMessages = messages.filter(m => m.group_id === group.id);
-            groupMessages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const userSettings = settings || { muted_chats: [], deleted_conversations: [], cleared_at: {} };
 
-            const lastMsg = groupMessages[groupMessages.length - 1];
+        // 2. Get Group Conversations
+        // First get groups the user is currently in (where left_at is null)
+        const { data: memberOf, error: memberError } = await supabaseAdmin
+            .from('group_members')
+            .select('group_id')
+            .eq('user_id', user_id)
+            .is('left_at', null);
 
-            // Calculate unread
-            const clearedInfos = userSettings.cleared[group.id];
-            const clearedTime = clearedInfos ? new Date(clearedInfos) : new Date(0);
+        if (memberError) throw memberError;
+        const groupIds = memberOf.map(m => m.group_id);
 
-            const unreadCount = groupMessages.filter(m =>
-                new Date(m.created_at) > clearedTime &&
-                m.sender_id !== user_id &&
-                (!m.read_by || !m.read_by.includes(user_id))
-            ).length;
+        const conversations = {};
 
-            conversations[group.id] = {
-                id: group.id,
-                type: 'group',
-                name: group.name,
-                avatar: group.icon,
-                unreadCount,
-                lastMessage: lastMsg ? lastMsg.content : 'No messages yet',
-                lastMessageTime: lastMsg ? lastMsg.created_at : group.created_at,
-                muted: userSettings.muted.includes(group.id),
-                isArchived: userSettings.archived.includes(group.id)
-            };
+        // 3. Process Groups
+        if (groupIds.length > 0) {
+            const { data: groups, error: groupsError } = await supabaseAdmin
+                .from('chat_groups')
+                .select('*')
+                .in('id', groupIds);
+
+            if (groupsError) throw groupsError;
+
+            for (const group of groups) {
+                if (userSettings.deleted_conversations.includes(group.id)) continue;
+
+                // Find last message for this group
+                const { data: lastMsg, error: lastMsgError } = await supabaseAdmin
+                    .from('chat_messages')
+                    .select('*')
+                    .eq('group_id', group.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (lastMsgError) throw lastMsgError;
+
+                // Calculate unread
+                const clearedTime = userSettings.cleared_at[group.id] || '1970-01-01T00:00:00Z';
+                const { count: unreadCount, error: unreadError } = await supabaseAdmin
+                    .from('chat_messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('group_id', group.id)
+                    .gt('created_at', clearedTime)
+                    .neq('sender_id', user_id)
+                    .not('read_by', 'cs', `{${user_id}}`); // cs = contains
+
+                if (unreadError) throw unreadError;
+
+                conversations[group.id] = {
+                    id: group.id,
+                    type: 'group',
+                    name: group.name,
+                    avatar: group.avatar_url,
+                    unreadCount: unreadCount || 0,
+                    lastMessage: lastMsg ? lastMsg.content : 'No messages yet',
+                    lastMessageTime: lastMsg ? lastMsg.created_at : group.created_at,
+                    muted: userSettings.muted_chats.includes(group.id)
+                };
+            }
         }
-    });
 
-    // 2. Process 1:1 Messages
-    messages.forEach(m => {
-        if ((m.sender_id === user_id || m.receiver_id === user_id) && !m.group_id) {
+        // 4. Process 1:1 Messages
+        // Fetch direct messages where user is sender or receiver
+        const { data: directMessages, error: dmError } = await supabaseAdmin
+            .from('chat_messages')
+            .select('*')
+            .or(`sender_id.eq.${user_id},receiver_id.eq.${user_id}`)
+            .is('group_id', null)
+            .order('created_at', { ascending: false });
+
+        if (dmError) throw dmError;
+
+        directMessages.forEach(m => {
             const otherUserId = m.sender_id === user_id ? m.receiver_id : m.sender_id;
-            const chatId = `recent-${otherUserId}`; // Virtual ID for 1:1
+            if (!otherUserId) return;
 
-            if (userSettings.deleted.includes(chatId)) return;
+            const chatId = `recent-${otherUserId}`;
+            if (userSettings.deleted_conversations.includes(chatId)) return;
 
             if (!conversations[chatId]) {
+                const clearedTime = userSettings.cleared_at[chatId] || '1970-01-01T00:00:00Z';
+
+                // If message is older than cleared time, skip it for summary
+                if (new Date(m.created_at) <= new Date(clearedTime)) return;
+
                 conversations[chatId] = {
                     id: chatId,
-                    userId: otherUserId, // For identifying user in frontend
+                    userId: otherUserId,
                     type: 'direct',
-                    messages: [],
                     unreadCount: 0,
-                    lastMessage: null,
-                    muted: userSettings.muted.includes(chatId),
-                    isArchived: userSettings.archived.includes(chatId)
+                    lastMessage: m.content,
+                    lastMessageTime: m.created_at,
+                    muted: userSettings.muted_chats.includes(chatId)
                 };
             }
 
-            conversations[chatId].messages.push(m);
-
             // Unread count logic
-            const clearedInfos = userSettings.cleared[chatId];
-            const clearedTime = clearedInfos ? new Date(clearedInfos) : new Date(0);
-
-            if (new Date(m.created_at) > clearedTime && m.receiver_id === user_id && !m.read) {
+            const clearedTime = userSettings.cleared_at[chatId] || '1970-01-01T00:00:00Z';
+            if (new Date(m.created_at) > new Date(clearedTime) && m.receiver_id === user_id && !m.is_read) {
                 conversations[chatId].unreadCount++;
             }
-        }
-    });
+        });
 
-    // Finalize 1:1 conversations
-    Object.values(conversations).forEach(conv => {
-        if (conv.type === 'direct') {
-            conv.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            const lastMsg = conv.messages[conv.messages.length - 1];
-            conv.lastMessage = lastMsg ? lastMsg.content : '';
-            conv.lastMessageTime = lastMsg ? lastMsg.created_at : null;
-            delete conv.messages; // Don't send full history in summary
-            // name/avatar will be filled by frontend based on userId
-        }
-    });
+        // Convert to array and sort
+        const result = Object.values(conversations);
+        result.sort((a, b) => {
+            const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+            const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+            return timeB - timeA;
+        });
 
-    // Convert to array and sort
-    const result = Object.values(conversations).map(c => c);
-
-    result.sort((a, b) => {
-        const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
-        const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
-        return timeB - timeA;
-    });
-
-    res.json({ data: result, error: null });
+        sendSuccess(res, result);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch chats');
+    }
 });
 
 // Create a Group
-router.post('/groups', (req, res) => {
+router.post('/groups', async (req, res) => {
     const { name, members, icon, created_by } = req.body;
 
     if (!name || !members || !created_by) {
         return res.status(400).json({ error: 'Name, members, and created_by are required' });
     }
 
-    const groups = readGroups();
-    const newGroup = {
-        id: `group-${Date.now()}`,
-        name,
-        members: [...members, created_by], // Ensure creator is included
-        icon: icon || null,
-        created_by,
-        created_at: new Date().toISOString()
-    };
+    try {
+        // 1. Insert Group
+        const { data: group, error: groupError } = await supabaseAdmin
+            .from('chat_groups')
+            .insert({
+                name,
+                avatar_url: icon || null,
+                created_by
+            })
+            .select()
+            .single();
 
-    groups.push(newGroup);
-    writeGroups(groups);
-    // Create system message for group creation
-    // ...
-    res.json({ data: newGroup, error: null });
+        if (groupError) throw groupError;
+
+        // 2. Add members
+        const allMembers = Array.from(new Set([...members, created_by]));
+        const memberInserts = allMembers.map(uid => ({
+            group_id: group.id,
+            user_id: uid,
+            role: uid === created_by ? 'admin' : 'member'
+        }));
+
+        const { error: membersError } = await supabaseAdmin
+            .from('group_members')
+            .insert(memberInserts);
+
+        if (membersError) throw membersError;
+
+        // Add a system message
+        await supabaseAdmin.from('chat_messages').insert({
+            group_id: group.id,
+            sender_id: created_by,
+            content: `Group "${name}" created`,
+            type: 'system'
+        });
+
+        sendSuccess(res, group);
+    } catch (error) {
+        handleError(error, res, 'Failed to create group');
+    }
 });
 
-// Update Group Description
-router.put('/groups/:id', (req, res) => {
+// Update Group
+router.put('/groups/:id', async (req, res) => {
     const { id } = req.params;
-    const { description } = req.body;
+    const { description, name, icon } = req.body;
 
-    const groups = readGroups();
-    const groupIndex = groups.findIndex(g => g.id === id);
+    try {
+        const updateData = {};
+        if (description !== undefined) updateData.description = description;
+        if (name !== undefined) updateData.name = name;
+        if (icon !== undefined) updateData.avatar_url = icon;
 
-    if (groupIndex === -1) {
-        return res.status(404).json({ error: 'Group not found' });
+        const { data: group, error } = await supabaseAdmin
+            .from('chat_groups')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, group);
+    } catch (error) {
+        handleError(error, res, 'Failed to update group');
     }
-
-    groups[groupIndex].description = description;
-    writeGroups(groups);
-
-    res.json({ data: groups[groupIndex], error: null });
 });
 
 // Add Member to Group
-router.post('/groups/:id/members', (req, res) => {
+router.post('/groups/:id/members', async (req, res) => {
     const { id } = req.params;
-    const { user_id } = req.body; // user_id can be string or array
+    const { user_id, user_ids, members } = req.body;
 
-    const groups = readGroups();
-    const groupIndex = groups.findIndex(g => g.id === id);
-
-    if (groupIndex === -1) {
-        return res.status(404).json({ error: 'Group not found' });
-    }
-
-    const group = groups[groupIndex];
-    if (!group.members) group.members = [];
-
-    const userIdsToAdd = Array.isArray(user_id) ? user_id : [user_id];
-    let addedCount = 0;
-
-    userIdsToAdd.forEach(uid => {
-        if (!group.members.includes(uid)) {
-            group.members.push(uid);
-            addedCount++;
+    try {
+        const providedIds = user_ids || user_id || members;
+        if (!providedIds) {
+            return res.status(400).json({ error: 'No user IDs provided' });
         }
-    });
 
-    writeGroups(groups);
-    res.json({ data: group, added: addedCount, error: null });
-});
+        const userIdsToAdd = Array.isArray(providedIds) ? providedIds : [providedIds];
+        const cleanUserIdsToAdd = userIdsToAdd.filter(uid => uid != null);
 
-// Add members to a group
-router.put('/groups/:id/members', (req, res) => {
-    const { id } = req.params;
-    const { members } = req.body; // Array of user IDs to add
+        if (cleanUserIdsToAdd.length === 0) {
+            return res.status(400).json({ error: 'No valid user IDs provided' });
+        }
 
-    if (!members || !Array.isArray(members)) {
-        return res.status(400).json({ error: 'Members array is required' });
+        // Filter out existing members
+        const { data: existing, error: fetchError } = await supabaseAdmin
+            .from('group_members')
+            .select('user_id')
+            .eq('group_id', id)
+            .in('user_id', cleanUserIdsToAdd)
+            .is('left_at', null);
+
+        if (fetchError) throw fetchError;
+        const exitingIds = existing.map(e => e.user_id);
+        const newIds = cleanUserIdsToAdd.filter(uid => !exitingIds.includes(uid));
+
+        if (newIds.length > 0) {
+            const inserts = newIds.map(uid => ({
+                group_id: id,
+                user_id: uid,
+                role: 'member'
+            }));
+            const { error: insertError } = await supabaseAdmin
+                .from('group_members')
+                .insert(inserts);
+
+            if (insertError) throw insertError;
+        }
+
+        res.json({ success: true, added: newIds.length });
+    } catch (error) {
+        handleError(error, res, 'Failed to add members');
     }
-
-    const groups = readGroups();
-    const groupIndex = groups.findIndex(g => g.id === id);
-
-    if (groupIndex === -1) {
-        return res.status(404).json({ error: 'Group not found' });
-    }
-
-    // Add new members if not already in group
-    const currentMembers = groups[groupIndex].members;
-    const newMembers = members.filter(m => !currentMembers.includes(m));
-
-    if (newMembers.length > 0) {
-        groups[groupIndex].members = [...currentMembers, ...newMembers];
-        writeGroups(groups);
-    }
-
-    res.json({ data: groups[groupIndex], error: null });
 });
 
 // Leave a Group
-router.post('/groups/:id/leave', (req, res) => {
+router.post('/groups/:id/leave', async (req, res) => {
     const { id } = req.params;
     const { user_id } = req.body;
 
@@ -333,109 +273,155 @@ router.post('/groups/:id/leave', (req, res) => {
         return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const groups = readGroups();
-    const groupIndex = groups.findIndex(g => g.id === id);
+    try {
+        const { error } = await supabaseAdmin
+            .from('group_members')
+            .update({ left_at: new Date().toISOString() })
+            .eq('group_id', id)
+            .eq('user_id', user_id);
 
-    if (groupIndex === -1) {
-        return res.status(404).json({ error: 'Group not found' });
+        if (error) throw error;
+
+        // Add a system message
+        await supabaseAdmin.from('chat_messages').insert({
+            group_id: id,
+            sender_id: user_id,
+            content: `A member has left the group`,
+            type: 'system'
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to leave group');
     }
-
-    const group = groups[groupIndex];
-    if (!group.members) group.members = [];
-
-    // Remove user from members
-    group.members = group.members.filter(uid => uid !== user_id);
-
-    writeGroups(groups);
-
-    // Add a system message about user leaving
-    const messages = readMessages();
-    const systemMsg = {
-        id: `sys-${Date.now()}`,
-        group_id: id,
-        sender_id: 'system',
-        content: `A member has left the group`,
-        type: 'system',
-        created_at: new Date().toISOString()
-    };
-    messages.push(systemMsg);
-    writeMessages(messages);
-
-    res.json({ success: true, data: group, error: null });
 });
 
 // Get Group Details
-router.get('/groups/:id', (req, res) => {
+router.get('/groups/:id', async (req, res) => {
     const { id } = req.params;
-    const groups = readGroups();
-    const group = groups.find(g => g.id === id);
+    try {
+        // 1. Fetch group basic info
+        const { data: group, error: groupError } = await supabaseAdmin
+            .from('chat_groups')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    if (!group) {
-        return res.status(404).json({ error: 'Group not found' });
+        if (groupError) throw groupError;
+
+        // 2. Fetch members with user info
+        const { data: members, error: membersError } = await supabaseAdmin
+            .from('group_members')
+            .select('*, users(name, avatar, email)')
+            .eq('group_id', id);
+
+        if (membersError) {
+            console.warn('Failed to fetch members with users, falling back to basic members list:', membersError);
+            // Fallback: fetch members without join if join fails
+            const { data: basicMembers } = await supabaseAdmin
+                .from('group_members')
+                .select('*')
+                .eq('group_id', id);
+
+            group.group_members = basicMembers || [];
+        } else {
+            group.group_members = members || [];
+        }
+
+        sendSuccess(res, group);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch group details');
     }
-
-    // Enrich with member info if possible (mocking names for now or fetching from users if we had a readUsers here)
-    // For now returning raw IDs is fine, frontend can resolve or we can do it here if we read users file.
-    // Let's safe-read users to provide names
-    /*
-    const usersFile = path.join(__dirname, '../data/users.json');
-    let users = [];
-    if(fs.existsSync(usersFile)) users = JSON.parse(fs.readFileSync(usersFile));
-    const enrichedMembers = group.members.map(mid => {
-        const u = users.find(user => user.id === mid);
-        return { id: mid, name: u ? u.name : 'Unknown User', avatar: u ? u.profile_picture : null };
-    });
-    */
-
-    res.json({ data: group, error: null });
 });
 
 // Mute/Unmute Chat
-router.put('/chats/:id/mute', (req, res) => {
+router.put('/chats/:id/mute', async (req, res) => {
     const { id } = req.params;
-    const { user_id, muted } = req.body; // muted: true/false
+    const { user_id, muted } = req.body;
 
-    const settings = readSettings();
-    if (!settings[user_id]) settings[user_id] = { muted: [], deleted: [], cleared: {} };
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_settings')
+            .select('muted_chats')
+            .eq('user_id', user_id)
+            .maybeSingle();
+        let mutedChats = existing ? (existing.muted_chats || []) : [];
+        if (muted) {
+            if (!mutedChats.includes(id)) mutedChats.push(id);
+        } else {
+            mutedChats = mutedChats.filter(cid => cid !== id);
+        }
 
-    if (muted) {
-        if (!settings[user_id].muted.includes(id)) settings[user_id].muted.push(id);
-    } else {
-        settings[user_id].muted = settings[user_id].muted.filter(m => m !== id);
+        const { error } = await supabaseAdmin
+            .from('chat_settings')
+            .upsert({
+                user_id,
+                muted_chats: mutedChats
+            }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to mute chat');
     }
-
-    writeSettings(settings);
-    res.json({ success: true });
 });
 
 // Delete (Hide) Chat
-router.delete('/chats/:id', (req, res) => {
-    const { id } = req.params;
-    const { user_id } = req.body; // Need to know WHO is deleting
-
-    const settings = readSettings();
-    if (!settings[user_id]) settings[user_id] = { muted: [], deleted: [], cleared: {} };
-
-    if (!settings[user_id].deleted.includes(id)) {
-        settings[user_id].deleted.push(id);
-    }
-
-    writeSettings(settings);
-    res.json({ success: true });
-});
-
-// Clear Chat History
-router.post('/chats/:id/clear', (req, res) => {
+router.delete('/chats/:id', async (req, res) => {
     const { id } = req.params;
     const { user_id } = req.body;
 
-    const settings = readSettings();
-    if (!settings[user_id]) settings[user_id] = { muted: [], deleted: [], cleared: {} };
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_settings')
+            .select('deleted_conversations')
+            .eq('user_id', user_id)
+            .maybeSingle();
 
-    settings[user_id].cleared[id] = new Date().toISOString();
+        let deletedConv = existing ? (existing.deleted_conversations || []) : [];
+        if (!deletedConv.includes(id)) deletedConv.push(id);
 
-    writeSettings(settings);
-    res.json({ success: true });
+        const { error } = await supabaseAdmin
+            .from('chat_settings')
+            .upsert({
+                user_id,
+                deleted_conversations: deletedConv
+            }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to delete chat');
+    }
+});
+
+// Clear Chat History
+router.post('/chats/:id/clear', async (req, res) => {
+    const { id } = req.params;
+    const { user_id } = req.body;
+
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_settings')
+            .select('cleared_at')
+            .eq('user_id', user_id)
+            .maybeSingle();
+
+        const clearedAt = existing ? (existing.cleared_at || {}) : {};
+        clearedAt[id] = new Date().toISOString();
+
+        const { error } = await supabaseAdmin
+            .from('chat_settings')
+            .upsert({
+                user_id,
+                cleared_at: clearedAt
+            }, { onConflict: 'user_id' });
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to clear chat');
+    }
 });
 
 // Archive/Unarchive Chat
@@ -458,307 +444,310 @@ router.put('/chats/:id/archive', (req, res) => {
 });
 
 // Get messages (supports Group and Direct)
-router.get('/messages', (req, res) => {
+router.get('/messages', async (req, res) => {
     const { user_id, other_user_id, group_id } = req.query;
 
-    const messages = readMessages();
-    const settings = readSettings();
+    try {
+        const contextId = group_id || (other_user_id ? `recent-${other_user_id}` : null);
+        let clearedTime = '1970-01-01T00:00:00Z';
 
-    const userSettings = settings[user_id] || { cleared: {} };
-    // Determine context ID for clearing check
-    const contextId = group_id ? group_id : (other_user_id ? `recent-${other_user_id}` : null);
-    const clearedTime = (contextId && userSettings.cleared[contextId]) ? new Date(userSettings.cleared[contextId]) : new Date(0);
+        if (user_id && contextId) {
+            const { data: settings } = await supabaseAdmin
+                .from('chat_settings')
+                .select('cleared_at')
+                .eq('user_id', user_id)
+                .maybeSingle();
 
-    let filtered = [];
+            if (settings?.cleared_at?.[contextId]) {
+                clearedTime = settings.cleared_at[contextId];
+            }
+        }
 
-    if (group_id) {
-        filtered = messages.filter(m => m.group_id === group_id && new Date(m.created_at) > clearedTime);
-    } else if (user_id && other_user_id) {
-        filtered = messages.filter(m =>
-            ((m.sender_id === user_id && m.receiver_id === other_user_id) ||
-                (m.sender_id === other_user_id && m.receiver_id === user_id)) &&
-            new Date(m.created_at) > clearedTime
-        );
-    } else {
-        return res.status(400).json({ error: 'Missing parameters' });
+        let query = supabaseAdmin.from('chat_messages').select('*');
+
+        if (group_id) {
+            query = query.eq('group_id', group_id);
+        } else if (user_id && other_user_id) {
+            query = query.or(`and(sender_id.eq.${user_id},receiver_id.eq.${other_user_id}),and(sender_id.eq.${other_user_id},receiver_id.eq.${user_id})`);
+            query = query.is('group_id', null);
+        } else {
+            return res.status(400).json({ error: 'Missing parameters' });
+        }
+
+        query = query.gt('created_at', clearedTime)
+            .not('deleted_for', 'cs', `{${user_id}}`)
+            .order('created_at', { ascending: true });
+
+        const { data: messages, error } = await query;
+        if (error) throw error;
+
+        const enriched = messages.map(m => ({
+            ...m,
+            starred: m.starred_by && m.starred_by.includes(user_id)
+        }));
+
+        sendSuccess(res, enriched);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch messages');
     }
-
-    // Filter out messages deleted for this user
-    filtered = filtered.filter(m => !m.deleted_for || !m.deleted_for.includes(user_id));
-
-    // Add 'starred' property for this user
-    filtered = filtered.map(m => ({
-        ...m,
-        starred: m.starred_by && m.starred_by.includes(user_id)
-    }));
-
-    filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    res.json({ data: filtered, error: null });
 });
 
 // Send a message (Direct or Group)
-router.post('/messages', (req, res) => {
+router.post('/messages', async (req, res) => {
     const { sender_id, receiver_id, group_id, content, type, reply_to_id, file_url, file_name, file_type, file_size } = req.body;
 
-    if (!sender_id || !content || (!receiver_id && !group_id)) {
+    if (!sender_id || (!content && !file_url) || (!receiver_id && !group_id)) {
         return res.status(400).json({ data: null, error: 'Invalid message data' });
     }
 
-    // Resolve reply_to object if reply_to_id is present
-    let reply_to = null;
-    const messages = readMessages();
+    try {
+        const messageData = {
+            sender_id,
+            receiver_id: receiver_id || null,
+            group_id: group_id || null,
+            content,
+            type: type || 'text',
+            reply_to_id: reply_to_id || null,
+            file_url: file_url || null,
+            file_name: file_name || null,
+            file_type: file_type || null,
+            file_size: file_size || null
+        };
 
-    if (reply_to_id) {
-        const parentMsg = messages.find(m => m.id === reply_to_id);
-        if (parentMsg) {
-            reply_to = {
-                id: parentMsg.id,
-                sender_id: parentMsg.sender_id,
-                content: parentMsg.content,
-                type: parentMsg.type,
-                file_name: parentMsg.file_name
-            };
-        }
+        const { data: newMessage, error } = await supabaseAdmin
+            .from('chat_messages')
+            .insert(messageData)
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, newMessage);
+    } catch (error) {
+        handleError(error, res, 'Failed to send message');
     }
-
-    const newMessage = {
-        id: Date.now().toString(),
-        sender_id,
-        receiver_id: receiver_id || null,
-        group_id: group_id || null,
-        content,
-        type: type || 'text',
-        read: false,
-        read_by: [], // For groups
-        created_at: new Date().toISOString(),
-        reply_to_id: reply_to_id || null,
-        reply_to: reply_to || null,
-        pinned: false,
-        starred_by: [], // Array of user_ids who starred this message
-        file_url: file_url || null,
-        file_name: file_name || null,
-        file_type: file_type || null,
-        file_size: file_size || null
-    };
-
-    messages.push(newMessage);
-    writeMessages(messages);
-
-    // Auto-undelete for receiver(s) if they had deleted the chat
-    // Complex logic omitted for simplicity, but in real app we'd 'revive' the chat for them.
-
-    res.json({ data: newMessage, error: null });
 });
 
 // Pin/Unpin Message
-router.put('/messages/:id/pin', (req, res) => {
+router.put('/messages/:id/pin', async (req, res) => {
     const { id } = req.params;
-    const { pinned } = req.body; // true/false
+    const { pinned } = req.body;
 
-    const messages = readMessages();
-    const msgIndex = messages.findIndex(m => m.id === id);
+    try {
+        const { data: msg, error } = await supabaseAdmin
+            .from('chat_messages')
+            .update({ is_pinned: pinned })
+            .eq('id', id)
+            .select()
+            .single();
 
-    if (msgIndex === -1) {
-        return res.status(404).json({ error: 'Message not found' });
+        if (error) throw error;
+        sendSuccess(res, msg);
+    } catch (error) {
+        handleError(error, res, 'Failed to pin message');
     }
-
-    messages[msgIndex].pinned = pinned;
-    writeMessages(messages);
-
-    res.json({ data: messages[msgIndex], error: null });
 });
 
 // Star/Unstar Message
-router.put('/messages/:id/star', (req, res) => {
+router.put('/messages/:id/star', async (req, res) => {
     const { id } = req.params;
     const { user_id, starred } = req.body;
 
     if (!user_id) return res.status(400).json({ error: 'user_id is required' });
 
-    const messages = readMessages();
-    const msgIndex = messages.findIndex(m => m.id === id);
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_messages')
+            .select('starred_by')
+            .eq('id', id)
+            .single();
 
-    if (msgIndex === -1) {
-        return res.status(404).json({ error: 'Message not found' });
+        let starredBy = existing ? (existing.starred_by || []) : [];
+        if (starred) {
+            if (!starredBy.includes(user_id)) starredBy.push(user_id);
+        } else {
+            starredBy = starredBy.filter(uid => uid !== user_id);
+        }
+
+        const { data: msg, error } = await supabaseAdmin
+            .from('chat_messages')
+            .update({ starred_by: starredBy })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const resp = { ...msg, starred: starred };
+        sendSuccess(res, resp);
+    } catch (error) {
+        handleError(error, res, 'Failed to star message');
     }
-
-    const msg = messages[msgIndex];
-    if (!msg.starred_by) msg.starred_by = [];
-
-    if (starred) {
-        if (!msg.starred_by.includes(user_id)) msg.starred_by.push(user_id);
-    } else {
-        msg.starred_by = msg.starred_by.filter(uid => uid !== user_id);
-    }
-
-    // Decorate response for the user
-    const responseMsg = { ...msg, starred: starred };
-    writeMessages(messages);
-
-    res.json({ data: responseMsg, error: null });
 });
 
 // Delete Message
-router.delete('/messages/:id', (req, res) => {
+router.delete('/messages/:id', async (req, res) => {
     const { id } = req.params;
     const { user_id, type } = req.query; // type: 'me' or 'everyone'
 
     if (!user_id || !type) return res.status(400).json({ error: 'user_id and type are required' });
 
-    const messages = readMessages();
-    const msgIndex = messages.findIndex(m => m.id === id);
+    try {
+        if (type === 'everyone') {
+            const { data: msg } = await supabaseAdmin
+                .from('chat_messages')
+                .select('sender_id')
+                .eq('id', id)
+                .single();
 
-    if (msgIndex === -1) {
-        return res.status(404).json({ error: 'Message not found' });
-    }
+            if (msg.sender_id !== user_id) {
+                return res.status(403).json({ error: 'Not authorized to delete for everyone' });
+            }
 
-    const msg = messages[msgIndex];
+            const { error } = await supabaseAdmin
+                .from('chat_messages')
+                .update({
+                    content: 'This message was deleted',
+                    type: 'system',
+                    is_deleted: true,
+                    file_url: null
+                })
+                .eq('id', id);
 
-    if (type === 'everyone') {
-        // Validation: Only sender or admin can delete for everyone
-        if (msg.sender_id !== user_id) { // Add admin check if needed
-            return res.status(403).json({ error: 'Not authorized to delete for everyone' });
+            if (error) throw error;
+        } else {
+            const { data: existing } = await supabaseAdmin
+                .from('chat_messages')
+                .select('deleted_for')
+                .eq('id', id)
+                .single();
+
+            let deletedFor = existing ? (existing.deleted_for || []) : [];
+            if (!deletedFor.includes(user_id)) deletedFor.push(user_id);
+
+            const { error } = await supabaseAdmin
+                .from('chat_messages')
+                .update({ deleted_for: deletedFor })
+                .eq('id', id);
+
+            if (error) throw error;
         }
 
-        // Hard delete or Soft delete content?
-        // WhatsApp style: "This message was deleted"
-        msg.content = "This message was deleted";
-        msg.type = "system"; // or keep text but mark deleted
-        msg.is_deleted = true;
-        msg.deleted_for_everyone = true;
-        msg.file_url = null; // Remove attachments
-    } else {
-        // Delete for me
-        if (!msg.deleted_for) msg.deleted_for = [];
-        if (!msg.deleted_for.includes(user_id)) msg.deleted_for.push(user_id);
+        res.json({ success: true, id });
+    } catch (error) {
+        handleError(error, res, 'Failed to delete message');
     }
-
-    writeMessages(messages);
-    res.json({ success: true, id });
 });
 
 // Add Reaction to Message
-router.post('/messages/:id/reactions', (req, res) => {
+router.post('/messages/:id/reactions', async (req, res) => {
     const { id } = req.params;
     const { user_id, user_name, emoji } = req.body;
 
-    if (!user_id || !emoji) {
-        return res.status(400).json({ error: 'user_id and emoji are required' });
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_messages')
+            .select('reactions')
+            .eq('id', id)
+            .single();
+
+        const reactions = existing ? (existing.reactions || []) : [];
+        const alreadySet = reactions.find(r => r.user_id === user_id && r.emoji === emoji);
+
+        if (!alreadySet) {
+            reactions.push({ user_id, user_name, emoji });
+            const { data: msg, error } = await supabaseAdmin
+                .from('chat_messages')
+                .update({ reactions })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            sendSuccess(res, msg);
+        } else {
+            sendSuccess(res, existing);
+        }
+    } catch (error) {
+        handleError(error, res, 'Failed to add reaction');
     }
-
-    const messages = readMessages();
-    const msgIndex = messages.findIndex(m => m.id === id);
-
-    if (msgIndex === -1) {
-        return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const msg = messages[msgIndex];
-    if (!msg.reactions) msg.reactions = [];
-
-    // Check if user already reacted with this emoji
-    const existing = msg.reactions.find(r => r.user_id === user_id && r.emoji === emoji);
-    if (!existing) {
-        msg.reactions.push({ user_id, user_name, emoji });
-        writeMessages(messages);
-    }
-
-    res.json({ data: msg, error: null });
 });
 
 // Remove Reaction from Message
-router.delete('/messages/:id/reactions/:emoji', (req, res) => {
+router.delete('/messages/:id/reactions/:emoji', async (req, res) => {
     const { id, emoji } = req.params;
     const { user_id } = req.query;
 
-    if (!user_id) {
-        return res.status(400).json({ error: 'user_id is required' });
+    try {
+        const { data: existing } = await supabaseAdmin
+            .from('chat_messages')
+            .select('reactions')
+            .eq('id', id)
+            .single();
+
+        const reactions = existing ? (existing.reactions || []) : [];
+        const filtered = reactions.filter(r => !(r.user_id === user_id && r.emoji === emoji));
+
+        const { data: msg, error } = await supabaseAdmin
+            .from('chat_messages')
+            .update({ reactions: filtered })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        sendSuccess(res, msg);
+    } catch (error) {
+        handleError(error, res, 'Failed to remove reaction');
     }
-
-    const messages = readMessages();
-    const msgIndex = messages.findIndex(m => m.id === id);
-
-    if (msgIndex === -1) {
-        return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const msg = messages[msgIndex];
-    if (msg.reactions) {
-        msg.reactions = msg.reactions.filter(r => !(r.user_id === user_id && r.emoji === emoji));
-        writeMessages(messages);
-    }
-
-    res.json({ data: msg, error: null });
 });
 
 // Mark messages as read
-router.put('/messages/read', (req, res) => {
+router.put('/messages/read', async (req, res) => {
     const { user_id, other_user_id, group_id } = req.body;
 
-    const messages = readMessages();
-    let updatedCount = 0;
-
-    const updated = messages.map(m => {
+    try {
         if (group_id) {
-            if (m.group_id === group_id && m.sender_id !== user_id && (!m.read_by || !m.read_by.includes(user_id))) {
-                const readBy = m.read_by || [];
-                return { ...m, read_by: [...readBy, user_id] };
+            const { data: msgs } = await supabaseAdmin
+                .from('chat_messages')
+                .select('id, read_by')
+                .eq('group_id', group_id)
+                .neq('sender_id', user_id)
+                .not('read_by', 'cs', `{${user_id}}`);
+
+            if (msgs?.length > 0) {
+                for (const m of msgs) {
+                    const newReadBy = [...(m.read_by || []), user_id];
+                    await supabaseAdmin
+                        .from('chat_messages')
+                        .update({ read_by: newReadBy })
+                        .eq('id', m.id);
+                }
             }
         } else if (other_user_id) {
-            if (m.receiver_id === user_id && m.sender_id === other_user_id && !m.read) {
-                return { ...m, read: true, read_at: new Date().toISOString() };
-            }
+            await supabaseAdmin
+                .from('chat_messages')
+                .update({
+                    read: true
+                })
+                .eq('receiver_id', user_id)
+                .eq('sender_id', other_user_id)
+                .is('group_id', null) // Ensure we only target direct messages
+                .eq('read', false);
         }
-        return m;
-    });
-
-    writeMessages(updated);
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to mark messages as read');
+    }
 });
 
 // Initiate a call
-router.post('/calls', (req, res) => {
-    const { caller_id, receiver_id, type } = req.body;
-
-    if (!caller_id || !receiver_id || !type) {
-        return res.status(400).json({ data: null, error: 'caller_id, receiver_id, and type are required' });
-    }
-
-    const newCall = {
-        id: Date.now().toString(),
-        caller_id,
-        receiver_id,
-        type,
-        status: 'initiated',
-        created_at: new Date().toISOString(),
-        ended_at: null
-    };
-
-    const calls = readCalls();
-    calls.push(newCall);
-    writeCalls(calls);
-
-    res.json({ data: newCall, error: null });
+router.post('/calls', async (req, res) => {
+    res.json({ data: { status: 'initiated' }, error: null });
 });
 
 // End a call
-router.put('/calls/:id/end', (req, res) => {
-    const { id } = req.params;
-
-    const calls = readCalls();
-    const callIndex = calls.findIndex(c => c.id === id);
-
-    if (callIndex === -1) {
-        return res.status(404).json({ data: null, error: 'Call not found' });
-    }
-
-    calls[callIndex] = {
-        ...calls[callIndex],
-        status: 'ended',
-        ended_at: new Date().toISOString()
-    };
-
-    writeCalls(calls);
-    res.json({ data: calls[callIndex], error: null });
+router.put('/calls/:id/end', async (req, res) => {
+    res.json({ data: { status: 'ended' }, error: null });
 });
 
 export default router;

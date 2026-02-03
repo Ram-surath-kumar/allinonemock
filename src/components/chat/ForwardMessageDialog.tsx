@@ -27,7 +27,7 @@ interface ForwardMessageDialogProps {
     message: {
         id: string;
         content: string;
-        type: "text" | "image" | "file";
+        type: "text" | "image" | "file" | "system";
     };
     chats: Chat[];
     onForward: (chatIds: string[]) => void;

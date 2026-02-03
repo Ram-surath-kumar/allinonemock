@@ -11,7 +11,7 @@ interface Message {
     id: string;
     sender_id: string;
     content: string;
-    type: "text" | "image" | "file";
+    type: "text" | "image" | "file" | "system";
     created_at: string;
     read?: boolean;
     file_url?: string;
@@ -46,6 +46,8 @@ interface ChatBubbleProps {
     onAddReaction?: (messageId: string, emoji: string) => void;
     onRemoveReaction?: (messageId: string, emoji: string) => void;
     currentUserId?: string;
+    deliveryStatus?: 'sent' | 'delivered' | 'read';
+    senderName?: string;
 }
 
 export function ChatBubble({
@@ -64,9 +66,24 @@ export function ChatBubble({
     onAddReaction,
     onRemoveReaction,
     currentUserId,
+    deliveryStatus = 'sent',
+    senderName,
 }: ChatBubbleProps) {
     const [showPicker, setShowPicker] = useState(false);
     const time = format(new Date(message.created_at), "HH:mm");
+
+    const handleDownload = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!message.file_url) return;
+
+        const link = document.createElement('a');
+        link.href = message.file_url;
+        link.download = message.file_name || 'download';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const renderContent = () => {
         if (message.is_deleted || message.deleted_for_everyone) {
@@ -81,11 +98,14 @@ export function ChatBubble({
         switch (message.type) {
             case "image":
                 return (
-                    <div className="relative group cursor-pointer overflow-hidden rounded-lg">
+                    <div
+                        className="relative group cursor-pointer overflow-hidden rounded-lg"
+                        onClick={handleDownload}
+                    >
                         <img
                             src={message.file_url || message.content}
-                            alt="Sent image"
-                            className="max-w-full max-h-[300px] object-contain bg-muted/20"
+                            alt={message.file_name || "Sent image"}
+                            className="max-w-full max-h-[300px] object-contain bg-muted/20 transition-transform duration-300 group-hover:scale-[1.02]"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Download className="h-6 w-6 text-white" />
@@ -94,14 +114,17 @@ export function ChatBubble({
                 );
             case "file":
                 return (
-                    <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer group">
+                    <div
+                        className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border/50 hover:bg-background/80 transition-colors cursor-pointer group"
+                        onClick={handleDownload}
+                    >
                         <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
                             <FileText className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{message.file_name || "Document"}</p>
                             <p className="text-xs text-muted-foreground">
-                                {message.file_size ? `${(message.file_size / 1024 / 1024).toFixed(1)} MB` : "File"}
+                                {message.file_size ? `${(message.file_size / 1024 / 1024).toFixed(2)} MB` : "File"}
                             </p>
                         </div>
                         <Download className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -112,6 +135,16 @@ export function ChatBubble({
         }
     };
 
+    if (message.type === "system") {
+        return (
+            <div className="flex justify-center w-full my-4 px-4">
+                <div className="bg-muted/40 text-muted-foreground px-4 py-1.5 rounded-lg text-[12px] font-medium shadow-sm border border-border/20 backdrop-blur-sm">
+                    {message.content}
+                </div>
+            </div>
+        );
+    }
+
     const bubbleContent = (
         <div className={cn(
             "max-w-[85%] md:max-w-[70%] flex flex-col",
@@ -119,7 +152,7 @@ export function ChatBubble({
         )}>
             {showName && !isMe && (
                 <span className="text-[12px] font-semibold text-primary/80 ml-2 mb-1">
-                    {message.sender_id}
+                    {senderName || message.sender_id}
                 </span>
             )}
 
@@ -157,8 +190,10 @@ export function ChatBubble({
                             {message.pinned && <Pin className="h-3 w-3" />}
                             <span className="text-[10px] tabular-nums font-medium">{time}</span>
                             {isMe && (
-                                message.read ? (
-                                    <CheckCheck className="h-3 w-3 text-emerald-400" />
+                                deliveryStatus === 'read' ? (
+                                    <CheckCheck className="h-3 w-3 text-blue-500" />
+                                ) : deliveryStatus === 'delivered' ? (
+                                    <CheckCheck className="h-3 w-3 text-muted-foreground" />
                                 ) : (
                                     <Check className="h-3 w-3" />
                                 )
@@ -166,12 +201,12 @@ export function ChatBubble({
 
                             {/* 3-dot menu icon - only visible on hover */}
                             <MessageContextMenu
-                                message={message}
+                                message={message as any}
                                 isMe={isMe}
                                 onReply={() => onReply?.(message)}
                                 onCopy={onCopy || (() => { })}
                                 onReact={() => {
-                                    setShowPicker(true);
+                                    setShowPicker(!showPicker);
                                     onReact?.(message);
                                 }}
                                 onForward={() => onForward?.(message)}
@@ -186,7 +221,7 @@ export function ChatBubble({
                                         "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
                                         isMe ? "hover:bg-white/10" : "hover:bg-black/5"
                                     )}
-                                    // onClick={(e) => e.stopPropagation()} // Removed so triggers correctly
+                                    onClick={(e) => e.stopPropagation()}
                                     aria-label="Message options"
                                 >
                                     <MoreVertical className="h-3.5 w-3.5" />
