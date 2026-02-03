@@ -1855,3 +1855,44 @@
 [2026-02-03T12:25:09.592Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-02-03T12:28:29.361Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
 [2026-02-03T12:28:30.111Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:37:55.731Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:37:56.479Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:37:56.599Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:37:56.772Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:37:57.866Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-03T12:37:58.048Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:38:01.514Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-03T12:38:01.710Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:39:16.699Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-03T12:39:26.967Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:39:27.595Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed
+[2026-02-03T12:39:31.914Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:41:55.998Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:41:59.736Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:42:28.434Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-03T12:42:30.094Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:42:31.765Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-03T12:42:33.058Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:42:33.460Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:42:33.474Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-03T12:42:33.478Z] [DEBUG] Request body: {"college_email":"vijaykumarunfounded@gmail.com","loop_email":"1000120071@loopverse.in","loopid":"1000120071","user_name":"vijayrajkumar unfounded","user_id":20071}
+[2026-02-03T12:42:33.658Z] [DEBUG] Generated password: vC0SeEfNAOfv
+[2026-02-03T12:42:33.660Z] [DEBUG] Attempting to create auth user: 1000120071@loopverse.in
+[2026-02-03T12:42:34.688Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:42:35.321Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:50:44.109Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:50:47.020Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:51:44.247Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-03T12:51:45.945Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:51:51.705Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-03T12:51:53.022Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:53:59.358Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T12:54:00.149Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:54:17.511Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-03T12:54:18.120Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:54:19.926Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-03T12:54:20.415Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:54:20.687Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-03T12:54:21.154Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T12:54:50.887Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-03T12:54:51.468Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

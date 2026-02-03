@@ -617,8 +617,8 @@ export function AddUserDialog({ open, onOpenChange, onAdd, onAddMultiple }) {
                           <FormLabel>Departments *</FormLabel>
                           <div
                             className={`rounded-lg border p-3 min-h-[80px] max-h-[200px] overflow-y-auto ${form.formState.errors.department_ids
-                                ? "border-destructive"
-                                : "border-border"
+                              ? "border-destructive"
+                              : "border-border"
                               }`}
                           >
                             {loadingDepartments ? (

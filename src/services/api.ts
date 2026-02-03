@@ -234,7 +234,7 @@ class ApiClient {
     org_id?: string;
     user_id?: string;
     email?: string;
-  }): Promise<ApiResponse<any[]>> {
+  }, useCache: boolean = true): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -242,11 +242,11 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request<any[]>(`/users${query ? `?${query}` : ""}`);
+    return this.request<any[]>(`/users${query ? `?${query}` : ""}`, {}, useCache);
   }
 
-  async getUserById(id: string): Promise<ApiResponse<any>> {
-    return this.request<any>(`/users/${id}`);
+  async getUserById(id: string, useCache: boolean = true): Promise<ApiResponse<any>> {
+    return this.request<any>(`/users/${id}`, {}, useCache);
   }
 
   async getUsersByDepartments(

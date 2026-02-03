@@ -57,6 +57,7 @@ interface ChatSidebarProps {
     onDeleteChat: (chatId: string) => void;
     isMobile?: boolean; // Added optional prop
     onCloseMobile?: () => void; // Added optional prop
+    onRefreshUsers?: () => void;
 }
 
 export function ChatSidebar({
@@ -72,7 +73,8 @@ export function ChatSidebar({
     onMuteChat,
     onDeleteChat,
     isMobile,
-    onCloseMobile
+    onCloseMobile,
+    onRefreshUsers
 }: ChatSidebarProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -366,6 +368,7 @@ export function ChatSidebar({
                 currentUser={currentUser}
                 onStartChat={handleStartChat}
                 onGroupCreated={onGroupCreated}
+                onRefreshUsers={onRefreshUsers}
             />
 
             <CreateGroupDialog

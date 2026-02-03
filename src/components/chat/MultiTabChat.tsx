@@ -140,7 +140,16 @@ export function MultiTabChat() {
           }
         }
       }, 5000);
-      return () => clearInterval(interval);
+
+      // Refresh user list periodically (every 20 seconds) to catch new users
+      const userInterval = setInterval(() => {
+        loadUsers(false); // bypass cache
+      }, 20000);
+
+      return () => {
+        clearInterval(interval);
+        clearInterval(userInterval);
+      };
     }
   }, [currentUser, activeChat, lastMessageSentTime]);
 
@@ -280,9 +289,9 @@ export function MultiTabChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatUserId, tab, users.length, chats.length, currentUser]); // Removed activeChat to avoid loop
 
-  const loadUsers = async () => {
+  const loadUsers = async (useCache = true) => {
     try {
-      const response = await api.getUsers({ status: "active" });
+      const response = await api.getUsers({ status: "active" }, useCache);
       if (response.data) {
         // Preserve all user fields including user_id and loopid
         const filteredUsers = response.data
@@ -903,6 +912,7 @@ export function MultiTabChat() {
           onArchiveChat={handleArchiveChat}
           onMuteChat={handleMute}
           onDeleteChat={handleDelete}
+          onRefreshUsers={() => loadUsers(false)}
         />
       </div>
 

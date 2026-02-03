@@ -25,6 +25,7 @@ interface NewChatDialogProps {
     currentUser: { id: string; name: string };
     onStartChat: (user: User) => void;
     onGroupCreated: () => void;
+    onRefreshUsers?: () => void;
 }
 
 export function NewChatDialog({
@@ -33,7 +34,8 @@ export function NewChatDialog({
     users,
     currentUser,
     onStartChat,
-    onGroupCreated
+    onGroupCreated,
+    onRefreshUsers
 }: NewChatDialogProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -48,8 +50,10 @@ export function NewChatDialog({
             setSelectedUsers([]);
             setIsGroup(false);
             setGroupName("");
+            // Refresh users list immediately when opening dialog
+            if (onRefreshUsers) onRefreshUsers();
         }
-    }, [open]);
+    }, [open, onRefreshUsers]);
 
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
