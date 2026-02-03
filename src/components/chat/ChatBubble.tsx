@@ -45,6 +45,8 @@ interface ChatBubbleProps {
     onAddReaction?: (messageId: string, emoji: string) => void;
     onRemoveReaction?: (messageId: string, emoji: string) => void;
     currentUserId?: string;
+    deliveryStatus?: 'sent' | 'delivered' | 'read';
+    senderName?: string;
 }
 
 export function ChatBubble({
@@ -63,6 +65,8 @@ export function ChatBubble({
     onAddReaction,
     onRemoveReaction,
     currentUserId,
+    deliveryStatus = 'sent',
+    senderName,
 }: ChatBubbleProps) {
     const [showPicker, setShowPicker] = useState(false);
     const time = format(new Date(message.created_at), "HH:mm");
@@ -147,7 +151,7 @@ export function ChatBubble({
         )}>
             {showName && !isMe && (
                 <span className="text-[12px] font-semibold text-primary/80 ml-2 mb-1">
-                    {message.sender_id}
+                    {senderName || message.sender_id}
                 </span>
             )}
 
@@ -183,8 +187,10 @@ export function ChatBubble({
                     {message.pinned && <Pin className="h-3 w-3" />}
                     <span className="text-[10px] tabular-nums font-medium">{time}</span>
                     {isMe && (
-                        message.read ? (
-                            <CheckCheck className="h-3 w-3 text-emerald-400" />
+                        deliveryStatus === 'read' ? (
+                            <CheckCheck className="h-3 w-3 text-blue-500" />
+                        ) : deliveryStatus === 'delivered' ? (
+                            <CheckCheck className="h-3 w-3 text-muted-foreground" />
                         ) : (
                             <Check className="h-3 w-3" />
                         )
@@ -192,7 +198,7 @@ export function ChatBubble({
 
                     {/* 3-dot menu icon - only visible on hover */}
                     <MessageContextMenu
-                        message={message}
+                        message={message as any}
                         isMe={isMe}
                         onReply={() => onReply?.(message)}
                         onCopy={onCopy || (() => { })}

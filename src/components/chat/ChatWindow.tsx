@@ -69,6 +69,7 @@ interface ChatWindowProps {
     onRemoveReaction: (messageId: string, emoji: string) => void;
     onRefreshMessages?: () => void;
     onLeaveGroup?: () => void;
+    users?: Array<{ id: string; name: string; }>;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -90,7 +91,8 @@ export function ChatWindow({
     onAddReaction,
     onRemoveReaction,
     onRefreshMessages,
-    onLeaveGroup
+    onLeaveGroup,
+    users = []
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -408,6 +410,17 @@ export function ChatWindow({
                                             onAddReaction={handleAddReaction}
                                             onRemoveReaction={handleRemoveReaction}
                                             currentUserId={currentUser.id}
+                                            deliveryStatus={
+                                                msg.read ? 'read' :
+                                                    (activeChat.type !== 'group' &&
+                                                        activeChat.userId &&
+                                                        statusMap[activeChat.userId]?.isOnline) ? 'delivered' : 'sent'
+                                            }
+                                            senderName={
+                                                msg.sender_id === currentUser.id ? 'You' :
+                                                    (users.find(u => u.id === msg.sender_id)?.name ||
+                                                        (activeChat.type !== 'group' && activeChat.userId === msg.sender_id ? activeChat.userName : null))
+                                            }
                                         />
                                     </div>
                                 );

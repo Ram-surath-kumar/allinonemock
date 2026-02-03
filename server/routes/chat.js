@@ -345,7 +345,6 @@ router.put('/chats/:id/mute', async (req, res) => {
             .select('muted_chats')
             .eq('user_id', user_id)
             .maybeSingle();
-
         let mutedChats = existing ? (existing.muted_chats || []) : [];
         if (muted) {
             if (!mutedChats.includes(id)) mutedChats.push(id);
@@ -709,12 +708,12 @@ router.put('/messages/read', async (req, res) => {
             await supabaseAdmin
                 .from('chat_messages')
                 .update({
-                    is_read: true
+                    read: true
                 })
                 .eq('receiver_id', user_id)
                 .eq('sender_id', other_user_id)
                 .is('group_id', null) // Ensure we only target direct messages
-                .eq('is_read', false);
+                .eq('read', false);
         }
         res.json({ success: true });
     } catch (error) {

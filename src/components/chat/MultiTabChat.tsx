@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
@@ -53,6 +53,7 @@ export function MultiTabChat() {
   // State
   const [chats, setChats] = useState<ChatTab[]>([]);
   const [activeChat, setActiveChat] = useState<ChatTab | null>(null);
+  const activeChatRef = useRef<ChatTab | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<Array<{ id: string; user_id?: string | number; loopid?: string; name: string; email?: string; avatar?: string; last_login?: string }>>([]);
   const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
@@ -321,7 +322,7 @@ export function MultiTabChat() {
           let avatar = c.avatar;
           let userId = c.userId; // Preserve original userId
 
-          if (c.type === 'direct') {
+          if (!c.type || c.type === 'direct') {
             // Match by UUID id (which is what c.userId should be)
             let user = users.find(u => u.id === c.userId);
 
@@ -365,7 +366,8 @@ export function MultiTabChat() {
             type: c.type || 'direct', // Default to direct if missing
             userName: name || 'Unknown',
             userAvatar: avatar,
-            userId: userId // Use resolved UUID
+            userId: userId, // Use resolved UUID
+            unreadCount: (activeChatRef.current && (activeChatRef.current.id === c.id || activeChatRef.current.userId === userId)) ? 0 : c.unreadCount
           };
         });
         setChats(mappedChats);
@@ -401,7 +403,9 @@ export function MultiTabChat() {
             userName: user.name,
             userAvatar: user.avatar
           };
+
           setActiveChat(updatedChat);
+          activeChatRef.current = updatedChat;
           // Load messages with the updated chat
           loadMessages(updatedChat);
           return;
@@ -415,6 +419,11 @@ export function MultiTabChat() {
           userName: user.name,
           userAvatar: user.avatar
         });
+        activeChatRef.current = {
+          ...activeChat,
+          userName: user.name,
+          userAvatar: user.avatar
+        };
       }
     }
   }, [users.length, activeChat?.userId, chatUserId]);
@@ -449,6 +458,27 @@ export function MultiTabChat() {
 
       const query = new URLSearchParams(params).toString();
       const msgRes = await api.get<Message[]>(`/chat/messages?${query}`, undefined, false);
+
+      // Mark messages as read if this is an active chat load (not silent background update OR silent update but it's the active chat)
+      if (!silent || (activeChat && activeChat.id === chat.id)) {
+        if (params.other_user_id) {
+          api.put('/chat/messages/read', {
+            user_id: currentUser.id,
+            other_user_id: params.other_user_id
+          }).catch(console.error);
+        } else if (params.group_id) {
+          api.put('/chat/messages/read', {
+            user_id: currentUser.id,
+            group_id: params.group_id
+          }).catch(console.error);
+        }
+
+
+        // Optimistically clear unread count in UI
+        setChats(prev => prev.map(c =>
+          c.id === chat.id ? { ...c, unreadCount: 0 } : c
+        ));
+      }
 
       if (msgRes.data && Array.isArray(msgRes.data)) {
         // Sort messages by created_at to ensure correct order
@@ -559,6 +589,7 @@ export function MultiTabChat() {
 
   const handleSelectChat = (chat: ChatTab) => {
     setActiveChat(chat);
+    activeChatRef.current = chat;
     loadMessages(chat);
 
     // Update URL - use loopid (user_id) instead of UUID
@@ -878,6 +909,7 @@ export function MultiTabChat() {
               onSendMessage={handleSendMessage}
               onBack={() => {
                 setActiveChat(null);
+                activeChatRef.current = null;
                 if (currentUser?.organization) {
                   navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat`);
                 }
@@ -895,6 +927,7 @@ export function MultiTabChat() {
                 if (activeChat) loadMessages(activeChat, true);
               }}
               onLeaveGroup={handleLeaveGroup}
+              users={users}
             />
           ) : (
             <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-muted/5 select-none animate-in fade-in duration-500">
