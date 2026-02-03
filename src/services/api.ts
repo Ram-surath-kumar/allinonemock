@@ -195,7 +195,7 @@ class ApiClient {
   }
 
   // Generic methods for flexibility
-  public async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
+  public async get<T>(endpoint: string, params?: Record<string, string>, useCache: boolean = true): Promise<ApiResponse<T>> {
     const queryParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -203,7 +203,7 @@ class ApiClient {
       });
     }
     const query = queryParams.toString();
-    return this.request<T>(`${endpoint}${query ? `?${query}` : ""}`);
+    return this.request<T>(`${endpoint}${query ? `?${query}` : ""}`, {}, useCache);
   }
 
   public async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
@@ -1026,8 +1026,8 @@ class ApiClient {
   }
 
   // Chat Messaging
-  async getChatMessages(userId: string, otherUserId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`);
+  async getChatMessages(userId: string, otherUserId: string, useCache: boolean = true): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`, {}, useCache);
   }
 
   async getRecentConversations(userId: string, useCache: boolean = true): Promise<ApiResponse<any[]>> {

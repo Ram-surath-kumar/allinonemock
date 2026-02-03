@@ -446,7 +446,7 @@ export function MultiTabChat() {
     }
   }, [users.length, activeChat?.userId, chatUserId]);
 
-  const loadMessages = async (chat: ChatTab, silent = false) => {
+  const loadMessages = async (chat: ChatTab, silent = false, useCache = true) => {
     if (!currentUser) return;
     try {
       let params: any = { user_id: currentUser.id };
@@ -484,7 +484,7 @@ export function MultiTabChat() {
 
       // Let's use `api.get` for now to be safe and quick
       const query = new URLSearchParams(params).toString();
-      const msgRes = await api.get<Message[]>(`/chat/messages?${query}`);
+      const msgRes = await api.get<Message[]>(`/chat/messages`, params, useCache);
 
       if (msgRes.data && Array.isArray(msgRes.data)) {
         // Sort messages by created_at to ensure correct order
@@ -745,6 +745,7 @@ export function MultiTabChat() {
       if (activeChat?.id === chatId) {
         setMessages([]);
       }
+      loadMessages(activeChat, true, false); // silent, bypass cache
     } catch (error) {
       toast.error("Failed to clear chat");
     }
@@ -832,6 +833,7 @@ export function MultiTabChat() {
           msg.id === messageId ? { ...msg, reactions: response.data.reactions } : msg
         ));
       }
+      if (activeChat) loadMessages(activeChat, true, false);
     } catch (error) {
       console.error("Failed to add reaction", error);
       // Revert on failure
@@ -869,6 +871,7 @@ export function MultiTabChat() {
           msg.id === messageId ? { ...msg, reactions: response.data.reactions || [] } : msg
         ));
       }
+      if (activeChat) loadMessages(activeChat, true, false);
     } catch (error) {
       console.error("Failed to remove reaction", error);
       // Revert on failure
