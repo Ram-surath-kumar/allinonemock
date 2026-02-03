@@ -1896,3 +1896,21 @@
 [2026-02-03T12:54:21.154Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
 [2026-02-03T12:54:50.887Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
 [2026-02-03T12:54:51.468Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:04:01.275Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-03T13:04:01.995Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:04:28.142Z] [AUTH] Incoming Request: DELETE /api/users/a75a43c3-4dd7-4722-9566-c940032ba220
+[2026-02-03T13:04:29.132Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:06:04.999Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:06:05.571Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:06:52.699Z] [AUTH] Incoming Request: GET /api/finance/assignments?type=Hostel&_t=1770124012685
+[2026-02-03T13:06:53.876Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:06:53.885Z] [API-ASSIGNMENTS] Request by User: 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:06:53.886Z] [API-ASSIGNMENTS] Params: search=undefined, type=Hostel, status=undefined
+[2026-02-03T13:06:54.082Z] [API-ASSIGNMENTS] Raw Fetch Count: 30
+[2026-02-03T13:06:54.083Z] [API-ASSIGNMENTS] Returned Count: 8
+[2026-02-03T13:07:15.174Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-03T13:07:15.987Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:08:35.079Z] [AUTH] Incoming Request: GET /api/users?email=1000120001%40loopverse.in
+[2026-02-03T13:08:36.246Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)
+[2026-02-03T13:08:42.128Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-03T13:08:42.624Z] [AUTH] Success: Authenticated as 1000120001@loopverse.in (Role: admin)

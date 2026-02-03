@@ -12,6 +12,16 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Users, Plus, X, Search } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { api } from '@/services/api';
 
@@ -22,6 +32,9 @@ export function StudentAllocation({ onUpdate }) {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedRoute, setSelectedRoute] = useState(null);
+    const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+    const [registrationToRemove, setRegistrationToRemove] = useState(null);
+    const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
 
     const [routeStops, setRouteStops] = useState([]);
     const [showAllocationsDialog, setShowAllocationsDialog] = useState(false);
@@ -133,11 +146,11 @@ export function StudentAllocation({ onUpdate }) {
         }
     };
 
-    const handleRemove = async (registrationId) => {
-        if (!confirm('Remove student from this route?')) return;
+    const confirmRemove = async () => {
+        if (!registrationToRemove) return;
 
         try {
-            const response = await api.delete(`/transport/registrations/${registrationId}`);
+            const response = await api.delete(`/transport/registrations/${registrationToRemove}`);
             if (response.data) {
                 toast.success('Student removed from route');
                 fetchData();
@@ -148,7 +161,15 @@ export function StudentAllocation({ onUpdate }) {
         } catch (error) {
             console.error('Error removing student:', error);
             toast.error('An error occurred');
+        } finally {
+            setIsRemoveDialogOpen(false);
+            setRegistrationToRemove(null);
         }
+    };
+
+    const handleRemove = (registrationId) => {
+        setRegistrationToRemove(registrationId);
+        setIsRemoveDialogOpen(true);
     };
 
     const getStudentsForRoute = (routeId) => {
@@ -188,12 +209,7 @@ export function StudentAllocation({ onUpdate }) {
                         variant="outline"
                         size="sm"
                         className="flex-1 sm:flex-none"
-                        onClick={async () => {
-                            if (!confirm("This will calculate and assign fees to all currently allocated students who have no fee records. Continue?")) return;
-                            const res = await api.syncTransportFees();
-                            if (res.data) toast.success(res.data.message);
-                            else toast.error("Failed to sync fees");
-                        }}
+                        onClick={() => setIsSyncDialogOpen(true)}
                     >
                         Sync Fees
                     </Button>
@@ -464,6 +480,47 @@ export function StudentAllocation({ onUpdate }) {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Remove Confirmation Dialog */}
+            <AlertDialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Student Allocation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove this student from the transport route? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmRemove} className="bg-red-600 hover:bg-red-700">
+                            Confirm Remove
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Sync Fees Confirmation Dialog */}
+            <AlertDialog open={isSyncDialogOpen} onOpenChange={setIsSyncDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Sync Transport Fees</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will calculate and assign fees to all currently allocated students who have no fee records. Do you want to continue?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={async () => {
+                            const res = await api.syncTransportFees();
+                            if (res.data) toast.success(res.data.message);
+                            else toast.error("Failed to sync fees");
+                            setIsSyncDialogOpen(false);
+                        }}>
+                            Confirm Sync
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
