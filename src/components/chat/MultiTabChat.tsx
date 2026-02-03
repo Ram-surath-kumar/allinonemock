@@ -162,101 +162,101 @@ export function MultiTabChat() {
   useEffect(() => {
     if (!currentUser) return;
 
-      // Check if we have a chatUserId in the URL (from route /:orgName/:userId/chat/:chatUserId)
-      // Note: chatUserId is the numeric user_id (loopid), not the UUID id
-      if (chatUserId) {
-        const targetLoopId = chatUserId; // This is the numeric user_id/loopid from URL
+    // Check if we have a chatUserId in the URL (from route /:orgName/:userId/chat/:chatUserId)
+    // Note: chatUserId is the numeric user_id (loopid), not the UUID id
+    if (chatUserId) {
+      const targetLoopId = chatUserId; // This is the numeric user_id/loopid from URL
 
-        // If users haven't loaded yet, create temporary chat and open it immediately
-        if (users.length === 0) {
-          // Create a temporary chat to open immediately (will be updated when users load)
-          const tempChat: ChatTab = {
-            id: `temp-chat-${targetLoopId}`,
-            userId: targetLoopId, // Temporary - will be replaced with UUID
-            userName: 'Loading...',
-            type: 'direct',
-            unreadCount: 0
-          };
-
-          // Only set if not already set or different
-          if (!activeChat || activeChat.userId !== tempChat.userId) {
-            setActiveChat(tempChat);
-          }
-
-          // Trigger users load
-          loadUsers();
-          return; // Will retry when users load
-        }
-
-        // Match by user_id (loopid) or loopid field, converting to string for comparison
-        let user = users.find(u =>
-          String(u.user_id) === String(targetLoopId) ||
-          String(u.loopid) === String(targetLoopId) ||
-          u.id === targetLoopId // Fallback to UUID match
-        );
-
-        // If user not found, try to find in chats (chats use UUID id as userId)
-        if (!user) {
-          const existingChat = chats.find(c => {
-            // Try to match by finding user with matching loopid
-            const chatUser = users.find(u => u.id === c.userId);
-            return chatUser && (String(chatUser.user_id) === String(targetLoopId) || String(chatUser.loopid) === String(targetLoopId));
-          });
-
-          if (existingChat && existingChat.userName !== 'Unknown') {
-            // Use existing chat data if we have name
-            if (!activeChat || activeChat.userId !== existingChat.userId) {
-              setActiveChat(existingChat);
-              loadMessages(existingChat);
-
-              // Update URL to use loopid - find user by UUID
-              const chatUser = users.find(u => u.id === existingChat.userId);
-              if (currentUser?.organization && chatUser) {
-                const loopId = chatUser.user_id || chatUser.loopid;
-                if (loopId && String(loopId) !== String(targetLoopId)) {
-                  navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat/${loopId}`, { replace: true });
-                }
-              }
-            }
-            return;
-          }
-          // User not found - keep temp chat open, will update when found
-          return;
-        }
-
-        // Find existing chat or create temp one with proper user info
-        // Chats use UUID id, so we need to find by matching the user's UUID
-        const existing = chats.find(c => c.userId === user!.id);
-        const chatToOpen = existing || {
-          id: `recent-${user.id}`,
-          userId: user.id, // Use UUID id for chat userId
-          userName: user.name || 'Unknown',
-          userAvatar: user.avatar,
-          type: 'direct' as const,
+      // If users haven't loaded yet, create temporary chat and open it immediately
+      if (users.length === 0) {
+        // Create a temporary chat to open immediately (will be updated when users load)
+        const tempChat: ChatTab = {
+          id: `temp-chat-${targetLoopId}`,
+          userId: targetLoopId, // Temporary - will be replaced with UUID
+          userName: 'Loading...',
+          type: 'direct',
           unreadCount: 0
         };
 
-        // Update chat name if we now have user info
-        if (user && chatToOpen.userName === 'Unknown') {
-          chatToOpen.userName = user.name;
-          chatToOpen.userAvatar = user.avatar;
+        // Only set if not already set or different
+        if (!activeChat || activeChat.userId !== tempChat.userId) {
+          setActiveChat(tempChat);
         }
 
-        // Only set active chat if it's different to avoid unnecessary re-renders
-        if (!activeChat || activeChat.userId !== chatToOpen.userId || activeChat.id.startsWith('temp-chat-')) {
-          setActiveChat(chatToOpen);
-          loadMessages(chatToOpen);
+        // Trigger users load
+        loadUsers();
+        return; // Will retry when users load
+      }
 
-          // Update URL to use loopid instead of UUID (if URL currently has UUID)
-          if (currentUser?.organization && user) {
-            const loopId = user.user_id || user.loopid;
-            if (loopId && String(loopId) !== String(chatUserId)) {
-              navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat/${loopId}`, { replace: true });
+      // Match by user_id (loopid) or loopid field, converting to string for comparison
+      let user = users.find(u =>
+        String(u.user_id) === String(targetLoopId) ||
+        String(u.loopid) === String(targetLoopId) ||
+        u.id === targetLoopId // Fallback to UUID match
+      );
+
+      // If user not found, try to find in chats (chats use UUID id as userId)
+      if (!user) {
+        const existingChat = chats.find(c => {
+          // Try to match by finding user with matching loopid
+          const chatUser = users.find(u => u.id === c.userId);
+          return chatUser && (String(chatUser.user_id) === String(targetLoopId) || String(chatUser.loopid) === String(targetLoopId));
+        });
+
+        if (existingChat && existingChat.userName !== 'Unknown') {
+          // Use existing chat data if we have name
+          if (!activeChat || activeChat.userId !== existingChat.userId) {
+            setActiveChat(existingChat);
+            loadMessages(existingChat);
+
+            // Update URL to use loopid - find user by UUID
+            const chatUser = users.find(u => u.id === existingChat.userId);
+            if (currentUser?.organization && chatUser) {
+              const loopId = chatUser.user_id || chatUser.loopid;
+              if (loopId && String(loopId) !== String(targetLoopId)) {
+                navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat/${loopId}`, { replace: true });
+              }
             }
           }
+          return;
         }
-      } else if (tab && tab.startsWith("chat/") && users.length > 0) {
-      // Fallback for old URL format
+        // User not found - keep temp chat open, will update when found
+        return;
+      }
+
+      // Find existing chat or create temp one with proper user info
+      // Chats use UUID id, so we need to find by matching the user's UUID
+      const existing = chats.find(c => c.userId === user!.id);
+      const chatToOpen = existing || {
+        id: `recent-${user.id}`,
+        userId: user.id, // Use UUID id for chat userId
+        userName: user.name || 'Unknown',
+        userAvatar: user.avatar,
+        type: 'direct' as const,
+        unreadCount: 0
+      };
+
+      // Update chat name if we now have user info
+      if (user && chatToOpen.userName === 'Unknown') {
+        chatToOpen.userName = user.name;
+        chatToOpen.userAvatar = user.avatar;
+      }
+
+      // Only set active chat if it's different to avoid unnecessary re-renders
+      if (!activeChat || activeChat.userId !== chatToOpen.userId || activeChat.id.startsWith('temp-chat-')) {
+        setActiveChat(chatToOpen);
+        loadMessages(chatToOpen);
+
+        // Update URL to use loopid instead of UUID (if URL currently has UUID)
+        if (currentUser?.organization && user) {
+          const loopId = user.user_id || user.loopid;
+          if (loopId && String(loopId) !== String(chatUserId)) {
+            navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/chat/${loopId}`, { replace: true });
+          }
+        }
+      }
+    } else if (tab && tab.startsWith("chat/") && users.length > 0) {
+      // Fallback for old URL format: split to get ID
       const targetId = tab.split("/")[1];
       // Try matching by loopid first, then UUID
       const user = users.find(u =>
