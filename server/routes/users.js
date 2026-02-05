@@ -30,8 +30,8 @@ router.get('/', async (req, res) => {
       if (role) query = query.eq('role', role);
       if (status) query = query.eq('status', status);
       if (department_id) query = query.eq('department_id', department_id);
-      if (org_id) query = query.eq('org_id', org_id);
-      if (user_id) query = query.eq('user_id', user_id);
+      if (org_id) query = query.eq('org_id', parseInt(org_id, 10));
+      if (user_id) query = query.eq('user_id', parseInt(user_id, 10));
       if (email) query = query.eq('email', email);
       return query.order('created_at', { ascending: false });
     });
@@ -91,7 +91,41 @@ router.post('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
 
     const { college_email, ...userData } = req.body;
 
-    const newUser = await secureDb.create('users', userData, context);
+    // Clean userData: remove undefined values and ensure proper types
+    const cleanedUserData = {};
+    for (const [key, value] of Object.entries(userData)) {
+      // Skip undefined values
+      if (value === undefined) continue;
+      
+      // Handle integer fields (org_id, user_id)
+      if (['org_id', 'user_id'].includes(key)) {
+        // Skip if value is undefined or the string "undefined"
+        if (value === undefined || value === 'undefined' || value === 'null') {
+          continue; // Don't include this field at all
+        }
+        if (value === null || value === '') {
+          cleanedUserData[key] = null;
+        } else {
+          const intValue = parseInt(value, 10);
+          cleanedUserData[key] = isNaN(intValue) ? null : intValue;
+        }
+      }
+      // Handle UUID fields (department_id) - keep as string, validate format
+      else if (key === 'department_id') {
+        if (value === null || value === '') {
+          cleanedUserData[key] = null;
+        } else {
+          // Keep as string (UUID format), don't convert to integer
+          cleanedUserData[key] = String(value);
+        }
+      }
+      // All other fields pass through as-is
+      else {
+        cleanedUserData[key] = value;
+      }
+    }
+
+    const newUser = await secureDb.create('users', cleanedUserData, context);
 
     sendSuccess(res, newUser);
   } catch (error) {

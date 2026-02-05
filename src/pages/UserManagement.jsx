@@ -120,38 +120,89 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
       const loopid = newUser.loopid;
       const college_email = newUser.college_email;
 
+      // Get org_id from current user - prioritize user.org_id (more reliable), fallback to organization.org_id
+      // Handle the case where organization.org_id might be the string 'undefined'
+      let orgId = null;
+      
+      // First check user.org_id (most reliable - directly from user record)
+      // This is the primary source since it comes directly from the users table
+      if (currentUser?.org_id != null && 
+          currentUser.org_id !== 'undefined' && 
+          !isNaN(Number(currentUser.org_id))) {
+        orgId = Number(currentUser.org_id);
+      } 
+      // Then check organization.org_id, but validate it's not the string 'undefined'
+      // Only use this if user.org_id is not available
+      else if (currentUser?.organization?.org_id != null && 
+               currentUser.organization.org_id !== 'undefined' && 
+               currentUser.organization.org_id !== undefined &&
+               !isNaN(Number(currentUser.organization.org_id))) {
+        orgId = Number(currentUser.organization.org_id);
+      }
+      
+      // Final validation - org_id must be a valid number
+      const validOrgId = (orgId != null && typeof orgId === 'number' && !isNaN(orgId)) ? orgId : null;
+      
+      if (!validOrgId) {
+        const errorMsg = `Cannot create user: Current user does not have a valid org_id. Please ensure you are logged in with a user that belongs to an organization.`;
+        console.error(errorMsg, {
+          currentUser: currentUser,
+          organization: currentUser?.organization,
+          organizationOrgId: currentUser?.organization?.org_id,
+          userOrgId: currentUser?.org_id,
+          extractedOrgId: orgId,
+          validOrgId: validOrgId
+        });
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
       // Generate temporary email if not provided (will be updated after user_id is known)
       let tempEmail = email;
       if (!tempEmail) {
         // For all roles, use temporary email - will be updated after user_id is known
-        tempEmail = `temp-${currentUser?.organization?.org_id || "org"}-${Date.now()}@loopverse.in`;
+        tempEmail = `temp-${validOrgId}-${Date.now()}@loopverse.in`;
       }
-
-      // Use API to create user (which will handle email sending)
-      const response = await api.createUser({
+      
+      const userData = {
         name: newUser.name,
         email: tempEmail, // Always provide email to satisfy NOT NULL constraint
         role: newUser.role,
-        permissions: newUser.permissions,
-        department_id: newUser.department_id || null,
-        loopid: loopid || null, // Will be updated after user_id is known
+        permissions: newUser.permissions || [],
         status: "active",
-        college_email: college_email, // Pass college email to backend
-      });
+        college_email: college_email || null, // Pass college email to backend
+      };
+
+      // Only include fields if they have valid values
+      // department_id is a UUID, so keep it as a string
+      if (newUser.department_id && newUser.department_id.trim() !== '') {
+        userData.department_id = newUser.department_id;
+      }
+      // org_id is an integer - always include if we have a valid value
+      if (validOrgId != null) {
+        userData.org_id = validOrgId;
+      }
+      // loopid is a string
+      if (loopid && loopid.trim() !== '') {
+        userData.loopid = loopid;
+      }
+
+      // Use API to create user (which will handle email sending)
+      const response = await api.createUser(userData);
 
       if (response.error) throw new Error(response.error);
       const data = response.data;
 
       // For all users: Generate email as org_id + user_id @loopverse.in
-      if (data && currentUser?.organization?.org_id && data.user_id) {
-        const generatedEmail = `${currentUser.organization.org_id}${data.user_id}@loopverse.in`;
+      if (data && validOrgId && data.user_id) {
+        const generatedEmail = `${validOrgId}${data.user_id}@loopverse.in`;
 
         // For students, also generate loopid
         const updateData =
           newUser.role === "student"
             ? {
               email: generatedEmail,
-              loopid: `${currentUser.organization.org_id}${data.user_id}`,
+              loopid: `${validOrgId}${data.user_id}`,
             }
             : { email: generatedEmail };
 
@@ -257,8 +308,31 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
 
   const handleAddMultipleUsers = async (users) => {
     try {
-      if (!currentUser?.organization?.org_id) {
-        throw new Error("Organization ID is required");
+      // Get org_id from current user (same logic as single user creation)
+      // Prioritize user.org_id (more reliable), handle string 'undefined' case
+      let orgId = null;
+      
+      // First check user.org_id (most reliable - directly from user record)
+      // This is the primary source since it comes directly from the users table
+      if (currentUser?.org_id != null && 
+          currentUser.org_id !== 'undefined' && 
+          !isNaN(Number(currentUser.org_id))) {
+        orgId = Number(currentUser.org_id);
+      } 
+      // Then check organization.org_id, but validate it's not the string 'undefined'
+      // Only use this if user.org_id is not available
+      else if (currentUser?.organization?.org_id != null && 
+               currentUser.organization.org_id !== 'undefined' && 
+               currentUser.organization.org_id !== undefined &&
+               !isNaN(Number(currentUser.organization.org_id))) {
+        orgId = Number(currentUser.organization.org_id);
+      }
+      
+      // Final validation - org_id must be a valid number
+      const validOrgId = (orgId != null && typeof orgId === 'number' && !isNaN(orgId)) ? orgId : null;
+      
+      if (!validOrgId) {
+        throw new Error("Cannot create users: Current user does not have a valid org_id. Please ensure you are logged in with a user that belongs to an organization.");
       }
 
       // Prepare users for bulk insert with temporary emails
@@ -266,18 +340,27 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         let tempEmail = user.email;
         if (!tempEmail) {
           // For all roles, generate unique temporary email - will be updated after user_id is known
-          tempEmail = `temp-${currentUser.organization.org_id}-${Date.now()}-${index}@loopverse.in`;
+          tempEmail = `temp-${validOrgId}-${Date.now()}-${index}@loopverse.in`;
         }
 
-        return {
+        const userData = {
           name: user.name,
           email: tempEmail,
           role: user.role,
           permissions: user.permissions || [],
-          department_id: user.department_id || null,
-          loopid: user.loopid || null,
           status: "active",
+          org_id: validOrgId, // Always include org_id
         };
+
+        // Only include fields if they have valid values
+        if (user.department_id && user.department_id.trim() !== '') {
+          userData.department_id = user.department_id;
+        }
+        if (user.loopid && user.loopid.trim() !== '') {
+          userData.loopid = user.loopid;
+        }
+
+        return userData;
       });
 
       // Bulk insert all users at once
@@ -297,14 +380,14 @@ export function UserManagement({ dialogOpen, setDialogOpen }) {
         .map((user, index) => {
           const originalUser = users[index];
           if (user.user_id) {
-            const generatedEmail = `${currentUser.organization.org_id}${user.user_id}@loopverse.in`;
+            const generatedEmail = `${validOrgId}${user.user_id}@loopverse.in`;
             const update = {
               id: user.id,
               email: generatedEmail,
             };
             // For students, also generate loopid
             if (originalUser.role === "student") {
-              update.loopid = `${currentUser.organization.org_id}${user.user_id}`;
+              update.loopid = `${validOrgId}${user.user_id}`;
             }
             return update;
           }

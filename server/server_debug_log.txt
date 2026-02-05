@@ -505,3 +505,352 @@
 [2026-02-05T18:43:35.660Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
 [2026-02-05T18:43:50.020Z] [AUTH] Incoming Request: GET /api/users?limit=100
 [2026-02-05T18:43:50.629Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:49:38.776Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:49:39.257Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:49:39.468Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-05T18:49:39.567Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:49:41.879Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T18:49:41.977Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:49:46.190Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-05T18:49:46.341Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:50:13.327Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T18:50:13.492Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:50:22.594Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:50:22.786Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:50:36.238Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T18:50:36.395Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:53:10.701Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:53:10.915Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:53:19.914Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T18:53:20.120Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:54:48.286Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:54:48.879Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:55:00.737Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T18:55:00.900Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:56:28.968Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:56:29.524Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:56:41.026Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T18:56:41.201Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:59:05.946Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:59:06.160Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T18:59:26.144Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T18:59:26.332Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:00:38.038Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:00:38.224Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:00:38.757Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-05T19:00:39.255Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:02:55.858Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:02:56.319Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:05:56.566Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:05:56.752Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:06:05.980Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:06:06.143Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:07:57.842Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:07:58.375Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:08:10.598Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:08:11.066Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:08:11.395Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:08:11.497Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:08:11.500Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:08:11.500Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Jeevanantham","user_id":20003}
+[2026-02-05T19:08:11.532Z] [DEBUG] Generated password: xWrA5WupWL5L
+[2026-02-05T19:08:11.532Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:08:11.738Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"a18e58d3-dee9-41df-af3a-3410a60dabc8","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:08:11.776330607Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Jeevanantham","user_id":20003},"identities":[{"identity_id":"f29497a2-9b67-48a6-9497-f8393b8f6ede","id":"a18e58d3-dee9-41df-af3a-3410a60dabc8","user_id":"a18e58d3-dee9-41df-af3a-3410a60dabc8","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"a18e58d3-dee9-41df-af3a-3410a60dabc8"},"provider":"email","last_sign_in_at":"2026-02-05T19:08:11.771166773Z","created_at":"2026-02-05T19:08:11.771231Z","updated_at":"2026-02-05T19:08:11.771231Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:08:11.737936Z","updated_at":"2026-02-05T19:08:11.777446Z","is_anonymous":false}}
+[2026-02-05T19:08:11.739Z] [DEBUG] Sending welcome email...
+[ERROR] Catch block: Email server connection failed. Please check your internet connection and email configuration.
+[2026-02-05T19:08:21.972Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:08:22.073Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:08:22.140Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:08:23.267Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:10:58.905Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:11:00.167Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:11:19.230Z] [AUTH] Incoming Request: DELETE /api/users/aeaa1dd9-feb2-4aab-8e30-7236dfe3ba96
+[2026-02-05T19:11:19.513Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:11:39.655Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:11:40.073Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:11:40.590Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:11:40.785Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:11:40.786Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:11:40.786Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Jeevanantham","user_id":20003}
+[2026-02-05T19:11:40.787Z] [DEBUG] Generated password: OXxRkGgfslrs
+[2026-02-05T19:11:40.787Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:11:40.964Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"6aac9b35-3014-43f3-8083-b7c915a405c4","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:11:41.006464793Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Jeevanantham","user_id":20003},"identities":[{"identity_id":"f315e5a3-96a3-4ca6-bbcd-23dbc79f4c50","id":"6aac9b35-3014-43f3-8083-b7c915a405c4","user_id":"6aac9b35-3014-43f3-8083-b7c915a405c4","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"6aac9b35-3014-43f3-8083-b7c915a405c4"},"provider":"email","last_sign_in_at":"2026-02-05T19:11:41.00257231Z","created_at":"2026-02-05T19:11:41.002627Z","updated_at":"2026-02-05T19:11:41.002627Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:11:40.99557Z","updated_at":"2026-02-05T19:11:41.007744Z","is_anonymous":false}}
+[2026-02-05T19:11:40.965Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:11:44.870Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:11:45.077Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:11:45.251Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:11:45.353Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:11:45.588Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:14:40.686Z] [AUTH] Incoming Request: DELETE /api/users/278a4ddc-ba35-495a-ac8d-a7b80d0cb731
+[2026-02-05T19:14:41.486Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:15:04.904Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:15:05.160Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:15:05.561Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:15:05.738Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:15:05.739Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:15:05.739Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120004@loopverse.in","loopid":"1000120004","user_name":"Jeevanantham","user_id":20004}
+[2026-02-05T19:15:05.761Z] [DEBUG] Generated password: o7Dtkl6bi9aS
+[2026-02-05T19:15:05.761Z] [DEBUG] Attempting to create auth user: 1000120004@loopverse.in
+[2026-02-05T19:15:05.845Z] [DEBUG] Auth user creation returned error: A user with this email address has already been registered
+[2026-02-05T19:15:05.845Z] [DEBUG] User exists. Attempting to update password...
+[2026-02-05T19:15:05.845Z] [DEBUG] Fetching user list from Auth API...
+[2026-02-05T19:15:05.933Z] [DEBUG] User list fetched. Total users found: 36
+[2026-02-05T19:15:05.933Z] [DEBUG] Found existing user ID: 3b794472-54b6-4b3d-a6b1-11cfde4bee7f
+[2026-02-05T19:15:05.933Z] [DEBUG] Updating user password...
+[2026-02-05T19:15:06.144Z] [DEBUG] ✅ Password updated successfully via Admin API.
+[2026-02-05T19:15:06.144Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:15:10.100Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:15:10.308Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:15:10.485Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:18:51.577Z] [AUTH] Incoming Request: DELETE /api/users/278a4ddc-ba35-495a-ac8d-a7b80d0cb731
+[2026-02-05T19:18:52.060Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:18:53.554Z] [AUTH] Incoming Request: DELETE /api/users/f1f69425-0f39-4e74-9a7f-56f0d17eba45
+[2026-02-05T19:18:53.772Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:19:01.352Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:19:01.539Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:19:22.486Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:19:22.796Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:19:23.321Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:19:23.524Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:19:23.525Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:19:23.525Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Jeevanantham","user_id":20003}
+[2026-02-05T19:19:23.551Z] [DEBUG] Generated password: uOmKKeyxpuD3
+[2026-02-05T19:19:23.551Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:19:23.764Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"b1d72b68-38ff-4c73-a6a1-8da90c6bd72d","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:19:23.788432815Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Jeevanantham","user_id":20003},"identities":[{"identity_id":"4a77b0c5-60b9-44c2-a165-2012c0e0015b","id":"b1d72b68-38ff-4c73-a6a1-8da90c6bd72d","user_id":"b1d72b68-38ff-4c73-a6a1-8da90c6bd72d","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"b1d72b68-38ff-4c73-a6a1-8da90c6bd72d"},"provider":"email","last_sign_in_at":"2026-02-05T19:19:23.786655677Z","created_at":"2026-02-05T19:19:23.786708Z","updated_at":"2026-02-05T19:19:23.786708Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:19:23.775063Z","updated_at":"2026-02-05T19:19:23.789962Z","is_anonymous":false}}
+[2026-02-05T19:19:23.764Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:19:27.403Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:19:27.629Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:19:27.821Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:19:27.907Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:19:28.197Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:21:20.165Z] [AUTH] Incoming Request: DELETE /api/users/75dfa490-1c58-476f-a934-70d2775d83ba
+[2026-02-05T19:21:20.497Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:21:27.986Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:21:28.241Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:21:28.879Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:21:29.041Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:21:29.043Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:21:29.043Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Jeevanantham","user_id":20003}
+[2026-02-05T19:21:29.075Z] [DEBUG] Generated password: v35hQoju7Djl
+[2026-02-05T19:21:29.075Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:21:29.241Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"1b2e3f82-a700-403f-bb0a-29897d3e99b9","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:21:29.266844548Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Jeevanantham","user_id":20003},"identities":[{"identity_id":"bce9f93d-d097-4a2c-b636-9aba9bd2ed58","id":"1b2e3f82-a700-403f-bb0a-29897d3e99b9","user_id":"1b2e3f82-a700-403f-bb0a-29897d3e99b9","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"1b2e3f82-a700-403f-bb0a-29897d3e99b9"},"provider":"email","last_sign_in_at":"2026-02-05T19:21:29.265208292Z","created_at":"2026-02-05T19:21:29.265255Z","updated_at":"2026-02-05T19:21:29.265255Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:21:29.263835Z","updated_at":"2026-02-05T19:21:29.268084Z","is_anonymous":false}}
+[2026-02-05T19:21:29.241Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:21:32.795Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:21:32.889Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:21:33.055Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:24:49.772Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:24:50.270Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:24:50.870Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:24:51.061Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:24:51.062Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:24:51.062Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120004@loopverse.in","loopid":"1000120004","user_name":"Jeevanantham","user_id":20004}
+[2026-02-05T19:24:51.091Z] [DEBUG] Generated password: i5DLA3IOygUl
+[2026-02-05T19:24:51.091Z] [DEBUG] Attempting to create auth user: 1000120004@loopverse.in
+[2026-02-05T19:24:51.318Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"593f029d-ab2c-472d-a960-19326b3725f4","aud":"authenticated","role":"authenticated","email":"1000120004@loopverse.in","email_confirmed_at":"2026-02-05T19:24:51.336189333Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120004","name":"Jeevanantham","user_id":20004},"identities":[{"identity_id":"050de7e8-88e7-40c1-84df-76eb3655f4f3","id":"593f029d-ab2c-472d-a960-19326b3725f4","user_id":"593f029d-ab2c-472d-a960-19326b3725f4","identity_data":{"email":"1000120004@loopverse.in","email_verified":false,"phone_verified":false,"sub":"593f029d-ab2c-472d-a960-19326b3725f4"},"provider":"email","last_sign_in_at":"2026-02-05T19:24:51.330376008Z","created_at":"2026-02-05T19:24:51.330434Z","updated_at":"2026-02-05T19:24:51.330434Z","email":"1000120004@loopverse.in"}],"created_at":"2026-02-05T19:24:51.319712Z","updated_at":"2026-02-05T19:24:51.33725Z","is_anonymous":false}}
+[2026-02-05T19:24:51.318Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:24:54.943Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:24:55.212Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:24:55.432Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:24:55.548Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:24:55.805Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:25:32.435Z] [AUTH] Incoming Request: DELETE /api/users/d2f3abbf-22ff-4612-884a-01787c83fd37
+[2026-02-05T19:25:32.796Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:25:36.080Z] [AUTH] Incoming Request: DELETE /api/users/45d0674c-c2a3-481a-8876-84ada5459719
+[2026-02-05T19:25:36.296Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:25:38.183Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:25:38.441Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:25:43.026Z] [AUTH] Incoming Request: DELETE /api/users/45d0674c-c2a3-481a-8876-84ada5459719
+[2026-02-05T19:25:43.259Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:25:47.979Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:25:48.309Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:26:26.481Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:26:26.869Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:26:37.829Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:26:38.124Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:26:38.597Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:26:38.821Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:26:38.821Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:26:38.821Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Jeevanantham","user_id":20003}
+[2026-02-05T19:26:38.847Z] [DEBUG] Generated password: cZP1W1nq5dgx
+[2026-02-05T19:26:38.847Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:26:39.199Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"64e9f5b9-bbb2-4f14-be21-03a8a9bf0a45","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:26:39.065530271Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Jeevanantham","user_id":20003},"identities":[{"identity_id":"2feb07f8-4891-4d47-ba70-8bd14f953440","id":"64e9f5b9-bbb2-4f14-be21-03a8a9bf0a45","user_id":"64e9f5b9-bbb2-4f14-be21-03a8a9bf0a45","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"64e9f5b9-bbb2-4f14-be21-03a8a9bf0a45"},"provider":"email","last_sign_in_at":"2026-02-05T19:26:39.062210021Z","created_at":"2026-02-05T19:26:39.062265Z","updated_at":"2026-02-05T19:26:39.062265Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:26:39.053262Z","updated_at":"2026-02-05T19:26:39.066356Z","is_anonymous":false}}
+[2026-02-05T19:26:39.200Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:26:42.858Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:26:43.067Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:26:43.268Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:26:43.436Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:26:43.703Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:28:47.470Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:28:50.024Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:28:50.783Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:28:50.989Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:28:50.991Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:28:50.991Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120004@loopverse.in","loopid":"1000120004","user_name":"Jeevanantham","user_id":20004}
+[2026-02-05T19:28:51.019Z] [DEBUG] Generated password: NjHxUX2GNZLu
+[2026-02-05T19:28:51.019Z] [DEBUG] Attempting to create auth user: 1000120004@loopverse.in
+[2026-02-05T19:28:51.220Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"3a5bb86a-e9ca-4f8c-83cf-3b94fcaed7ad","aud":"authenticated","role":"authenticated","email":"1000120004@loopverse.in","email_confirmed_at":"2026-02-05T19:28:51.239926192Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120004","name":"Jeevanantham","user_id":20004},"identities":[{"identity_id":"92a2db4a-fb3e-457b-9a16-9b85f737bd37","id":"3a5bb86a-e9ca-4f8c-83cf-3b94fcaed7ad","user_id":"3a5bb86a-e9ca-4f8c-83cf-3b94fcaed7ad","identity_data":{"email":"1000120004@loopverse.in","email_verified":false,"phone_verified":false,"sub":"3a5bb86a-e9ca-4f8c-83cf-3b94fcaed7ad"},"provider":"email","last_sign_in_at":"2026-02-05T19:28:51.234800751Z","created_at":"2026-02-05T19:28:51.234851Z","updated_at":"2026-02-05T19:28:51.234851Z","email":"1000120004@loopverse.in"}],"created_at":"2026-02-05T19:28:51.231309Z","updated_at":"2026-02-05T19:28:51.240828Z","is_anonymous":false}}
+[2026-02-05T19:28:51.221Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:28:54.950Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:28:55.210Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:28:55.402Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:09.902Z] [AUTH] Incoming Request: DELETE /api/users/99049f19-40d0-46c1-8e6f-61ea3bca2d3f
+[2026-02-05T19:30:10.329Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:12.350Z] [AUTH] Incoming Request: DELETE /api/users/23ecb3dd-1503-413f-8864-c9b37130cd1b
+[2026-02-05T19:30:12.541Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:22.281Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:30:22.603Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:23.074Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:30:23.258Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:23.259Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:30:23.259Z] [DEBUG] Request body: {"college_email":"ffpermanentid72@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"agnes roshini","user_id":20003}
+[2026-02-05T19:30:23.280Z] [DEBUG] Generated password: ONMraI1XmVmg
+[2026-02-05T19:30:23.280Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:30:23.470Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"372be0c5-98ba-4290-bcc5-50332f334cf6","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:30:23.491211423Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"agnes roshini","user_id":20003},"identities":[{"identity_id":"bc904f6c-ef43-4a3f-bb66-bc2d135793d8","id":"372be0c5-98ba-4290-bcc5-50332f334cf6","user_id":"372be0c5-98ba-4290-bcc5-50332f334cf6","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"372be0c5-98ba-4290-bcc5-50332f334cf6"},"provider":"email","last_sign_in_at":"2026-02-05T19:30:23.489260451Z","created_at":"2026-02-05T19:30:23.489312Z","updated_at":"2026-02-05T19:30:23.489312Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:30:23.481688Z","updated_at":"2026-02-05T19:30:23.492094Z","is_anonymous":false}}
+[2026-02-05T19:30:23.471Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:30:27.188Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:30:27.495Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:30:27.649Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:30:48.518Z] [AUTH] Incoming Request: DELETE /api/users/71253376-114c-4c03-8748-08f6b120c064
+[2026-02-05T19:30:49.752Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:36.661Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:31:37.032Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:37.510Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:31:37.702Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:37.702Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:31:37.703Z] [DEBUG] Request body: {"college_email":"harishunfounded@gmail.com","loop_email":"1000120003@loopverse.in","loopid":"1000120003","user_name":"Harish","user_id":20003}
+[2026-02-05T19:31:37.703Z] [DEBUG] Generated password: Dhu9MeVCYftv
+[2026-02-05T19:31:37.703Z] [DEBUG] Attempting to create auth user: 1000120003@loopverse.in
+[2026-02-05T19:31:37.997Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"2b9ba6e1-e8c1-4c43-bbc8-d60864c2e952","aud":"authenticated","role":"authenticated","email":"1000120003@loopverse.in","email_confirmed_at":"2026-02-05T19:31:38.013268029Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120003","name":"Harish","user_id":20003},"identities":[{"identity_id":"b0a7f151-f72d-4745-a96a-8d77d74c4ddb","id":"2b9ba6e1-e8c1-4c43-bbc8-d60864c2e952","user_id":"2b9ba6e1-e8c1-4c43-bbc8-d60864c2e952","identity_data":{"email":"1000120003@loopverse.in","email_verified":false,"phone_verified":false,"sub":"2b9ba6e1-e8c1-4c43-bbc8-d60864c2e952"},"provider":"email","last_sign_in_at":"2026-02-05T19:31:38.010531097Z","created_at":"2026-02-05T19:31:38.010582Z","updated_at":"2026-02-05T19:31:38.010582Z","email":"1000120003@loopverse.in"}],"created_at":"2026-02-05T19:31:38.00941Z","updated_at":"2026-02-05T19:31:38.015042Z","is_anonymous":false}}
+[2026-02-05T19:31:37.997Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:31:41.699Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:31:42.052Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:31:42.263Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:58.063Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:31:58.424Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:58.900Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:31:59.078Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:31:59.079Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:31:59.080Z] [DEBUG] Request body: {"college_email":"senthamilselvan1412@gmail.com","loop_email":"1000120004@loopverse.in","loopid":"1000120004","user_name":"Sentha","user_id":20004}
+[2026-02-05T19:31:59.080Z] [DEBUG] Generated password: hkg1QWz7m8TF
+[2026-02-05T19:31:59.081Z] [DEBUG] Attempting to create auth user: 1000120004@loopverse.in
+[2026-02-05T19:31:59.245Z] [DEBUG] ✅ Auth user created successfully: {"user":{"id":"ddcc6720-bf41-4737-9be8-d54a0a82e539","aud":"authenticated","role":"authenticated","email":"1000120004@loopverse.in","email_confirmed_at":"2026-02-05T19:31:59.268840776Z","phone":"","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"email_verified":true,"loopid":"1000120004","name":"Sentha","user_id":20004},"identities":[{"identity_id":"540a281e-16c7-407b-abc3-3a304f323d98","id":"ddcc6720-bf41-4737-9be8-d54a0a82e539","user_id":"ddcc6720-bf41-4737-9be8-d54a0a82e539","identity_data":{"email":"1000120004@loopverse.in","email_verified":false,"phone_verified":false,"sub":"ddcc6720-bf41-4737-9be8-d54a0a82e539"},"provider":"email","last_sign_in_at":"2026-02-05T19:31:59.266927704Z","created_at":"2026-02-05T19:31:59.266972Z","updated_at":"2026-02-05T19:31:59.266972Z","email":"1000120004@loopverse.in"}],"created_at":"2026-02-05T19:31:59.265252Z","updated_at":"2026-02-05T19:31:59.269719Z","is_anonymous":false}}
+[2026-02-05T19:31:59.246Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:32:03.460Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:32:03.595Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:32:03.992Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:04.095Z] [AUTH] Incoming Request: GET /api/users?role=admin
+[2026-02-05T19:32:04.277Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:26.842Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:32:27.203Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:27.746Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:32:27.937Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:27.937Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:32:27.937Z] [DEBUG] Request body: {"college_email":"vijaykumarunfounded@gmail.com","loop_email":"1000120005@loopverse.in","loopid":"1000120005","user_name":"Vijay","user_id":20005}
+[2026-02-05T19:32:27.937Z] [DEBUG] Generated password: SCNqdhvRDdXE
+[2026-02-05T19:32:27.937Z] [DEBUG] Attempting to create auth user: 1000120005@loopverse.in
+[2026-02-05T19:32:28.056Z] [DEBUG] Auth user creation returned error: A user with this email address has already been registered
+[2026-02-05T19:32:28.056Z] [DEBUG] User exists. Attempting to update password...
+[2026-02-05T19:32:28.056Z] [DEBUG] Fetching user list from Auth API...
+[2026-02-05T19:32:28.141Z] [DEBUG] User list fetched. Total users found: 36
+[2026-02-05T19:32:28.141Z] [DEBUG] Found existing user ID: c3dcd997-dd90-4da2-8ebe-814d8c8a60e7
+[2026-02-05T19:32:28.142Z] [DEBUG] Updating user password...
+[2026-02-05T19:32:28.362Z] [DEBUG] ✅ Password updated successfully via Admin API.
+[2026-02-05T19:32:28.363Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:32:31.959Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:32:31.976Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:32:32.218Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:52.051Z] [AUTH] Incoming Request: POST /api/users
+[2026-02-05T19:32:52.404Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:52.902Z] [AUTH] Incoming Request: POST /api/users/send-welcome-email
+[2026-02-05T19:32:53.120Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:32:53.121Z] ---- [DEBUG] /send-welcome-email called ----
+[2026-02-05T19:32:53.121Z] [DEBUG] Request body: {"college_email":"vijaykumarunfounded@gmail.com","loop_email":"1000120006@loopverse.in","loopid":"1000120006","user_name":"Mukesh","user_id":20006}
+[2026-02-05T19:32:53.121Z] [DEBUG] Generated password: 8PI1i4vcBktl
+[2026-02-05T19:32:53.122Z] [DEBUG] Attempting to create auth user: 1000120006@loopverse.in
+[2026-02-05T19:32:53.273Z] [DEBUG] Auth user creation returned error: A user with this email address has already been registered
+[2026-02-05T19:32:53.273Z] [DEBUG] User exists. Attempting to update password...
+[2026-02-05T19:32:53.273Z] [DEBUG] Fetching user list from Auth API...
+[2026-02-05T19:32:53.387Z] [DEBUG] User list fetched. Total users found: 36
+[2026-02-05T19:32:53.387Z] [DEBUG] Found existing user ID: 75532d06-478a-480e-8762-aa3a37ea05f6
+[2026-02-05T19:32:53.388Z] [DEBUG] Updating user password...
+[2026-02-05T19:32:53.559Z] [DEBUG] ✅ Password updated successfully via Admin API.
+[2026-02-05T19:32:53.559Z] [DEBUG] Sending welcome email...
+[2026-02-05T19:32:57.151Z] [DEBUG] ✅ Welcome email sent.
+[2026-02-05T19:32:57.442Z] [AUTH] Incoming Request: POST /api/activities
+[2026-02-05T19:32:57.658Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:16.377Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:16.662Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:17.802Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:18.037Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:18.142Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:18.345Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:18.454Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:18.656Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:18.765Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:18.956Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:19.045Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:19.219Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:19.326Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:19.501Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:19.605Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:19.780Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:19.887Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:20.069Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:20.184Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:20.386Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:20.490Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:20.778Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:20.870Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:21.109Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:21.204Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:21.403Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:21.488Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:21.681Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:21.777Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:21.937Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:22.026Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:22.222Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:22.318Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:22.484Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:22.586Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:22.792Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:22.881Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:23.083Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:23.181Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:23.362Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:23.480Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:23.681Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:23.788Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:23.979Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:24.077Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:24.259Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:24.356Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:24.559Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:24.643Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:24.801Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:24.920Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:25.137Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:25.236Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:25.416Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:25.520Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:25.719Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:25.819Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:25.995Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:26.107Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:26.297Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:26.380Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:26.563Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:26.658Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:26.843Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:26.868Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:26.869Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:27.059Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:27.064Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:27.089Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-05T19:33:27.323Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:27.623Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:27.803Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:33:35.445Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-05T19:33:47.096Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-05T19:33:47.198Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-05T19:35:21.809Z] [AUTH] Fail: Invalid/Expired Token. Error: fetch failed

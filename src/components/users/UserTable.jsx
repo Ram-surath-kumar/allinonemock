@@ -17,6 +17,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Helper function to check if user was created in the last 3 days
+const isUserRecent = (user) => {
+  if (!user.createdAt) return false;
+  const createdAt = user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt);
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  return createdAt >= threeDaysAgo;
+};
+
 export function UserTable({ users, onEdit, onDelete, onResendEmail }) {
   const { canManageRole } = useAuth();
 
@@ -85,10 +94,10 @@ export function UserTable({ users, onEdit, onDelete, onResendEmail }) {
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          {onResendEmail && user.college_email && (
+                          {onResendEmail && user.college_email && isUserRecent(user) && (
                             <DropdownMenuItem onClick={() => onResendEmail(user)}>
                               <Mail className="mr-2 h-4 w-4" />
-                              Resend Email
+                              Resend Welcome Email
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem

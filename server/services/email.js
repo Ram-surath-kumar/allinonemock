@@ -90,21 +90,6 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
               .credential-box {
                 padding: 15px !important;
               }
-              .credential-item {
-                flex-direction: column !important;
-                align-items: flex-start !important;
-              }
-              .credential-label {
-                margin-bottom: 8px !important;
-                width: 100% !important;
-              }
-              .credential-value {
-                width: 100% !important;
-              }
-              .copy-button {
-                width: 100% !important;
-                margin-top: 8px !important;
-              }
               .login-button {
                 width: 100% !important;
                 padding: 14px 20px !important;
@@ -112,77 +97,53 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
             }
           </style>
         </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+        <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
           <!-- Main Container -->
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f7fa; padding: 20px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0a0a; padding: 20px 0;">
             <tr>
               <td align="center">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="container" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="container" style="max-width: 600px; background-color: #0f0f0f; border-radius: 8px; overflow: hidden;">
                   
-                  <!-- Header with Gradient -->
+                  <!-- Header -->
                   <tr>
-                    <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Welcome to LoopVerse ERP!</h1>
+                    <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 30px; text-align: center; border-bottom: 1px solid #1a1a1a;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Welcome to LoopVerse ERP</h1>
                       <p style="margin: 10px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 400;">Your account is ready</p>
                     </td>
                   </tr>
                   
                   <!-- Content -->
                   <tr>
-                    <td class="content" style="padding: 40px 30px;">
+                    <td class="content" style="padding: 40px 30px; background-color: #0f0f0f;">
                       <!-- Greeting -->
-                      <p style="margin: 0 0 20px 0; font-size: 18px; color: #1a202c; font-weight: 500;">Hello ${userName},</p>
+                      <p style="margin: 0 0 20px 0; font-size: 18px; color: #ffffff; font-weight: 500;">Hello ${userName},</p>
                       
-                      <p style="margin: 0 0 30px 0; font-size: 16px; color: #4a5568; line-height: 1.6;">Your account has been successfully created. Below are your login credentials:</p>
+                      <p style="margin: 0 0 30px 0; font-size: 16px; color: #b0b0b0; line-height: 1.6;">Your account has been successfully created. Below are your login credentials:</p>
                       
                       <!-- Credentials Box -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="credential-box" style="background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); border-radius: 10px; padding: 25px; margin: 0 0 25px 0; border: 1px solid #e2e8f0;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="credential-box" style="background-color: #0a0a0a; border-radius: 8px; padding: 25px; margin: 0 0 25px 0; border: 1px solid #1a1a1a;">
                         <tr>
                           <td>
-                            <h3 style="margin: 0 0 20px 0; color: #667eea; font-size: 18px; font-weight: 600;">Your Account Details</h3>
-                            
                             <!-- Loop Email -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 18px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 20px;">
                               <tr>
                                 <td>
                                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                     <tr>
-                                      <td style="padding-bottom: 6px;">
-                                        <span style="font-size: 13px; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Loop Email</span>
+                                      <td style="padding-bottom: 8px;">
+                                        <span style="font-size: 12px; color: #3b82f6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Loop Email</span>
                                       </td>
                                     </tr>
                                     <tr>
                                       <td>
-                                        <div style="background: #ffffff; border: 2px solid #cbd5e0; border-radius: 8px; padding: 14px 16px; position: relative;">
-                                          <span style="font-size: 15px; color: #667eea; font-weight: 600; font-family: 'Courier New', monospace; word-break: break-all; user-select: all; -webkit-user-select: all; display: block;">${loopEmail}</span>
-                                          <div style="position: absolute; top: 8px; right: 8px;">
-                                            <span style="background: #667eea; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Select to Copy</span>
-                                          </div>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  </table>
-                                </td>
-                              </tr>
-                            </table>
-                            
-                            <!-- Loop ID -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 18px;">
-                              <tr>
-                                <td>
-                                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                    <tr>
-                                      <td style="padding-bottom: 6px;">
-                                        <span style="font-size: 13px; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Loop ID</span>
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td>
-                                        <div style="background: #ffffff; border: 2px solid #cbd5e0; border-radius: 8px; padding: 14px 16px; position: relative;">
-                                          <span style="font-size: 15px; color: #2d3748; font-weight: 600; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; display: block;">${loopid}</span>
-                                          <div style="position: absolute; top: 8px; right: 8px;">
-                                            <span style="background: #667eea; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Select to Copy</span>
-                                          </div>
+                                        <div style="background-color: #0f0f0f; border: 2px solid #3b82f6; border-radius: 6px; padding: 14px 16px; position: relative;">
+                                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                              <td style="width: 100%;">
+                                                <span style="font-size: 16px; color: #ffffff; font-weight: 600; font-family: 'Courier New', monospace; word-break: break-all; user-select: all; -webkit-user-select: all; display: block; letter-spacing: 0.5px;">${loopEmail}</span>
+                                              </td>
+                                            </tr>
+                                          </table>
                                         </div>
                                       </td>
                                     </tr>
@@ -197,32 +158,24 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
                                 <td>
                                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                     <tr>
-                                      <td style="padding-bottom: 6px;">
-                                        <span style="font-size: 13px; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Password</span>
+                                      <td style="padding-bottom: 8px;">
+                                        <span style="font-size: 12px; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Password</span>
                                       </td>
                                     </tr>
                                     <tr>
                                       <td>
-                                        <div style="background: #ffffff; border: 2px solid #e53e3e; border-radius: 8px; padding: 14px 16px; position: relative;">
-                                          <span style="font-size: 17px; color: #e53e3e; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 2px; user-select: all; -webkit-user-select: all; display: block;">${password}</span>
-                                          <div style="position: absolute; top: 8px; right: 8px;">
-                                            <span style="background: #e53e3e; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Select to Copy</span>
-                                          </div>
+                                        <div style="background-color: #0f0f0f; border: 2px solid #10b981; border-radius: 6px; padding: 14px 16px; position: relative;">
+                                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                              <td style="width: 100%;">
+                                                <span style="font-size: 18px; color: #ffffff; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 3px; user-select: all; -webkit-user-select: all; display: block;">${password}</span>
+                                              </td>
+                                            </tr>
+                                          </table>
                                         </div>
                                       </td>
                                     </tr>
                                   </table>
-                                </td>
-                              </tr>
-                            </table>
-                            
-                            <!-- Copy Instructions -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 20px;">
-                              <tr>
-                                <td style="padding: 12px; background: #edf2f7; border-radius: 8px; text-align: center;">
-                                  <p style="margin: 0; font-size: 12px; color: #4a5568; line-height: 1.5;">
-                                    <strong>💡 Tip:</strong> Triple-click any credential above to select and copy it easily
-                                  </p>
                                 </td>
                               </tr>
                             </table>
@@ -231,11 +184,11 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
                       </table>
                       
                       <!-- Security Notice -->
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: #fff5e6; border-left: 4px solid #ffa500; border-radius: 8px; padding: 18px 20px; margin: 0 0 30px 0;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0a0a; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 18px 20px; margin: 0 0 30px 0; border-top: 1px solid #1a1a1a; border-right: 1px solid #1a1a1a; border-bottom: 1px solid #1a1a1a;">
                         <tr>
                           <td>
-                            <p style="margin: 0; font-size: 14px; color: #744210; line-height: 1.6;">
-                              <strong style="font-size: 16px;">⚠️ Important Security Notice:</strong><br>
+                            <p style="margin: 0; font-size: 14px; color: #b0b0b0; line-height: 1.6;">
+                              <strong style="font-size: 16px; color: #fbbf24;">⚠️ Important Security Notice:</strong><br>
                               Please save this password securely. For security reasons, we strongly recommend changing your password after your first login.
                             </p>
                           </td>
@@ -243,19 +196,19 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
                       </table>
                       
                       <!-- Login Instructions -->
-                      <p style="margin: 0 0 25px 0; font-size: 16px; color: #4a5568; line-height: 1.6;">You can now log in to LoopVerse ERP using your Loop Email and the password provided above.</p>
+                      <p style="margin: 0 0 25px 0; font-size: 16px; color: #b0b0b0; line-height: 1.6;">You can now log in to LoopVerse ERP using your Loop Email and the password provided above.</p>
                       
                       <!-- Login Button -->
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         <tr>
                           <td align="center" style="padding: 10px 0;">
-                            <a href="${process.env.FRONTEND_URL || 'http://localhost:8080'}/login" class="login-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 10px; display: inline-block; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">🚀 Login to LoopVerse ERP</a>
+                            <a href="${process.env.FRONTEND_URL || 'http://localhost:8080'}/login" class="login-button" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 6px; display: inline-block; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">🚀 Login to LoopVerse ERP</a>
                           </td>
                         </tr>
                       </table>
                       
                       <!-- Help Text -->
-                      <p style="margin: 30px 0 0 0; font-size: 14px; color: #718096; line-height: 1.6; text-align: center;">
+                      <p style="margin: 30px 0 0 0; font-size: 14px; color: #808080; line-height: 1.6; text-align: center;">
                         If you have any questions or need assistance, please contact your administrator.
                       </p>
                     </td>
@@ -263,10 +216,10 @@ export async function sendWelcomeEmail(collegeEmail, loopEmail, loopid, password
                   
                   <!-- Footer -->
                   <tr>
-                    <td style="background: #f7fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-                      <p style="margin: 0; font-size: 12px; color: #a0aec0; line-height: 1.5;">
+                    <td style="background-color: #0a0a0a; padding: 20px 30px; text-align: center; border-top: 1px solid #1a1a1a;">
+                      <p style="margin: 0; font-size: 12px; color: #808080; line-height: 1.5;">
                         This is an automated email. Please do not reply to this message.<br>
-                        <span style="color: #cbd5e0;">© ${new Date().getFullYear()} LoopVerse ERP. All rights reserved.</span>
+                        <span style="color: #606060;">© ${new Date().getFullYear()} LoopVerse ERP. All rights reserved.</span>
                       </p>
                     </td>
                   </tr>
@@ -286,7 +239,6 @@ Hello ${userName},
 Your account has been successfully created. Below are your login credentials:
 
 Loop Email: ${loopEmail}
-Loop ID: ${loopid}
 Password: ${password}
 
 ⚠️ Important: Please save this password securely. For security reasons, we recommend changing your password after your first login.
