@@ -288,17 +288,32 @@ const SecuritySettings = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+
+  const validatePassword = (password) => {
+    if (password.length < 6) {
+      return t("settings.passwordMinLength") || "Password must be at least 6 characters long";
+    }
+    return null;
+  };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    setErrors({});
 
-    if (newPassword !== confirmPassword) {
-      toast.error(t("settings.passwordsDoNotMatch") || "New passwords do not match");
+    // Validate new password
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setErrors({ newPassword: passwordError });
+      toast.error(passwordError);
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error(t("settings.passwordMinLength") || "Password must be at least 6 characters long");
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+      const errorMsg = t("settings.passwordsDoNotMatch") || "New passwords do not match";
+      setErrors({ confirmPassword: errorMsg });
+      toast.error(errorMsg);
       return;
     }
 
@@ -316,11 +331,13 @@ const SecuritySettings = () => {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setErrors({});
     } catch (error) {
       console.error("Error updating password:", error);
-      toast.error(
-        error.message || t("settings.failedToUpdatePassword") || "Failed to update password"
-      );
+      const errorMsg =
+        error.message || t("settings.failedToUpdatePassword") || "Failed to update password";
+      toast.error(errorMsg);
+      setErrors({ submit: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -330,62 +347,76 @@ const SecuritySettings = () => {
     <Card>
       <CardHeader>
         <CardTitle>{t("settings.security")}</CardTitle>
-        <CardDescription>
-          {t("settings.managePasswordSecurity") || "Manage your password and account security"}
-        </CardDescription>
+        <CardDescription>{t("settings.managePasswordSecurity")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handlePasswordChange} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="current-password">
-              {t("settings.currentPasswordOptional") ||
-                "Current Password (optional for logged in users)"}
-            </Label>
+            <Label htmlFor="current-password">{t("settings.currentPasswordOptional")}</Label>
             <Input
               id="current-password"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder={t("settings.enterCurrentPassword") || "Enter current password"}
+              placeholder={t("settings.enterCurrentPassword")}
+              disabled={loading}
             />
+            <p className="text-xs text-muted-foreground">
+              Optional - Required only if you're changing your password from a different device
+            </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-password">{t("settings.newPassword") || "New Password"}</Label>
+            <Label htmlFor="new-password">{t("settings.newPassword")}</Label>
             <Input
               id="new-password"
               type="password"
               required
-              validations={{
-                required: t("settings.passwordRequired") || "Password is required",
-                minLength: {
-                  value: 6,
-                  message:
-                    t("settings.passwordMinLengthMessage") ||
-                    "Password must have at least 6 characters",
-                },
-              }}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder={t("settings.enterNewPassword") || "Enter new password"}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (errors.newPassword) {
+                  setErrors((prev) => ({ ...prev, newPassword: null }));
+                }
+              }}
+              placeholder={t("settings.enterNewPassword")}
+              disabled={loading}
+              className={errors.newPassword ? "border-destructive" : ""}
             />
+            {errors.newPassword && (
+              <p className="text-xs text-destructive">{errors.newPassword}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {t("settings.passwordMinLength") || "Password must be at least 6 characters long"}
+            </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">
-              {t("settings.confirmNewPassword") || "Confirm New Password"}
-            </Label>
+            <Label htmlFor="confirm-password">{t("settings.confirmNewPassword")}</Label>
             <Input
               id="confirm-password"
               type="password"
               required
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={t("settings.confirmNewPasswordPlaceholder") || "Confirm new password"}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.confirmPassword) {
+                  setErrors((prev) => ({ ...prev, confirmPassword: null }));
+                }
+              }}
+              placeholder={t("settings.confirmNewPasswordPlaceholder")}
+              disabled={loading}
+              className={errors.confirmPassword ? "border-destructive" : ""}
             />
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+            )}
           </div>
-          <Button type="submit" disabled={loading}>
-            {loading
-              ? t("settings.updating") || "Updating..."
-              : t("settings.updatePassword") || "Update Password"}
+          {errors.submit && (
+            <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+              <p className="text-sm text-destructive">{errors.submit}</p>
+            </div>
+          )}
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+            {loading ? t("settings.updating") : t("settings.updatePassword")}
           </Button>
         </form>
       </CardContent>

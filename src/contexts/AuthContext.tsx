@@ -369,11 +369,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setCurrentUser(null);
       // Clear any cached data
-      window.location.href = "/";
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
       setCurrentUser(null);
-      window.location.href = "/";
+      window.location.href = "/login";
     }
   };
 

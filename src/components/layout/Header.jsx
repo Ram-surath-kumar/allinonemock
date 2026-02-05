@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings, Search } from "lucide-react";
+import { Bell, Check, X, Menu, Sparkles, Moon, Sun, User, Settings, Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,7 +20,7 @@ import { ROLE_LABELS } from "@/types/erp";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header({ title, subtitle, onMenuClick, onNavigate }) {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { t } = useI18n();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState([]);
@@ -362,6 +362,14 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
                 <DropdownMenuItem onClick={() => onNavigate("/settings")} className="rounded-xl">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Preferences</span>
+                </DropdownMenuItem>
+                <div className="h-px bg-border/20 my-1" />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="rounded-xl text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log Out</span>
                 </DropdownMenuItem>
               </div>
             </DropdownMenuContent>
