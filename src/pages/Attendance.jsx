@@ -363,7 +363,7 @@ export function Attendance() {
       // Refresh attendance records
       await loadAttendanceForDate();
       setSelectedStudentIds(new Set());
-      toast.success(`Marked ${selectedStudentIds.size} student(s) as ${status}`);
+      toast.success(`Marked ${selectedStudentIds.size} ${category === "staff" ? "staff member(s)" : "student(s)"} as ${status}`);
     } catch (error) {
       console.error("Error marking attendance:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to mark attendance";

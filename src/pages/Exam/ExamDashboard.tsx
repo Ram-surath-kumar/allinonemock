@@ -13,6 +13,7 @@ import {
   Clock,
   CalendarDays,
 } from "lucide-react";
+import { RippleLoader } from "@/components/ui/RippleLoader";
 import { api } from "@/services/api";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
@@ -80,8 +81,8 @@ export default function ExamDashboard() {
 
   if (loading) {
     return (
-      <div className="p-8 text-center text-muted-foreground animate-pulse">
-        {t("examinations.loadingExaminationData")}
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RippleLoader />
       </div>
     );
   }

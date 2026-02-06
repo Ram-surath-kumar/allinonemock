@@ -13,6 +13,7 @@ import {
   Library,
   Bus,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,6 +125,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         roles: ["admin", "vice_head", "teacher"],
       },
       { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
+      { icon: ShieldCheck, label: "Admin Console", href: "/admin-console", roles: ["admin"] },
       { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
     ];
   }, [t, currentUser?.role]);

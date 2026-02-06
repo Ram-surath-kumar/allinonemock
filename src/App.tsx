@@ -58,6 +58,7 @@ const AppContent = () => {
       <Route path="/exam" element={<Index />} />
       <Route path="/tools" element={<Index />} />
       <Route path="/settings" element={<Index />} />
+      <Route path="/admin-console" element={<Index />} />
 
       {/* Governance & Academics */}
       <Route path="/academics" element={<Index />} />
