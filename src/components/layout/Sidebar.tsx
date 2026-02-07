@@ -80,13 +80,13 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         icon: BookOpen,
         label: t("sidebar.academicGov"),
         href: "/governance/academic",
-        roles: ["admin", "vice_head"],
+        roles: ["vice_head"],
       },
       {
         icon: FileText,
         label: t("sidebar.misReports"),
         href: "/governance/mis",
-        roles: ["admin", "vice_head"],
+        roles: ["vice_head"],
       },
       {
         icon: CreditCard,
@@ -125,7 +125,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         roles: ["admin", "vice_head", "teacher"],
       },
       { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
-      { icon: ShieldCheck, label: "Admin Console", href: "/admin-console", roles: ["admin"] },
+      // { icon: ShieldCheck, label: "Admin Console", href: "/admin-console", roles: ["admin"] },
       { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
     ];
   }, [t, currentUser?.role]);
