@@ -1036,8 +1036,8 @@ class ApiClient {
     return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`, {}, false);
   }
 
-  async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/chats?user_id=${userId}`, {}, false);
+  async getRecentConversations(userId: string, useCache: boolean = true): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/chats?user_id=${userId}`, {}, useCache);
   }
 
   async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
@@ -1297,6 +1297,8 @@ class ApiClient {
   // getTasks params are passed directly to query string.
   // Backend /tasks filters by assigned_to or assigned_by respectively.
   // "My Tasks" calls getTasks({ assigned_to: currentId }), which matches backend logic.
+
+
 }
 
 export const api = new ApiClient(API_BASE_URL);

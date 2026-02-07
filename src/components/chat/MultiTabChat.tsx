@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatWindow } from "./ChatWindow";
+import { chatSocketService } from "@/services/chatSocket";
 
 interface ChatTab {
   id: string; // "recent-userID" or "group-ID"
   userId?: string;
   userName: string;
+  userRole?: string;
   userAvatar?: string;
   type?: 'direct' | 'group';
   unreadCount: number;
@@ -56,10 +58,134 @@ export function MultiTabChat() {
   const [activeChat, setActiveChat] = useState<ChatTab | null>(null);
   const activeChatRef = useRef<ChatTab | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [users, setUsers] = useState<Array<{ id: string; user_id?: string | number; loopid?: string; name: string; email?: string; avatar?: string; last_login?: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; user_id?: string | number; loopid?: string; name: string; email?: string; avatar?: string; role?: string; last_login?: string }>>([]);
   const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
   const [lastMessageSentTime, setLastMessageSentTime] = useState<number>(0);
   const [pendingTempMessages, setPendingTempMessages] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
+
+  // Socket Connection
+  useEffect(() => {
+    if (currentUser) {
+      chatSocketService.connect(currentUser.id);
+      toast.success("Real-time Chat Service Initialized");
+
+      chatSocketService.onNewMessage((message: Message) => {
+        handleNewSocketMessage(message);
+      });
+
+      chatSocketService.onMessageRead((data: any) => {
+        handleSocketMessageRead(data);
+      });
+
+      chatSocketService.onTyping((data: { roomId: string, userId: string, isTyping: boolean }) => {
+        if (data.userId !== currentUser.id) {
+          setTypingUsers(prev => ({
+            ...prev,
+            [data.userId]: data.isTyping
+          }));
+        }
+      });
+
+      chatSocketService.onUserStatus((data: { userId: string, isOnline: boolean }) => {
+        setStatusMap(prev => ({
+          ...prev,
+          [data.userId]: { ...prev[data.userId], userId: data.userId, isOnline: data.isOnline }
+        }));
+      });
+    }
+
+    return () => {
+      chatSocketService.disconnect();
+    };
+  }, [currentUser]);
+
+  const handleNewSocketMessage = (message: Message) => {
+    console.log('[Chat] Received new socket message:', message);
+
+    // 1. Update Chats List (Bump to top, update last message)
+    setChats(prevChats => {
+      // Find the chat this message belongs to
+      // For DM: matches sender_id (incoming) or receiver_id (outgoing sync)
+      // For Group: matches group_id (need to infer from message or payload if possible, but standard message structure might lack it explicitly if not joined)
+
+      // Since we don't have group_id easily in standard message unless we add it to the interface
+      // We will try to find a chat that matches.
+
+      let chatIndex = -1;
+
+      // If it's a group message (we can guess if we have a group chat with ID matching something)
+      // But standard Message interface doesn't have group_id. We need to rely on the active chat context or sender.
+      // Ideally, the backend should send { ...message, group_id } if it's a group message.
+      // Assuming for now it's a DM from sender_id.
+
+      chatIndex = prevChats.findIndex(c =>
+        (c.type === 'direct' && c.userId === message.sender_id) ||
+        (activeChatRef.current?.id === c.id && c.id === message.sender_id) // Fallback
+      );
+
+      // If found, update it
+      let updatedChats = [...prevChats];
+      if (chatIndex >= 0) {
+        const chat = updatedChats[chatIndex];
+        updatedChats.splice(chatIndex, 1); // remove
+        updatedChats.unshift({
+          ...chat,
+          lastMessage: message.content,
+          lastMessageTime: message.created_at,
+          unreadCount: (activeChatRef.current?.id === chat.id) ? 0 : (chat.unreadCount + 1)
+        }); // add to top
+      } else {
+        // If not found, we NEED to reload to fetch new chat details (user name, avatar etc)
+        // But we can trigger reload silently.
+        loadChats(true);
+        return prevChats;
+      }
+
+      return updatedChats;
+    });
+
+    // 2. If valid for active chat, append to messages
+    const active = activeChatRef.current;
+    if (active) {
+      // Logic to check if message belongs to active chat
+      // For DM: sender_id matches active.userId OR (it's my own message synced from another device)
+      const isForCurrentChat =
+        (active.type === 'direct' && (active.userId === message.sender_id || message.sender_id === currentUser?.id));
+      // Group logic would need group_id check
+
+      if (isForCurrentChat) {
+        setMessages(prev => {
+          // Prevent duplicates
+          if (prev.some(m => m.id === message.id)) return prev;
+          return [...prev, message].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
+
+        // Mark as read immediately if window is focused (simplified: just call API)
+        if (message.sender_id !== currentUser?.id && currentUser?.id && active.userId) {
+          api.markMessagesAsRead(currentUser.id, active.userId);
+        }
+      } else {
+        // If it's a group chat, we might need to reload or check active.id against group_id if available
+        // Fallback to reload if unsure
+        if (active.type === 'group') {
+          loadMessages(active, true);
+        }
+      }
+    }
+  };
+
+  const handleSocketMessageRead = (data: any) => {
+    // Optimistic update for ticks
+    if (activeChatRef.current) {
+      setMessages(prev => prev.map(m => {
+        if (m.sender_id === currentUser?.id && !m.read) {
+          return { ...m, read: true };
+        }
+        return m;
+      }));
+    }
+  };
 
   // Initial Data Loading - Load users first if we have a chatUserId in URL
   useEffect(() => {
@@ -98,6 +224,7 @@ export function MultiTabChat() {
               ...activeChat,
               userId: user.id, // Ensure UUID
               userName: user.name,
+              userRole: user.role, // Update role
               userAvatar: user.avatar
             });
           }
@@ -117,6 +244,7 @@ export function MultiTabChat() {
                   ...chat,
                   userId: user.id,
                   userName: user.name,
+                  userRole: user.role, // Update role
                   userAvatar: user.avatar
                 };
               }
@@ -308,6 +436,7 @@ export function MultiTabChat() {
             name: u.name,
             email: u.email,
             avatar: u.avatar,
+            role: u.role,
             last_login: u.last_login
           }));
         setUsers(filteredUsers);
@@ -360,6 +489,7 @@ export function MultiTabChat() {
           // If direct, find user info
           let name = c.name;
           let avatar = c.avatar;
+          let role = c.userRole; // Initialize role
           let userId = c.userId; // Preserve original userId
 
           if (!c.type || c.type === 'direct') {
@@ -383,6 +513,7 @@ export function MultiTabChat() {
             if (user) {
               name = user.name;
               avatar = user.avatar;
+              role = user.role; // Capture role
             } else if (users.length === 0) {
               // Users not loaded yet - keep existing name from previous load or mark as loading
               name = c.userName || name || 'Loading...';
@@ -406,11 +537,22 @@ export function MultiTabChat() {
             type: c.type || 'direct', // Default to direct if missing
             userName: name || 'Unknown',
             userAvatar: avatar,
+            userRole: role, // Include role in return
             userId: userId, // Use resolved UUID
             unreadCount: (activeChatRef.current && (activeChatRef.current.id === c.id || activeChatRef.current.userId === userId)) ? 0 : c.unreadCount
           };
         });
-        setChats(mappedChats);
+
+        setChats(prevChats => {
+          // Identify optimistic chats (start with 'recent-' or 'temp-') from previous state
+          // that are NOT present in the new backend data (matched by userId for DMs)
+          const optimisticChats = prevChats.filter(prev =>
+            (prev.id.startsWith('recent-') || prev.id.startsWith('temp-')) &&
+            !mappedChats.some((newChat: any) => newChat.userId === prev.userId)
+          );
+
+          return [...optimisticChats, ...mappedChats];
+        });
       }
     } catch (error) {
       if (!silent) console.error("Failed to load chats", error);
@@ -441,7 +583,8 @@ export function MultiTabChat() {
             id: activeChat.id.startsWith('temp-chat-') ? `recent-${user.id}` : activeChat.id,
             userId: user.id, // Update to UUID
             userName: user.name,
-            userAvatar: user.avatar
+            userAvatar: user.avatar,
+            userRole: user.role // Update role in activeChat fix
           };
 
           setActiveChat(updatedChat);
@@ -457,7 +600,8 @@ export function MultiTabChat() {
         setActiveChat({
           ...activeChat,
           userName: user.name,
-          userAvatar: user.avatar
+          userAvatar: user.avatar,
+          userRole: user.role // Update role here too
         });
         activeChatRef.current = {
           ...activeChat,
@@ -1005,6 +1149,7 @@ export function MultiTabChat() {
               }}
               onLeaveGroup={handleLeaveGroup}
               users={users}
+              typingUsers={typingUsers}
             />
           ) : (
             <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-muted/5 select-none animate-in fade-in duration-500">

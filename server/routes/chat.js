@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabaseAdmin, handleError, sendSuccess } from '../common.js';
+import { getIO } from '../socket.js';
 
 const router = express.Router();
 
@@ -521,6 +522,29 @@ router.post('/messages', async (req, res) => {
             .single();
 
         if (error) throw error;
+
+        // Emit socket event
+        try {
+            const io = getIO();
+            if (io) {
+                if (group_id) {
+                    // Broadcast to group room
+                    console.log(`[Socket] Emitting new_message to group_${group_id}`);
+                    io.to(group_id).emit('new_message', newMessage);
+                } else if (receiver_id) {
+                    // Emit to receiver's room and sender's room (for multi-device sync)
+                    console.log(`[Socket] Emitting new_message to user_${receiver_id} and user_${sender_id}`);
+                    io.to(`user_${receiver_id}`).emit('new_message', newMessage);
+                    io.to(`user_${sender_id}`).emit('new_message', newMessage);
+                }
+            } else {
+                console.error('[SocketError] IO instance is null');
+            }
+        } catch (socketError) {
+            console.error('[SocketError] Failed to emit message:', socketError);
+            // Don't fail request if socket fails
+        }
+
         sendSuccess(res, newMessage);
     } catch (error) {
         handleError(error, res, 'Failed to send message');
@@ -721,6 +745,16 @@ router.put('/messages/read', async (req, res) => {
                         .from('chat_messages')
                         .update({ read_by: newReadBy })
                         .eq('id', m.id);
+
+                    // Emit event
+                    try {
+                        const io = getIO();
+                        io.to(group_id).emit('message_read_update', {
+                            messageId: m.id,
+                            userId: user_id,
+                            groupId: group_id
+                        });
+                    } catch (e) { console.error(e); }
                 }
             }
         } else if (other_user_id) {
@@ -733,6 +767,14 @@ router.put('/messages/read', async (req, res) => {
                 .eq('sender_id', other_user_id)
                 .is('group_id', null) // Ensure we only target direct messages
                 .eq('read', false);
+
+            // Emit event to other user
+            try {
+                const io = getIO();
+                io.to(`user_${other_user_id}`).emit('messages_read', {
+                    readBy: user_id
+                });
+            } catch (e) { console.error(e); }
         }
         res.json({ success: true });
     } catch (error) {

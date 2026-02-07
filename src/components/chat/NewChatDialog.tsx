@@ -16,6 +16,7 @@ interface User {
     name: string;
     avatar?: string;
     email?: string;
+    role?: string;
 }
 
 interface NewChatDialogProps {
@@ -44,14 +45,20 @@ export function NewChatDialog({
     const [isLoading, setIsLoading] = useState(false);
 
     // Reset state when dialog opens/closes
+    // Reset state when dialog opens
     useEffect(() => {
         if (open) {
             setSearchQuery("");
             setSelectedUsers([]);
             setIsGroup(false);
             setGroupName("");
-            // Refresh users list immediately when opening dialog
-            if (onRefreshUsers) onRefreshUsers();
+        }
+    }, [open]);
+
+    // Refresh users when dialog opens (separate effect to avoid resetting state if onRefreshUsers changes)
+    useEffect(() => {
+        if (open && onRefreshUsers) {
+            onRefreshUsers();
         }
     }, [open, onRefreshUsers]);
 
@@ -167,6 +174,7 @@ export function NewChatDialog({
                                 <div className="space-y-1">
                                     {filteredUsers.map(user => {
                                         const isSelected = selectedUsers.includes(user.id);
+                                        // console.log(`Rendering user ${user.id} (${user.name}), selected: ${isSelected}`);
                                         return (
                                             <div
                                                 key={user.id}
@@ -174,13 +182,19 @@ export function NewChatDialog({
                                                     "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors hover:bg-muted",
                                                     isSelected && "bg-primary/10"
                                                 )}
-                                                onClick={() => toggleUser(user.id)}
+                                                onClick={(e) => {
+                                                    console.log(`Clicked user ${user.name} (${user.id})`);
+                                                    e.preventDefault(); // Prevent bubbling issues
+                                                    e.stopPropagation();
+                                                    toggleUser(user.id);
+                                                }}
                                             >
-                                                <Checkbox
-                                                    checked={isSelected}
-                                                    onCheckedChange={() => toggleUser(user.id)}
-                                                    className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                                />
+                                                <div className={cn(
+                                                    "h-5 w-5 rounded-sm border border-primary flex items-center justify-center transition-colors shadow-sm",
+                                                    isSelected ? "bg-primary text-primary-foreground" : "bg-transparent opacity-50 hover:opacity-100"
+                                                )}>
+                                                    {isSelected && <Check className="h-3.5 w-3.5" />}
+                                                </div>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.avatar} />
                                                     <AvatarFallback className="text-xs">
@@ -188,7 +202,10 @@ export function NewChatDialog({
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{user.name}</p>
+                                                    <p className="text-sm font-medium truncate">
+                                                        {user.name}
+                                                        {user.role && <span className="text-xs text-muted-foreground ml-1 capitalize">({user.role.replace('_', ' ')})</span>}
+                                                    </p>
                                                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                                 </div>
                                             </div>

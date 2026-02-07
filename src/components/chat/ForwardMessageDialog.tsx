@@ -18,6 +18,7 @@ interface Chat {
     id: string;
     userName: string;
     userAvatar?: string;
+    userRole?: string;
     type?: 'direct' | 'group';
 }
 
@@ -115,7 +116,10 @@ export function ForwardMessageDialog({
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-medium truncate">{chat.userName}</div>
+                                        <div className="font-medium truncate">
+                                            {chat.userName}
+                                            {chat.userRole && <span className="text-xs text-muted-foreground ml-1 capitalize">({chat.userRole.replace('_', ' ')})</span>}
+                                        </div>
                                         <div className="text-xs text-muted-foreground">
                                             {chat.type === "group" ? "Group" : "Direct message"}
                                         </div>

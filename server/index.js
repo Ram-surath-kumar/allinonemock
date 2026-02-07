@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { initSocket } from './socket.js';
 
 // Import route modules
 // Import route modules
@@ -45,7 +47,11 @@ import chatRouter from './routes/chat.js';
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize Socket.io
+initSocket(server);
 
 import { auditLogger } from './middleware/auditLogger.js';
 
@@ -668,7 +674,7 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
     }
   };
 
-  app.listen(PORT, async () => {
+  server.listen(PORT, async () => {
     console.log(`🚀 Backend server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
     console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
