@@ -2,7 +2,26 @@ import { apiCache, getCacheKey } from "./cache";
 
 import { supabase } from "@/lib/supabase";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+// Determine API base URL
+// In production (Vercel), if VITE_API_URL is not set, use empty string to trigger Supabase fallback
+// In development, default to localhost
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl;
+  
+  // In production (Vercel), don't default to localhost
+  const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
+  if (isProduction) {
+    // Return empty string to indicate no backend API available
+    // This will trigger Supabase fallback in AuthContext
+    return '';
+  }
+  
+  // Development: use localhost
+  return "http://localhost:3001/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Consolidated API endpoints - use these instead of multiple separate calls
 interface DashboardData {
@@ -78,10 +97,12 @@ interface AttendanceRecord {
 
 class ApiClient {
   private baseUrl: string;
+  private useBackend: boolean;
   private pendingRequests: Map<string, Promise<ApiResponse<unknown>>> = new Map();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    this.useBackend = baseUrl !== '' && baseUrl !== undefined;
   }
 
   private async request<T>(
@@ -119,6 +140,14 @@ class ApiClient {
     // Make the request
     const requestPromise = (async () => {
       try {
+        // If backend API is not configured, return error immediately
+        if (!this.useBackend) {
+          return {
+            data: null,
+            error: "Backend API not available. The server is not configured. Please configure VITE_API_URL environment variable or the app will use Supabase directly.",
+          };
+        }
+
         // Get the current session to extract the access token
         const {
           data: { session },
