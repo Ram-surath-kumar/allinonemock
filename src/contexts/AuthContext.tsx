@@ -38,6 +38,8 @@ interface ApiOrgData {
   org_id: number;
   org_code: string;
   org_name: string;
+  org_logo?: string;
+  allowed_tabs?: string[];
 }
 
 // Map role to email for login
@@ -113,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               org_id: orgData.org_id,
               org_code: orgData.org_code,
               org_name: orgData.org_name,
+              org_logo: orgData.org_logo,
+              allowed_tabs: orgData.allowed_tabs,
             };
           }
         }
@@ -186,6 +190,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           org_id: String(orgData.org_id),
           org_code: orgData.org_code,
           org_name: orgData.org_name,
+          org_logo: orgData.org_logo,
+          allowed_tabs: orgData.allowed_tabs,
         },
       };
       setCurrentUser(user);
@@ -223,6 +229,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             org_id: orgData.org_id,
             org_code: orgData.org_code,
             org_name: orgData.org_name,
+            org_logo: orgData.org_logo,
+            allowed_tabs: orgData.allowed_tabs,
           };
         }
       }
@@ -257,10 +265,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserByEmail = async (email: string) => {
     try {
       setLoading(true);
-      
+
       // Try backend API first
       let response = await api.getUsers({ email });
-      
+
       // If backend API is not available, fall back to Supabase directly
       if (response.error && (
         response.error.includes("Backend API not available") ||
@@ -269,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         response.error.includes("Failed to fetch")
       )) {
         console.warn("Backend API not available, falling back to Supabase direct query");
-        
+
         // Fallback to Supabase direct query
         const { data: supabaseData, error: supabaseError } = await supabase
           .from("users")
@@ -300,6 +308,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               org_id: String(orgData.id),
               org_code: orgData.org_code,
               org_name: orgData.org_name,
+              org_logo: orgData.org_logo,
+              allowed_tabs: orgData.allowed_tabs,
             };
           }
         }

@@ -130,11 +130,44 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
     ];
   }, [t, currentUser?.role]);
 
+  // Map sidebar hrefs to tab identifiers
+  const hrefToTabMap: Record<string, string> = {
+    '/': 'dashboard',
+    '/chat': 'chat',
+    '/users': 'users',
+    '/students': 'students',
+    '/attendance': 'attendance',
+    '/governance/academic': 'academic_gov',
+    '/governance/mis': 'mis_reports',
+    '/finance': 'finance',
+    '/facilities': 'facilities',
+    '/hostel': 'hostel',
+    '/library': 'library',
+    '/transport': 'transport',
+    '/exam': 'exam',
+    '/tools': 'tools',
+    '/settings': 'settings',
+    '/student/examinations': 'exam',
+    '/student/fee-payment': 'finance',
+    '/admin-console': 'admin_console'
+  };
+
   const filteredNavItems = useMemo(
     () =>
       navItems.filter((item) => {
+        // Check role/permission filters (existing logic)
         if (item.permission && !hasPermission(item.permission)) return false;
         if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
+
+        // Check organization allowed_tabs
+        const allowedTabs = currentUser?.organization?.allowed_tabs;
+        if (allowedTabs && allowedTabs.length > 0) {
+          const tabId = hrefToTabMap[item.href];
+          if (tabId && !allowedTabs.includes(tabId)) {
+            return false;
+          }
+        }
+
         return true;
       }),
     [navItems, currentUser, hasPermission]
