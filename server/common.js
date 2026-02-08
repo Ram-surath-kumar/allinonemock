@@ -33,7 +33,10 @@ if (!hasValidServiceKey) {
 if (!supabaseAnonKey || supabaseAnonKey === 'YOUR_ANON_KEY_HERE') {
   console.error('❌ ERROR: SUPABASE_ANON_KEY is missing or invalid.');
   console.error('❌ Please add SUPABASE_ANON_KEY to your server/.env file.');
-  process.exit(1);
+  // Don't exit in serverless environment - let it fail gracefully
+  if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+    process.exit(1);
+  }
 }
 
 // Use service role key for ALL operations (read and write) to avoid RLS issues
