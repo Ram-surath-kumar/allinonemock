@@ -122,7 +122,7 @@ class ApiClient {
     // Only use backend if:
     // 1. baseUrl is not empty
     // 2. baseUrl is a full URL (starts with http:// or https://)
-    // 3. baseUrl is not pointing to the same origin (to avoid hitting Vercel's catch-all)
+    // If VITE_API_URL is explicitly set, trust it and use it (even if same-origin)
     if (!baseUrl || baseUrl.trim() === '') {
       this.useBackend = false;
       return;
@@ -137,6 +137,16 @@ class ApiClient {
       return;
     }
     
+    // If it's a full URL and VITE_API_URL is explicitly set, use it
+    // This allows same-origin APIs (like Vercel serverless functions)
+    const hasExplicitApiUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== '';
+    if (hasExplicitApiUrl) {
+      // User explicitly configured API URL - trust it
+      this.useBackend = true;
+      return;
+    }
+    
+    // If no explicit config, only use backend if different origin (to avoid hitting frontend)
     try {
       const baseUrlOrigin = new URL(trimmed).origin;
       const currentOrigin = window.location.origin;
