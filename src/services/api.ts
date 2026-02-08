@@ -7,7 +7,15 @@ import { supabase } from "@/lib/supabase";
 // In development, default to localhost
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) return envUrl;
+  if (envUrl && envUrl.trim() !== '') {
+    // Ensure it's a full URL (not relative)
+    const trimmed = envUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    // If it's a relative URL, treat it as invalid in production
+    console.warn('VITE_API_URL is set but is not a full URL. Ignoring in production.');
+  }
   
   // In production (Vercel), don't default to localhost
   const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
@@ -22,6 +30,15 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Log API configuration in production for debugging
+if (import.meta.env.PROD) {
+  console.log('[API Config]', {
+    baseUrl: API_BASE_URL || '(empty - using Supabase fallback)',
+    hasBackend: API_BASE_URL !== '',
+    hostname: window.location.hostname,
+  });
+}
 
 // Consolidated API endpoints - use these instead of multiple separate calls
 interface DashboardData {
@@ -102,7 +119,33 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.useBackend = baseUrl !== '' && baseUrl !== undefined;
+    // Only use backend if:
+    // 1. baseUrl is not empty
+    // 2. baseUrl is a full URL (starts with http:// or https://)
+    // 3. baseUrl is not pointing to the same origin (to avoid hitting Vercel's catch-all)
+    if (!baseUrl || baseUrl.trim() === '') {
+      this.useBackend = false;
+      return;
+    }
+    
+    const trimmed = baseUrl.trim();
+    const isFullUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    
+    if (!isFullUrl) {
+      // Relative URL or invalid - don't use backend
+      this.useBackend = false;
+      return;
+    }
+    
+    try {
+      const baseUrlOrigin = new URL(trimmed).origin;
+      const currentOrigin = window.location.origin;
+      // Use backend only if it's a different origin, or if we're on localhost (dev)
+      this.useBackend = baseUrlOrigin !== currentOrigin || window.location.hostname === 'localhost';
+    } catch (e) {
+      // Invalid URL - don't use backend
+      this.useBackend = false;
+    }
   }
 
   private async request<T>(
