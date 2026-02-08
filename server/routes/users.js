@@ -172,26 +172,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     // Ideally we'd audit these too, but logging 100+ child records is excessive for this step.
 
     // 1. Delete associated data (Bulk)
-    const tables = [
-      'notifications', 'hall_tickets', 'seating_plans', 'exam_logs',
-      'student_fees', 'hostel_fees', 'hostel_applications', 'mess_attendance',
-      'hostel_complaints', 'book_issues', 'library_members', 'invigilation_duties',
-      'teacher_departments', 'salary_hikes', 'promotions', 'salaries', 'fees',
-      'refund_requests', 'payments', 'student_results', 'marks_entries',
-      'exam_attendance', 'attendance', 'visitor_logs', 'disciplinary_actions',
-      'journal_entries', 'tax_filings', 'hostel_allocations', 'hostel_allocations_api'
-    ];
-
-    // Parallel deletions for efficiency
-    await Promise.all(tables.map(table => {
-      // Must check column names. Most use user_id or student_id.
-      // This is tricky for generic loop. Let's stick to the explicit list 
-      // OR reuse the explicit logic from original file to be SAFE.
-      // Given complexity, explicit is safer.
-      return Promise.resolve();
-    }));
-
-    // Explicit Cascade (Re-instated for safety):
+    // Explicit Cascade - Only for existing tables:
     await supabaseAdmin.from('notifications').delete().eq('user_id', userId);
     await supabaseAdmin.from('hall_tickets').delete().eq('student_id', userId);
     await supabaseAdmin.from('attendance').delete().eq('student_id', userId);
@@ -200,40 +181,13 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     await supabaseAdmin.from('exam_attendance').delete().eq('marked_by', userId);
     await supabaseAdmin.from('seating_plans').delete().eq('student_id', userId);
     await supabaseAdmin.from('exam_logs').delete().eq('logged_by', userId);
-    await supabaseAdmin.from('marks_entries').delete().eq('student_id', userId);
-    await supabaseAdmin.from('marks_entries').delete().eq('evaluated_by', userId);
-    await supabaseAdmin.from('student_results').delete().eq('student_id', userId);
-    await supabaseAdmin.from('student_fees').delete().eq('student_id', userId);
     await supabaseAdmin.from('student_fee_assignments').delete().eq('student_id', userId);
-    await supabaseAdmin.from('payments').delete().eq('student_id', userId);
-    await supabaseAdmin.from('payments').delete().eq('created_by', userId);
     await supabaseAdmin.from('refund_requests').delete().eq('student_id', userId);
     await supabaseAdmin.from('refund_requests').delete().eq('requested_by', userId);
     await supabaseAdmin.from('refund_requests').delete().eq('approved_by', userId);
-    await supabaseAdmin.from('fees').delete().eq('student_id', userId);
-    await supabaseAdmin.from('salaries').delete().eq('user_id', userId);
-    await supabaseAdmin.from('promotions').delete().eq('user_id', userId);
-    await supabaseAdmin.from('promotions').delete().eq('created_by', userId);
-    await supabaseAdmin.from('salary_hikes').delete().eq('user_id', userId);
-    await supabaseAdmin.from('salary_hikes').delete().eq('approved_by', userId);
     await supabaseAdmin.from('teacher_departments').delete().eq('teacher_id', userId);
-    await supabaseAdmin.from('invigilation_duties').delete().eq('faculty_id', userId);
-    await supabaseAdmin.from('library_members').delete().eq('user_id', userId);
-    await supabaseAdmin.from('book_issues').delete().eq('issued_by', userId);
-    await supabaseAdmin.from('hostel_allocations').delete().eq('student_id', userId);
     await supabaseAdmin.from('hostel_allocations_api').delete().eq('user_id', userId);
     await supabaseAdmin.from('hostel_allocations_api').delete().eq('allocated_by', userId);
-    await supabaseAdmin.from('hostel_applications').delete().eq('student_id', userId);
-    await supabaseAdmin.from('visitor_logs').delete().eq('student_id', userId);
-    await supabaseAdmin.from('visitor_logs').delete().eq('approved_by', userId);
-    await supabaseAdmin.from('hostel_fees').delete().eq('student_id', userId);
-    await supabaseAdmin.from('mess_attendance').delete().eq('student_id', userId);
-    await supabaseAdmin.from('hostel_complaints').delete().eq('reporter_id', userId);
-    await supabaseAdmin.from('hostel_complaints').delete().eq('against_id', userId);
-    await supabaseAdmin.from('disciplinary_actions').delete().eq('student_id', userId);
-    await supabaseAdmin.from('disciplinary_actions').delete().eq('approved_by', userId);
-    await supabaseAdmin.from('journal_entries').delete().eq('created_by', userId);
-    await supabaseAdmin.from('tax_filings').delete().eq('created_by', userId);
     await supabaseAdmin.from('departments').update({ created_by: null }).eq('created_by', userId);
 
     // Finally delete user via secureDb to ensure Audit of the User entity
