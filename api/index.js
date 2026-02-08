@@ -5,7 +5,7 @@ import app from '../server/index.js';
 
 // Wrap Express app with serverless-http for Vercel compatibility
 const handler = serverless(app, {
-  binary: ['application/json', 'application/*+json', 'image/*'],
+  binary: ['application/json', 'application/*json', 'image/*'],
 });
 
 // Vercel serverless function handler
