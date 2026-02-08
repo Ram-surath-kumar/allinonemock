@@ -17,7 +17,7 @@ const handleError = (res, error, message = 'An error occurred') => {
 router.get('/vehicles', async (req, res) => {
     try {
         const { data, error } = await supabase
-            .from('vehicles')
+            .from('transport_vehicles')
             .select('*')
             .order('created_at', { ascending: false });
 
@@ -32,7 +32,7 @@ router.get('/vehicles', async (req, res) => {
 router.get('/vehicles/:id', async (req, res) => {
     try {
         const { data: vehicle, error: vehicleError } = await supabase
-            .from('vehicles')
+            .from('transport_vehicles')
             .select('*')
             .eq('id', req.params.id)
             .single();
@@ -84,7 +84,7 @@ router.post('/vehicles', async (req, res) => {
 router.put('/vehicles/:id', async (req, res) => {
     try {
         const { data, error } = await supabase
-            .from('vehicles')
+            .from('transport_vehicles')
             .update(req.body)
             .eq('id', req.params.id)
             .select()
@@ -101,7 +101,7 @@ router.put('/vehicles/:id', async (req, res) => {
 router.delete('/vehicles/:id', async (req, res) => {
     try {
         const { error } = await supabase
-            .from('vehicles')
+            .from('transport_vehicles')
             .delete()
             .eq('id', req.params.id);
 

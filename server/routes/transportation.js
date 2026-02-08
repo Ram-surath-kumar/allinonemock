@@ -175,7 +175,7 @@ router.post('/register', async (req, res) => {
  */
 router.get('/vehicles', async (req, res) => {
     try {
-        const vehicles = await secureDb.get('vehicles');
+        const vehicles = await secureDb.get('transport_vehicles');
         sendSuccess(res, vehicles);
     } catch (error) {
         handleError(error, res, 'Failed to fetch vehicles');
@@ -188,7 +188,7 @@ router.get('/vehicles', async (req, res) => {
 router.post('/vehicles', async (req, res) => {
     try {
         const context = { user: req.user };
-        const newVehicle = await secureDb.create('vehicles', req.body, context);
+        const newVehicle = await secureDb.create('transport_vehicles', req.body, context);
         sendSuccess(res, newVehicle);
     } catch (error) {
         handleError(error, res, 'Failed to add vehicle');
@@ -205,7 +205,7 @@ router.get('/vehicles/:id', async (req, res) => {
 
         // 1. Fetch Vehicle (using supabaseAdmin to bypass RLS if needed)
         const { data: vehicle, error: vehicleError } = await supabaseAdmin
-            .from('vehicles')
+            .from('transport_vehicles')
             .select('*')
             .eq('id', req.params.id)
             .single();

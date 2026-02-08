@@ -33,7 +33,7 @@ export default function AdminConsole() {
 
     if (!isAuthenticated) {
         return (
-            <div className="flex items-center justify-center min-h-[80vh] animate-fade-in">
+            <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in">
                 <Card className="w-full max-w-md shadow-lg">
                     <CardHeader className="space-y-1">
                         <div className="flex items-center justify-center mb-4">
@@ -80,8 +80,9 @@ export default function AdminConsole() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-8 animate-fade-in">
-            <div className="flex items-center space-x-4 mb-8">
+        <div className="min-h-screen bg-background">
+            <div className="container mx-auto p-6 space-y-8 animate-fade-in">
+                <div className="flex items-center space-x-4 mb-8">
                 <div className="p-3 rounded-xl bg-primary/10 text-primary">
                     <ShieldCheck className="h-8 w-8" />
                 </div>
@@ -129,6 +130,7 @@ export default function AdminConsole() {
                     </Card>
                 </TabsContent>
             </Tabs>
+            </div>
         </div>
     );
 }

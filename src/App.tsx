@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import { Login } from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import AdmissionAdmin from "./pages/AdmissionAdmin";
+import AdminConsole from "./pages/AdminConsole";
 // AdmissionPortal is already imported or not needed here if imported elsewhere?
 import { AdmissionPortal } from "./components/students/Admission/AdmissionPortal";
 import Facilities from "./pages/Facilities";
@@ -22,6 +23,9 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { currentUser, loading } = useAuth();
 
+  // Skip auth check for standalone routes like admin console
+  const isStandaloneRoute = window.location.pathname === '/admin-console';
+
   // Debug logging removed to prevent console spam
 
   // Optional: Redirect logic if needed at App level, but usually handled in protected routes or Index.jsx
@@ -29,7 +33,7 @@ const AppContent = () => {
   //   return null; // Or reliance on Index.jsx to redirect
   // }
 
-  if (loading) {
+  if (loading && !isStandaloneRoute) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <RippleLoader />
@@ -42,6 +46,9 @@ const AppContent = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<Index />} />
       <Route path="/admin/admissions" element={<AdmissionAdmin />} />
+      
+      {/* Standalone Admin Console - No authentication wrapper */}
+      <Route path="/admin-console" element={<AdminConsole />} />
 
       {/* Main Sidebar Routes */}
       <Route path="/chat" element={<Index />} />
@@ -58,7 +65,6 @@ const AppContent = () => {
       <Route path="/exam" element={<Index />} />
       <Route path="/tools" element={<Index />} />
       <Route path="/settings" element={<Index />} />
-      <Route path="/admin-console" element={<Index />} />
 
       {/* Governance & Academics */}
       <Route path="/academics" element={<Index />} />
