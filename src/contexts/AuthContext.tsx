@@ -257,7 +257,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserByEmail = async (email: string) => {
     try {
       setLoading(true);
-      const response = await api.getUsers({ email });
+      
+      // Try backend API first
+      let response = await api.getUsers({ email });
+      
+      // If backend API is not available, fall back to Supabase directly
+      if (response.error && (
+        response.error.includes("Backend API not available") ||
+        response.error.includes("Network error") ||
+        response.error.includes("fetch failed") ||
+        response.error.includes("Failed to fetch")
+      )) {
+        console.warn("Backend API not available, falling back to Supabase direct query");
+        
+        // Fallback to Supabase direct query
+        const { data: supabaseData, error: supabaseError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (supabaseError) {
+          throw new Error(`Failed to load user: ${supabaseError.message}`);
+        }
+
+        if (!supabaseData) {
+          throw new Error("User data not found in database");
+        }
+
+        // Fetch organization if org_id exists
+        let organization = undefined;
+        if (supabaseData.org_id) {
+          const { data: orgData } = await supabase
+            .from("organizations")
+            .select("*")
+            .eq("id", supabaseData.org_id)
+            .maybeSingle();
+
+          if (orgData) {
+            organization = {
+              id: orgData.id,
+              org_id: String(orgData.id),
+              org_code: orgData.org_code,
+              org_name: orgData.org_name,
+            };
+          }
+        }
+
+        const user: User = {
+          id: supabaseData.id,
+          loopid: supabaseData.loopid,
+          org_id: supabaseData.org_id,
+          user_id: supabaseData.user_id ? String(supabaseData.user_id) : undefined,
+          name: supabaseData.name,
+          email: supabaseData.email,
+          role: supabaseData.role as UserRole,
+          permissions:
+            supabaseData.permissions && supabaseData.permissions.length > 0
+              ? supabaseData.permissions
+              : ROLE_DEFAULT_PERMISSIONS[supabaseData.role as UserRole] || [],
+          department: supabaseData.department,
+          createdAt: new Date(supabaseData.created_at),
+          status: supabaseData.status as "active" | "inactive",
+          avatar: supabaseData.avatar,
+          organization,
+        };
+        setCurrentUser(user);
+        return;
+      }
+
+      // Continue with backend API response
       if (response.error) throw new Error(response.error);
       if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
         // Try to fallback to role-based email if specific email not found,

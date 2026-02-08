@@ -145,12 +145,43 @@ class ApiClient {
           headers,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        // Read response as text first to check if it's HTML
+        const text = await response.text();
+
+        // Check if response is HTML (error page) instead of JSON
+        if (text.trim().startsWith("<!") || text.includes("<!doctype")) {
+          throw new Error(
+            `Backend API not available. The server at ${this.baseUrl} returned HTML instead of JSON. ` +
+            `This usually means the backend server is not running or not deployed. ` +
+            `Please ensure the backend is running or configure VITE_API_URL environment variable.`
+          );
         }
 
-        const result = await response.json();
+        // Check content type as additional validation
+        const contentType = response.headers.get("content-type");
+        if (contentType && !contentType.includes("application/json") && !contentType.includes("text/json")) {
+          throw new Error(`Unexpected content type: ${contentType}. Expected JSON. Response: ${text.substring(0, 200)}`);
+        }
+
+        if (!response.ok) {
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+          } catch (parseError) {
+            throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}`);
+          }
+        }
+
+        // Parse JSON response
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error(
+            `Failed to parse API response as JSON. The server may be returning an error page. ` +
+            `Backend API at ${this.baseUrl} may not be available. Response: ${text.substring(0, 200)}`
+          );
+        }
 
         // Cache successful GET responses
         if (cacheKey && result.data !== null && result.error === null) {
@@ -162,16 +193,26 @@ class ApiClient {
         console.error(`API Error [${endpoint}]:`, error);
         // Handle network errors more gracefully
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        // Check if it's a network/fetch error
+        // Check if it's a network/fetch error or HTML response error
         if (
           errorMessage.includes("fetch failed") ||
           errorMessage.includes("Failed to fetch") ||
-          errorMessage.includes("NetworkError")
+          errorMessage.includes("NetworkError") ||
+          errorMessage.includes("Backend API not available") ||
+          errorMessage.includes("Unexpected content type")
         ) {
           return {
             data: null,
-            error:
-              "Network error: Backend server may not be running. Please ensure the backend server is running on port 3001.",
+            error: errorMessage.includes("Backend API not available") 
+              ? errorMessage
+              : "Network error: Backend server may not be running. Please ensure the backend server is running on port 3001.",
+          };
+        }
+        // Check for JSON parse errors (HTML responses)
+        if (errorMessage.includes("Unexpected token") || errorMessage.includes("is not valid JSON")) {
+          return {
+            data: null,
+            error: "Backend API not available. The server is returning HTML instead of JSON. Please ensure the backend server is running or configure VITE_API_URL environment variable.",
           };
         }
         return {
