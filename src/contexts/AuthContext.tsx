@@ -369,6 +369,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             org_id: String(orgData.org_id),
             org_code: orgData.org_code,
             org_name: orgData.org_name,
+            org_logo: orgData.org_logo,
+            allowed_tabs: orgData.allowed_tabs,
           };
         }
       }

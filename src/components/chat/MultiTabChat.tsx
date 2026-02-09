@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatWindow } from "./ChatWindow";
+import { CallOverlay } from "./CallOverlay";
 
 interface ChatTab {
   id: string; // "recent-userID" or "group-ID"
@@ -37,6 +38,9 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  is_edited?: boolean;
+  edited_at?: string;
+  edit_count?: number;
 }
 
 interface UserStatus {
@@ -60,6 +64,63 @@ export function MultiTabChat() {
   const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
   const [lastMessageSentTime, setLastMessageSentTime] = useState<number>(0);
   const [pendingTempMessages, setPendingTempMessages] = useState<Set<string>>(new Set());
+  const [activeCall, setActiveCall] = useState<any>(null);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+
+  const checkIncomingCalls = async () => {
+    if (!currentUser || activeCall) return;
+
+    try {
+      const res = await api.getIncomingCall(currentUser.id);
+      if (res.data && res.data.status === 'initiated') {
+        setActiveCall(res.data);
+        setIsIncomingCall(true);
+      }
+    } catch (error) {
+      console.error("Failed to check incoming calls:", error);
+    }
+  };
+
+  const handleCall = async (type: 'audio' | 'video') => {
+    if (!activeChat || !activeChat.userId || !currentUser) return;
+
+    try {
+      const res = await api.initiateCall({
+        caller_id: currentUser.id,
+        receiver_id: activeChat.userId,
+        type: type
+      });
+
+      if (res.data) {
+        setActiveCall(res.data);
+        setIsIncomingCall(false);
+      } else {
+        toast.error("Failed to initiate call");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate call");
+    }
+  };
+
+  const handleAcceptCall = () => {
+    setIsIncomingCall(false);
+  };
+
+  const handleRejectCall = async () => {
+    if (activeCall) {
+      await api.endCall(activeCall.id);
+      setActiveCall(null);
+      setIsIncomingCall(false);
+    }
+  };
+
+  const handleEndCall = async () => {
+    if (activeCall) {
+      await api.endCall(activeCall.id);
+      setActiveCall(null);
+      setIsIncomingCall(false);
+    }
+  };
 
   // Initial Data Loading - Load users first if we have a chatUserId in URL
   useEffect(() => {
@@ -144,6 +205,8 @@ export function MultiTabChat() {
             loadMessages(activeChat, true); // silent update
           }
         }
+        // Poll for incoming calls
+        checkIncomingCalls();
       }, 5000);
 
       // Refresh user list periodically (every 20 seconds) to catch new users
@@ -607,13 +670,41 @@ export function MultiTabChat() {
               const existingMsg = existingMap.get(serverMsg.id);
               if (existingMsg && existingMsg.reactions && existingMsg.reactions.length > 0) {
                 // If server has reactions, use them; otherwise keep existing
-                return {
+                const mergedMsg = {
                   ...serverMsg,
+                  // Preserve reactions
                   reactions: serverMsg.reactions && serverMsg.reactions.length > 0
                     ? serverMsg.reactions
                     : existingMsg.reactions
                 };
+
+                // Preserving local edit state:
+                // If existing message is locally marked as edited (has content change + is_edited true)
+                // and server message says is_edited false OR server edited_at is older/missing
+                // then keep the existing content and edit status.
+                // This handles the race condition where polling happens before the edit persists/propagates.
+                if (existingMsg.is_edited && (!serverMsg.is_edited ||
+                  (existingMsg.edited_at && serverMsg.edited_at && new Date(existingMsg.edited_at) > new Date(serverMsg.edited_at)))) {
+                  mergedMsg.content = existingMsg.content;
+                  mergedMsg.is_edited = true;
+                  mergedMsg.edited_at = existingMsg.edited_at;
+                  mergedMsg.edit_count = existingMsg.edit_count;
+                }
+
+                return mergedMsg;
               }
+
+              // Also check for local edits even if no reactions exist
+              if (existingMsg && existingMsg.is_edited && (!serverMsg.is_edited ||
+                (existingMsg.edited_at && serverMsg.edited_at && new Date(existingMsg.edited_at) > new Date(serverMsg.edited_at)))) {
+                const mergedMsg = { ...serverMsg };
+                mergedMsg.content = existingMsg.content;
+                mergedMsg.is_edited = true;
+                mergedMsg.edited_at = existingMsg.edited_at;
+                mergedMsg.edit_count = existingMsg.edit_count;
+                return mergedMsg;
+              }
+
               return serverMsg;
             });
           }
@@ -789,6 +880,53 @@ export function MultiTabChat() {
     }
   };
 
+  const handleEditMessage = async (messageId: string, content: string) => {
+    if (!currentUser || !activeChat) return;
+
+    // Optimistic update
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, content, is_edited: true, edited_at: new Date().toISOString(), edit_count: (msg.edit_count || 0) + 1 }
+        : msg
+    ));
+
+    // Update sidebar if it was the last message
+    setChats(prev => prev.map(c => {
+      if (c.id === activeChat.id) {
+        // Only update preview if this was the last message
+        // We can't easily know if it was the last message without checking, 
+        // but for now we'll assume if it matches the last message content we update it
+        // Or better, just update it if the time matches significantly
+        // For simplicity, we won't update sidebar preview for edits right now to avoid complexity
+        return c;
+      }
+      return c;
+    }));
+
+    try {
+      const response = await api.editChatMessage(messageId, currentUser.id, content);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.data) {
+        // Update with server data
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, ...response.data }
+            : msg
+        ));
+      }
+    } catch (error: any) {
+      console.error("Edit message error:", error);
+      toast.error(error.message || "Failed to edit message");
+      // Revert optimistic update is hard without keeping previous state history
+      // Ideally we should reload messages or keep previous content
+      loadMessages(activeChat, true);
+    }
+  };
+
   const handleMute = async (chatId: string, muted: boolean) => {
     if (!currentUser) return;
     try {
@@ -954,6 +1092,7 @@ export function MultiTabChat() {
     }
   };
 
+
   return (
     <div className="flex h-full min-h-0 bg-background overflow-hidden">
       {/* Sidebar - Hidden on mobile if chat active */}
@@ -996,7 +1135,7 @@ export function MultiTabChat() {
               onClear={() => activeChat && handleClear(activeChat.id)}
               onDelete={() => activeChat && handleDelete(activeChat.id)}
               onArchive={handleArchiveChat}
-              onCall={(type) => toast.info(`${type} calling not implemented yet`)}
+              onCall={handleCall}
               chats={chats}
               onAddReaction={handleAddReaction}
               onRemoveReaction={handleRemoveReaction}
@@ -1004,6 +1143,7 @@ export function MultiTabChat() {
                 if (activeChat) loadMessages(activeChat, true);
               }}
               onLeaveGroup={handleLeaveGroup}
+              onEditMessage={handleEditMessage}
               users={users}
             />
           ) : (
@@ -1043,6 +1183,22 @@ export function MultiTabChat() {
           )}
         </div>
       )}
+
+      {activeCall && (
+        <CallOverlay
+          call={activeCall}
+          currentUser={{ id: currentUser?.id || '', name: currentUser?.name || '', avatar: currentUser?.avatar || '' }}
+          otherUser={
+            users.find(u => u.id === (isIncomingCall ? activeCall.caller_id : activeCall.receiver_id)) ||
+            { id: '', name: 'Unknown User' }
+          }
+          isIncoming={isIncomingCall}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+          onEnd={handleEndCall}
+        />
+      )}
     </div>
   );
 }
+
