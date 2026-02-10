@@ -1,0 +1,12 @@
+[2026-02-10T11:51:47.005Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-10T11:51:50.521Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-10T11:51:51.142Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-10T11:51:52.500Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-10T11:51:54.192Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-10T11:51:55.914Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-10T11:51:56.651Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-10T11:51:57.621Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-10T11:52:01.493Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-10T11:52:02.519Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-10T11:52:22.184Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-10T11:52:22.853Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
