@@ -1,0 +1,6 @@
+
+-- Add columns for message editing
+ALTER TABLE public.chat_messages 
+ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS edit_count INTEGER DEFAULT 0;

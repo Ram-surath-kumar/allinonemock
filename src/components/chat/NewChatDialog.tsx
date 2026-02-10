@@ -53,7 +53,7 @@ export function NewChatDialog({
             // Refresh users list immediately when opening dialog
             if (onRefreshUsers) onRefreshUsers();
         }
-    }, [open, onRefreshUsers]);
+    }, [open]);
 
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -179,6 +179,7 @@ export function NewChatDialog({
                                                 <Checkbox
                                                     checked={isSelected}
                                                     onCheckedChange={() => toggleUser(user.id)}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                                 />
                                                 <Avatar className="h-8 w-8">

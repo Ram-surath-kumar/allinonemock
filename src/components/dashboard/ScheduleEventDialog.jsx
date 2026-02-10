@@ -124,7 +124,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
         facility_id: "",
       });
     }
-  }, [open, form]);
+  }, [open]);
 
   const loadDepartments = async () => {
     try {

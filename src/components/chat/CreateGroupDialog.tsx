@@ -144,6 +144,7 @@ export function CreateGroupDialog({
                                                 <Checkbox
                                                     checked={isSelected}
                                                     onCheckedChange={() => toggleUser(user.id)}
+                                                    onClick={(e) => e.stopPropagation()}
                                                     className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                                 />
                                                 <Avatar className="h-10 w-10 border border-border/50">

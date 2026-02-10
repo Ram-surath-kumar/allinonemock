@@ -36,6 +36,9 @@ interface Message {
     file_name?: string;
     file_type?: string;
     file_size?: number;
+    is_edited?: boolean;
+    edited_at?: string;
+    edit_count?: number;
 }
 
 interface ChatTab {
@@ -73,6 +76,7 @@ interface ChatWindowProps {
     onRefreshMessages?: () => void;
     onLeaveGroup?: () => void;
     users?: Array<{ id: string; name: string; }>;
+    onEditMessage?: (id: string, content: string) => void;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -96,7 +100,8 @@ export function ChatWindow({
     onRemoveReaction,
     onRefreshMessages,
     onLeaveGroup,
-    users = []
+    users = [],
+    onEditMessage
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -106,6 +111,7 @@ export function ChatWindow({
 
     // New state for message actions
     const [replyTo, setReplyTo] = useState<Message | null>(null);
+    const [editingMessage, setEditingMessage] = useState<Message | null>(null);
     const [attachments, setAttachments] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
@@ -216,6 +222,13 @@ export function ChatWindow({
     const handleSendWithAttachments = async () => {
         if (!inputValue.trim() && attachments.length === 0) return;
 
+        if (editingMessage && onEditMessage) {
+            onEditMessage(editingMessage.id, inputValue);
+            setEditingMessage(null);
+            setInputValue("");
+            return;
+        }
+
         if (attachments.length > 0) {
             setUploading(true);
             try {
@@ -324,10 +337,24 @@ export function ChatWindow({
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted" title="Video Call">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted"
+                            title="Video Call"
+                            onClick={() => onCall('video')}
+                            disabled={isGroup}
+                        >
                             <Video className="h-5 w-5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted" title="Voice Call">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-muted-foreground rounded-full hover:bg-muted"
+                            title="Voice Call"
+                            onClick={() => onCall('audio')}
+                            disabled={isGroup}
+                        >
                             <Phone className="h-5 w-5" />
                         </Button>
                         <div className="w-px h-6 bg-border mx-1" />
@@ -421,6 +448,13 @@ export function ChatWindow({
                                             onInfo={handleInfo}
                                             onAddReaction={handleAddReaction}
                                             onRemoveReaction={handleRemoveReaction}
+                                            onEdit={(msg) => {
+                                                setEditingMessage(msg);
+                                                setInputValue(msg.content);
+                                                // Focus input
+                                                const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                                                if (input) input.focus();
+                                            }}
                                             currentUserId={currentUser.id}
                                             deliveryStatus={
                                                 msg.read ? 'read' :
@@ -444,6 +478,32 @@ export function ChatWindow({
 
                 {/* Input Area */}
                 <div className="shrink-0">
+                    {/* Edit Preview */}
+                    {editingMessage && (
+                        <div className="px-4 py-2 bg-muted/50 border-t border-border flex items-center justify-between border-l-4 border-l-blue-500">
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-blue-500 flex items-center gap-1">
+                                    <Sparkles className="h-3 w-3" />
+                                    Editing Message
+                                </div>
+                                <div className="text-sm truncate opacity-70">
+                                    {editingMessage.content}
+                                </div>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={() => {
+                                    setEditingMessage(null);
+                                    setInputValue("");
+                                }}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Reply Preview */}
                     {replyTo && (
                         <div className="px-4 py-2 bg-muted/50 border-t border-border flex items-center justify-between">

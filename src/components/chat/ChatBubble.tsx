@@ -28,6 +28,9 @@ interface Message {
     starred?: boolean;
     is_deleted?: boolean;
     deleted_for_everyone?: boolean;
+    is_edited?: boolean;
+    edited_at?: string;
+    edit_count?: number;
 }
 
 interface ChatBubbleProps {
@@ -42,6 +45,7 @@ interface ChatBubbleProps {
     onPin?: (message: any) => void;
     onStar?: (message: any) => void;
     onDelete?: (message: any, everyone: boolean) => void;
+    onEdit?: (message: any) => void;
     onInfo?: (message: any) => void;
     onAddReaction?: (messageId: string, emoji: string) => void;
     onRemoveReaction?: (messageId: string, emoji: string) => void;
@@ -62,6 +66,7 @@ export function ChatBubble({
     onPin,
     onStar,
     onDelete,
+    onEdit,
     onInfo,
     onAddReaction,
     onRemoveReaction,
@@ -188,6 +193,7 @@ export function ChatBubble({
                         )}>
                             {message.starred && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}
                             {message.pinned && <Pin className="h-3 w-3" />}
+                            {message.is_edited && <span className="text-[10px] italic opacity-70">(edited)</span>}
                             <span className="text-[10px] tabular-nums font-medium">{time}</span>
                             {isMe && (
                                 deliveryStatus === 'read' ? (
@@ -213,6 +219,7 @@ export function ChatBubble({
                                 onPin={() => onPin?.(message)}
                                 onStar={() => onStar?.(message)}
                                 onDelete={onDelete || (() => { })}
+                                onEdit={() => onEdit?.(message)}
                                 onInfo={() => onInfo?.(message)}
                             >
                                 <button
