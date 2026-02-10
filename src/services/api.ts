@@ -1204,7 +1204,6 @@ class ApiClient {
     return res;
   }
 
-<<<<<<< HEAD
   async markMessagesAsDelivered(userId: string, messageIds: string[]): Promise<ApiResponse<any>> {
     return this.request("/messages/delivered", {
       method: "PUT",
@@ -1212,8 +1211,6 @@ class ApiClient {
     });
   }
 
-  async markMessagesAsRead(userId: string, otherUserId?: string, groupId?: string): Promise<ApiResponse<any>> {
-=======
   async editChatMessage(messageId: string, userId: string, content: string): Promise<ApiResponse<any>> {
     const res = await this.request(`/chat/messages/${messageId}`, {
       method: "PUT",
@@ -1223,8 +1220,7 @@ class ApiClient {
     return res;
   }
 
-  async markMessagesAsRead(userId: string, otherUserId: string): Promise<ApiResponse<any>> {
->>>>>>> 0a1c817d725e0bd370f8890273392f5aeb57290d
+  async markMessagesAsRead(userId: string, otherUserId?: string, groupId?: string): Promise<ApiResponse<any>> {
     return this.request(`/chat/messages/read`, {
       method: "PUT",
       body: JSON.stringify({ user_id: userId, other_user_id: otherUserId, group_id: groupId }),
