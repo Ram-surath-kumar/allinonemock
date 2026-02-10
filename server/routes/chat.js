@@ -782,6 +782,59 @@ router.put('/messages/read', async (req, res) => {
     }
 });
 
+// Mark messages as delivered
+router.put('/messages/delivered', async (req, res) => {
+    const { user_id, message_ids } = req.body;
+
+    if (!user_id || !message_ids || !Array.isArray(message_ids)) {
+        return res.status(400).json({ error: 'Invalid data' });
+    }
+
+    try {
+        // Fetch messages to notify senders
+        const { data: messages } = await supabaseAdmin
+            .from('chat_messages')
+            .select('id, sender_id, group_id, delivered_by')
+            .in('id', message_ids);
+
+        if (messages?.length > 0) {
+            for (const m of messages) {
+                const deliveredBy = m.delivered_by || [];
+                if (!deliveredBy.includes(user_id)) {
+                    await supabaseAdmin
+                        .from('chat_messages')
+                        .update({ delivered_by: [...deliveredBy, user_id] })
+                        .eq('id', m.id);
+
+                    // Emit event to sender
+                    const io = getIO();
+                    if (io) {
+                        try {
+                            if (m.group_id) {
+                                io.to(m.group_id).emit('message_delivered_update', {
+                                    messageId: m.id,
+                                    userId: user_id,
+                                    groupId: m.group_id
+                                });
+                            } else {
+                                io.to(`user_${m.sender_id}`).emit('message_delivered_update', {
+                                    messageId: m.id,
+                                    userId: user_id
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Socket emit error:', e);
+                        }
+                    }
+                }
+            }
+        }
+        res.json({ success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to mark messages as delivered');
+    }
+});
+
 // Initiate a call
 router.post('/calls', async (req, res) => {
     res.json({ data: { status: 'initiated' }, error: null });
@@ -790,6 +843,39 @@ router.post('/calls', async (req, res) => {
 // End a call
 router.put('/calls/:id/end', async (req, res) => {
     res.json({ data: { status: 'ended' }, error: null });
+});
+
+// E2EE Public Keys
+router.get('/users/:id/public-key', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('user_public_keys')
+            .select('public_key')
+            .eq('user_id', id)
+            .maybeSingle();
+
+        if (error) throw error;
+        sendSuccess(res, data ? data.public_key : null);
+    } catch (error) {
+        handleError(error, res, 'Failed to fetch public key');
+    }
+});
+
+router.post('/users/public-key', async (req, res) => {
+    const { user_id, public_key } = req.body;
+    if (!user_id || !public_key) return res.status(400).json({ error: 'Missing Data' });
+
+    try {
+        const { error } = await supabaseAdmin
+            .from('user_public_keys')
+            .upsert({ user_id, public_key });
+
+        if (error) throw error;
+        sendSuccess(res, { success: true });
+    } catch (error) {
+        handleError(error, res, 'Failed to upload public key');
+    }
 });
 
 export default router;

@@ -38,6 +38,7 @@ interface Message {
     file_name?: string;
     file_type?: string;
     file_size?: number;
+    delivered_by?: string[];
 }
 
 interface ChatTab {
@@ -273,6 +274,8 @@ export function ChatWindow({
     const pinnedMessages = messages.filter(m => m.pinned);
     const latestPinned = pinnedMessages[pinnedMessages.length - 1];
 
+
+
     const scrollToMessage = (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
         if (element) {
@@ -439,9 +442,8 @@ export function ChatWindow({
                                             currentUserId={currentUser.id}
                                             deliveryStatus={
                                                 msg.read ? 'read' :
-                                                    (activeChat.type !== 'group' &&
-                                                        activeChat.userId &&
-                                                        statusMap[activeChat.userId]?.isOnline) ? 'delivered' : 'sent'
+                                                    (msg.delivered_by && msg.delivered_by.length > 0) ? 'delivered' : 'sent'
+
                                             }
                                             senderName={
                                                 msg.sender_id === currentUser.id ? 'You' :

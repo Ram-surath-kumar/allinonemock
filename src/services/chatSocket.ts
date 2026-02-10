@@ -45,6 +45,10 @@ class ChatSocketService {
         this.socket?.on('messages_read', callback);
     }
 
+    onMessageDelivered(callback: (data: any) => void) {
+        this.socket?.on('message_delivered_update', callback);
+    }
+
     onTyping(callback: (data: any) => void) {
         this.socket?.on('typing', callback);
     }

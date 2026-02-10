@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatWindow } from "./ChatWindow";
 import { chatSocketService } from "@/services/chatSocket";
+import { encryptionService } from "@/services/encryptionService";
 
 interface ChatTab {
   id: string; // "recent-userID" or "group-ID"
@@ -39,6 +40,12 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  // E2EE fields
+  encrypted_content?: string;
+  iv?: string;
+  sender_key_encrypted?: string;
+  recipient_key_encrypted?: string;
+  delivered_by?: string[];
 }
 
 interface UserStatus {
@@ -63,6 +70,23 @@ export function MultiTabChat() {
   const [lastMessageSentTime, setLastMessageSentTime] = useState<number>(0);
   const [pendingTempMessages, setPendingTempMessages] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
+  const [keyPair, setKeyPair] = useState<CryptoKeyPair | null>(null);
+
+  // E2EE: Initialize Keys
+  useEffect(() => {
+    if (currentUser) {
+      const initKeys = async () => {
+        let keys = await encryptionService.loadKeyPair();
+        if (!keys) {
+          keys = await encryptionService.generateKeyPair();
+          const pubKey = await encryptionService.exportPublicKey(keys.publicKey);
+          await api.uploadPublicKey(currentUser.id, pubKey);
+        }
+        setKeyPair(keys);
+      };
+      initKeys();
+    }
+  }, [currentUser]);
 
   // Socket Connection
   useEffect(() => {
@@ -93,6 +117,10 @@ export function MultiTabChat() {
           [data.userId]: { ...prev[data.userId], userId: data.userId, isOnline: data.isOnline }
         }));
       });
+
+      chatSocketService.onMessageDelivered((data: any) => {
+        handleSocketMessageDelivered(data);
+      });
     }
 
     return () => {
@@ -100,8 +128,32 @@ export function MultiTabChat() {
     };
   }, [currentUser]);
 
-  const handleNewSocketMessage = (message: Message) => {
+  const handleNewSocketMessage = async (message: Message) => {
     console.log('[Chat] Received new socket message:', message);
+
+    // E2EE: Decrypt if needed
+    let decryptedContent = message.content;
+    if (message.encrypted_content && message.recipient_key_encrypted && keyPair && currentUser) {
+      // Incoming message: use my private key to decrypt the session key (recipient_key_encrypted)
+      const sessionKeyEnc = message.recipient_key_encrypted;
+      decryptedContent = await encryptionService.decryptMessage(
+        message.encrypted_content,
+        message.iv!,
+        sessionKeyEnc,
+        keyPair.privateKey
+      );
+    } else if (message.encrypted_content && message.sender_key_encrypted && keyPair && currentUser && message.sender_id === currentUser.id) {
+      // My own message (synced): use my private key to decrypt the session key (sender_key_encrypted)
+      const sessionKeyEnc = message.sender_key_encrypted;
+      decryptedContent = await encryptionService.decryptMessage(
+        message.encrypted_content,
+        message.iv!,
+        sessionKeyEnc,
+        keyPair.privateKey
+      );
+    }
+
+    const decryptedMessage = { ...message, content: decryptedContent };
 
     // 1. Update Chats List (Bump to top, update last message)
     setChats(prevChats => {
@@ -157,12 +209,12 @@ export function MultiTabChat() {
       if (isForCurrentChat) {
         setMessages(prev => {
           // Prevent duplicates
-          if (prev.some(m => m.id === message.id)) return prev;
-          return [...prev, message].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          if (prev.some(m => m.id === decryptedMessage.id)) return prev;
+          return [...prev, decryptedMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         });
 
         // Mark as read immediately if window is focused (simplified: just call API)
-        if (message.sender_id !== currentUser?.id && currentUser?.id && active.userId) {
+        if (decryptedMessage.sender_id !== currentUser?.id && currentUser?.id && active.userId) {
           api.markMessagesAsRead(currentUser.id, active.userId);
         }
       } else {
@@ -185,6 +237,21 @@ export function MultiTabChat() {
         return m;
       }));
     }
+  };
+
+  const handleSocketMessageDelivered = (data: any) => {
+    setMessages(prev => {
+      const updated = prev.map(m => {
+        if (m.id === data.messageId) {
+          const existing = m.delivered_by || [];
+          if (!existing.includes(data.userId)) {
+            return { ...m, delivered_by: [...existing, data.userId] };
+          }
+        }
+        return m;
+      });
+      return updated;
+    });
   };
 
   // Initial Data Loading - Load users first if we have a chatUserId in URL
@@ -643,7 +710,7 @@ export function MultiTabChat() {
       const query = new URLSearchParams(params).toString();
       const msgRes = await api.get<Message[]>(`/chat/messages?${query}`, undefined, false);
 
-      // Mark messages as read if this is an active chat load (not silent background update OR silent update but it's the active chat)
+      // Mark messages as read if this is an active chat load
       if (!silent || (activeChat && activeChat.id === chat.id)) {
         if (params.other_user_id) {
           api.put('/chat/messages/read', {
@@ -656,16 +723,59 @@ export function MultiTabChat() {
             group_id: params.group_id
           }).catch(console.error);
         }
-
-        // Optimistically clear unread count in UI
-        setChats(prev => prev.map(c =>
-          c.id === chat.id ? { ...c, unreadCount: 0 } : c
-        ));
       }
 
+      // Mark un-delivered messages as delivered
+      if (msgRes.data && msgRes.data.length > 0) {
+        const undeliveredIds = msgRes.data
+          .filter(m => m.sender_id !== currentUser.id && (!m.delivered_by || !m.delivered_by.includes(currentUser.id)))
+          .map(m => m.id);
+
+        if (undeliveredIds.length > 0) {
+          api.markMessagesAsDelivered(currentUser.id, undeliveredIds).catch(console.error);
+        }
+      }
+
+      // Optimistically clear unread count in UI
+      setChats(prev => prev.map(c =>
+        c.id === chat.id ? { ...c, unreadCount: 0 } : c
+      ));
+
       if (msgRes.data && Array.isArray(msgRes.data)) {
+        // E2EE: Decrypt messages
+        const decryptedMessages = await Promise.all(msgRes.data.map(async (m) => {
+          if (m.encrypted_content && keyPair) {
+            try {
+              // Determine which encrypted key to use
+              // If I am receiver, use recipient_key_encrypted
+              // If I am sender, use sender_key_encrypted
+              let sessionKeyEnc = m.recipient_key_encrypted;
+              if (m.sender_id === currentUser.id) {
+                sessionKeyEnc = m.sender_key_encrypted;
+              }
+
+              // If message was sent to me (or by me), I should be able to decrypt if I have the corresponding key
+              // Note: If I am sender, I need 'sender_key_encrypted' which creates a dependency on correct column usage
+
+              if (sessionKeyEnc && m.iv) {
+                const content = await encryptionService.decryptMessage(
+                  m.encrypted_content,
+                  m.iv,
+                  sessionKeyEnc,
+                  keyPair.privateKey
+                );
+                return { ...m, content };
+              }
+            } catch (e) {
+              console.error('Failed to decrypt message', m.id, e);
+              return { ...m, content: '🔒 Decryption Failed' };
+            }
+          }
+          return m;
+        }));
+
         // Sort messages by created_at to ensure correct order
-        const sortedMessages = [...msgRes.data].sort((a, b) =>
+        const sortedMessages = [...decryptedMessages].sort((a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
 
@@ -866,7 +976,39 @@ export function MultiTabChat() {
         payload.receiver_id = activeChat.userId?.replace('recent-', '');
       }
 
-      const response = await api.sendChatMessage(payload);
+      const response = await (async () => {
+        // E2EE: Encrypt if Direct Chat
+        if (activeChat.type === 'direct' && payload.receiver_id && keyPair) {
+          try {
+            // Fetch recipient public key
+            const pubKeyRes = await api.getPublicKey(payload.receiver_id);
+            if (pubKeyRes.data) {
+              const recipientKey = await encryptionService.importPublicKey(pubKeyRes.data);
+
+              const encrypted = await encryptionService.encryptMessage(
+                content,
+                recipientKey,
+                keyPair.publicKey
+              );
+
+              // Modify payload
+              // We send 'content' as fallback (or placeholder) - ideally empty string or "Encrypted Message"
+              // But to support non-E2EE clients or fallbacks, maybe we keep it? 
+              // Strict E2EE: content should be ignored or generic.
+              payload.content = "🔒 Encrypted Message";
+              payload.encrypted_content = encrypted.encryptedContent;
+              payload.iv = encrypted.iv;
+              payload.recipient_key_encrypted = encrypted.recipientKeyEncrypted;
+              payload.sender_key_encrypted = encrypted.senderKeyEncrypted;
+            } else {
+              console.warn('No public key for recipient, sending plain text');
+            }
+          } catch (e) {
+            console.error('Encryption failed, sending plain text', e);
+          }
+        }
+        return api.sendChatMessage(payload);
+      })();
 
       // Replace temp message with real message from server response
       if (response.data) {
