@@ -34,6 +34,7 @@ export interface Organization {
   org_code: string;
   org_name: string;
   org_logo?: string;
+  allowed_tabs?: string[];
 }
 
 /** Dashboard stats structure */

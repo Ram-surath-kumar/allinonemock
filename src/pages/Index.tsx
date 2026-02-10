@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 
 // Lazy load pages with better code splitting
-const Dashboard = lazy(() => 
+const Dashboard = lazy(() =>
   import("@/pages/Dashboard").then(module => {
     // Handle both named and default exports
     if (module.Dashboard) {
@@ -84,6 +84,10 @@ const AcademicGovernance = lazy(() =>
 const MISSubmission = lazy(() =>
   import("@/pages/MISSubmission").then((module) => ({ default: module.MISSubmission }))
 );
+
+const AdminConsole = lazy(() =>
+  import("@/pages/AdminConsole").then((module) => ({ default: module.default }))
+);
 // Enhanced skeleton loader with shimmer effect
 // Enhanced loader with ripple effect
 import { RippleLoader } from "@/components/ui/RippleLoader";
@@ -102,7 +106,7 @@ function AppContent() {
   const location = useLocation();
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  
+
   // Dialog states for various actions
   const [dialogStates, setDialogStates] = useState<Record<string, boolean>>({
     addUser: false,
@@ -144,6 +148,7 @@ function AppContent() {
     timetable: "/student/timetable",
     examinations: "/student/examinations",
     "fee-payment": "/student/fee-payment",
+    "admin-console": "/admin-console",
   };
 
   const pathToTab = {
@@ -171,6 +176,7 @@ function AppContent() {
     "/student/timetable": "timetable",
     "/student/examinations": "examinations",
     "/student/fee-payment": "fee-payment",
+    "/admin-console": "admin-console",
   };
 
   // Initialize from URL on mount (only if user is already logged in)
@@ -265,7 +271,7 @@ function AppContent() {
         }
         return;
       }
-      
+
       // Navigate to the page first
       const tabName = pathToTab[path as keyof typeof pathToTab] || path.replace("/", "") || "dashboard";
       if (currentUser?.organization && currentUser.user_id) {
@@ -279,7 +285,7 @@ function AppContent() {
       }, 100);
       return;
     }
-    
+
     // Handle focus actions (like notifications panel)
     if (action === "focus" && actionData?.section) {
       // Navigate to the page and focus on section
@@ -292,7 +298,7 @@ function AppContent() {
       // Focus logic can be handled by the page component
       return;
     }
-    
+
     // Regular navigation
     if (path.startsWith("/student/")) {
       const tabName = pathToTab[path] || path.replace("/student/", "").replace(/-/g, "-");
@@ -310,7 +316,7 @@ function AppContent() {
       }
     }
   };
-  
+
   // Helper to update dialog state
   const setDialogOpen = (dialogName: string, open: boolean) => {
     setDialogStates(prev => ({ ...prev, [dialogName]: open }));
@@ -418,6 +424,8 @@ function AppContent() {
         return "Academic Governance";
       case "/governance/mis":
         return "MIS Data Submission";
+      case "/admin-console":
+        return "Admin Console";
       default:
         return "Dashboard";
     }
@@ -447,8 +455,8 @@ function AppContent() {
       case "/users":
         return (
           <Suspense fallback={<PageLoader />}>
-            <UserManagement 
-              dialogOpen={dialogStates.addUser || addUserDialogOpen} 
+            <UserManagement
+              dialogOpen={dialogStates.addUser || addUserDialogOpen}
               setDialogOpen={(open) => {
                 setAddUserDialogOpen(open);
                 setDialogOpen("addUser", open);
@@ -521,6 +529,12 @@ function AppContent() {
         return (
           <Suspense fallback={<PageLoader />}>
             <MISSubmission />
+          </Suspense>
+        );
+      case "/admin-console":
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <AdminConsole />
           </Suspense>
         );
       case "/finance":

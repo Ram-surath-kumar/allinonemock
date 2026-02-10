@@ -13,6 +13,7 @@ import {
   Library,
   Bus,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -79,13 +80,13 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         icon: BookOpen,
         label: t("sidebar.academicGov"),
         href: "/governance/academic",
-        roles: ["admin", "vice_head"],
+        roles: ["vice_head"],
       },
       {
         icon: FileText,
         label: t("sidebar.misReports"),
         href: "/governance/mis",
-        roles: ["admin", "vice_head"],
+        roles: ["vice_head"],
       },
       {
         icon: CreditCard,
@@ -124,15 +125,49 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         roles: ["admin", "vice_head", "teacher"],
       },
       { icon: Wrench, label: t("sidebar.tools"), href: "/tools", roles: ["admin", "vice_head"] },
+      // { icon: ShieldCheck, label: "Admin Console", href: "/admin-console", roles: ["admin"] },
       { icon: Settings, label: t("sidebar.settings"), href: "/settings" },
     ];
   }, [t, currentUser?.role]);
 
+  // Map sidebar hrefs to tab identifiers
+  const hrefToTabMap: Record<string, string> = {
+    '/': 'dashboard',
+    '/chat': 'chat',
+    '/users': 'users',
+    '/students': 'students',
+    '/attendance': 'attendance',
+    '/governance/academic': 'academic_gov',
+    '/governance/mis': 'mis_reports',
+    '/finance': 'finance',
+    '/facilities': 'facilities',
+    '/hostel': 'hostel',
+    '/library': 'library',
+    '/transport': 'transport',
+    '/exam': 'exam',
+    '/tools': 'tools',
+    '/settings': 'settings',
+    '/student/examinations': 'exam',
+    '/student/fee-payment': 'finance',
+    '/admin-console': 'admin_console'
+  };
+
   const filteredNavItems = useMemo(
     () =>
       navItems.filter((item) => {
+        // Check role/permission filters (existing logic)
         if (item.permission && !hasPermission(item.permission)) return false;
         if (item.roles && currentUser && !item.roles.includes(currentUser.role)) return false;
+
+        // Check organization allowed_tabs
+        const allowedTabs = currentUser?.organization?.allowed_tabs;
+        if (allowedTabs && allowedTabs.length > 0) {
+          const tabId = hrefToTabMap[item.href];
+          if (tabId && !allowedTabs.includes(tabId)) {
+            return false;
+          }
+        }
+
         return true;
       }),
     [navItems, currentUser, hasPermission]

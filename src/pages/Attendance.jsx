@@ -36,6 +36,7 @@ export function Attendance() {
   const [hideMarked, setHideMarked] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
 
   const canManageAttendance = hasPermission("manage_attendance");
   const isAdminOrViceHead = currentUser?.role === "admin" || currentUser?.role === "vice_head";
@@ -214,9 +215,14 @@ export function Attendance() {
     if (!selectedDate || students.length === 0) return;
 
     try {
-      // Use consolidated API to reload attendance data
+      // Use consolidated API to reload attendance data with category
       const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const response = await api.getAttendancePageData(currentUser?.id, currentUser?.role, dateStr);
+      const response = await api.getAttendancePageData(
+        currentUser?.id,
+        currentUser?.role,
+        dateStr,
+        category // Pass category to load correct records
+      );
 
       if (response.error) throw new Error(response.error);
 
@@ -230,7 +236,7 @@ export function Attendance() {
     } catch (error) {
       console.error("Error loading attendance:", error);
     }
-  }, [selectedDate, students, currentUser?.id, currentUser?.role]);
+  }, [selectedDate, students, currentUser?.id, currentUser?.role, category]);
 
   useEffect(() => {
     // Only load data when component is mounted (i.e., when Attendance tab is active)
@@ -249,10 +255,11 @@ export function Attendance() {
   }, [category, selectedDate]);
 
   useEffect(() => {
-    if (selectedDate && students.length > 0) {
+    // Don't reload if we're currently marking attendance
+    if (selectedDate && students.length > 0 && !isMarkingAttendance) {
       loadAttendanceForDate();
     }
-  }, [selectedDate, students, loadAttendanceForDate]);
+  }, [selectedDate, students, loadAttendanceForDate, isMarkingAttendance]);
 
   // Reload students when teacher department IDs change
   useEffect(() => {
@@ -268,7 +275,8 @@ export function Attendance() {
   // Listen for attendance updates from AI assistant
   useEffect(() => {
     const handleAttendanceUpdate = () => {
-      if (selectedDate && students.length > 0) {
+      // Don't reload if we're currently marking attendance
+      if (selectedDate && students.length > 0 && !isMarkingAttendance) {
         loadAttendanceForDate();
       }
     };
@@ -277,7 +285,7 @@ export function Attendance() {
     return () => {
       window.removeEventListener("attendance-updated", handleAttendanceUpdate);
     };
-  }, [selectedDate, students, loadAttendanceForDate]);
+  }, [selectedDate, students, loadAttendanceForDate, isMarkingAttendance]);
 
   const filteredStudents = students.filter((student) => {
     // Department filter
@@ -347,23 +355,41 @@ export function Attendance() {
       return;
     }
 
+    const countToMark = selectedStudentIds.size;
+    const studentsToMark = Array.from(selectedStudentIds);
+    
     try {
       const dateStr = format(selectedDate, "yyyy-MM-dd");
-      const records = Array.from(selectedStudentIds).map((studentId) => ({
+      const records = studentsToMark.map((studentId) => ({
         student_id: studentId,
         date: dateStr,
         status,
         marked_by: currentUser?.id || null,
       }));
 
-      // Use consolidated attendance mark endpoint
+      // Call API to mark attendance
       const response = await api.markAttendance(records);
       if (response.error) throw new Error(response.error);
 
-      // Refresh attendance records
-      await loadAttendanceForDate();
+      // API SUCCESS - Immediately update UI state
+      setAttendanceRecords((prev) => {
+        const newRecords = new Map(prev);
+        records.forEach((record) => {
+          newRecords.set(record.student_id, {
+            student_id: record.student_id,
+            date: record.date,
+            status: record.status,
+            marked_by: record.marked_by,
+          });
+        });
+        return newRecords;
+      });
+
+      // Clear selection
       setSelectedStudentIds(new Set());
-      toast.success(`Marked ${selectedStudentIds.size} student(s) as ${status}`);
+
+      // Show success message
+      toast.success(`Marked ${countToMark} ${category === "staff" ? "staff member(s)" : "student(s)"} as ${status}`);
     } catch (error) {
       console.error("Error marking attendance:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to mark attendance";

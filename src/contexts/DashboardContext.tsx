@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { getDashboardData, DashboardData } from "@/services/dashboard";
 import { events, REFRESH_DASHBOARD } from "@/lib/events";
 

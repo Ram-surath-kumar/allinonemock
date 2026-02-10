@@ -26,10 +26,10 @@ router.get('/routes', async (req, res) => {
             // New: Fetch multiple vehicles via junction table
             const { data: routeVehicles } = await supabaseAdmin
                 .from('transport_route_vehicles')
-                .select('vehicle_id, vehicles(*)')
+                .select('vehicle_id, transport_vehicles(*)')
                 .eq('route_id', route.id);
 
-            const vehicles = routeVehicles ? routeVehicles.map(rv => rv.vehicles) : [];
+            const vehicles = routeVehicles ? routeVehicles.map(rv => rv.transport_vehicles) : [];
 
             // Fallback for backward compatibility if data exists in old column
             if (vehicles.length === 0 && route.vehicle_id) {
@@ -175,7 +175,7 @@ router.post('/register', async (req, res) => {
  */
 router.get('/vehicles', async (req, res) => {
     try {
-        const vehicles = await secureDb.get('vehicles');
+        const vehicles = await secureDb.get('transport_vehicles');
         sendSuccess(res, vehicles);
     } catch (error) {
         handleError(error, res, 'Failed to fetch vehicles');
@@ -187,9 +187,12 @@ router.get('/vehicles', async (req, res) => {
  */
 router.post('/vehicles', async (req, res) => {
     try {
-        const context = { user: req.user };
-        const newVehicle = await secureDb.create('vehicles', req.body, context);
-        sendSuccess(res, newVehicle);
+        const { supabaseAdmin } = await import('../common.js');
+        const { data, error } = await supabaseAdmin
+            .rpc('create_vehicle', { vehicle_data: req.body });
+
+        if (error) throw error;
+        sendSuccess(res, data);
     } catch (error) {
         handleError(error, res, 'Failed to add vehicle');
     }
@@ -205,7 +208,7 @@ router.get('/vehicles/:id', async (req, res) => {
 
         // 1. Fetch Vehicle (using supabaseAdmin to bypass RLS if needed)
         const { data: vehicle, error: vehicleError } = await supabaseAdmin
-            .from('vehicles')
+            .from('transport_vehicles')
             .select('*')
             .eq('id', req.params.id)
             .single();
@@ -507,7 +510,7 @@ router.delete('/vehicles/:id', async (req, res) => {
         const context = { user: req.user };
 
         const { error } = await supabaseAdmin
-            .from('vehicles')
+            .from('transport_vehicles')
             .delete()
             .eq('id', req.params.id);
 
@@ -560,7 +563,7 @@ router.put('/vehicles/:id/crew', async (req, res) => {
         if (conductor_id !== undefined) updateData.conductor_assigned = conductor_id;
 
         const { data, error } = await supabaseAdmin
-            .from('vehicles')
+            .from('transport_vehicles')
             .update(updateData)
             .eq('id', req.params.id)
             .select()
@@ -634,7 +637,7 @@ router.post('/fix-fees', async (req, res) => {
 
             // Try to find vehicle from registration
             if (reg.vehicle_id) {
-                const vs = await secureDb.get('vehicles', q => q.eq('id', reg.vehicle_id));
+                const vs = await secureDb.get('transport_vehicles', q => q.eq('id', reg.vehicle_id));
                 vehicle = vs[0];
             }
 
@@ -643,16 +646,16 @@ router.post('/fix-fees', async (req, res) => {
                 // Check route_vehicles first
                 const { data: routeVehicles } = await supabaseAdmin
                     .from('transport_route_vehicles')
-                    .select('vehicle_id, vehicles(*)')
+                    .select('vehicle_id, transport_vehicles(*)')
                     .eq('route_id', reg.route_id);
 
                 if (routeVehicles && routeVehicles.length > 0) {
-                    vehicle = routeVehicles[0].vehicles;
+                    vehicle = routeVehicles[0].transport_vehicles;
                 } else {
                     // Check legacy column
                     const routes = await secureDb.get('transport_routes', q => q.eq('id', reg.route_id));
                     if (routes[0]?.vehicle_id) {
-                        const vs = await secureDb.get('vehicles', q => q.eq('id', routes[0].vehicle_id));
+                        const vs = await secureDb.get('transport_vehicles', q => q.eq('id', routes[0].vehicle_id));
                         vehicle = vs[0];
                     }
                 }
