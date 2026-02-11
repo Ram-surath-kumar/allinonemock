@@ -18,6 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function StudentProfileView({ student, onBack }) {
   const [activeTab, setActiveTab] = useState("personal");
@@ -96,7 +103,7 @@ export function StudentProfileView({ student, onBack }) {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const renderInput = (label, field, type = "text", placeholder = "") => (
+  const renderInput = (label, field, type = "text", placeholder = "", options = []) => (
     <div className="space-y-2">
       <label className="text-sm font-medium text-muted-foreground">{label}</label>
       {isEditing ? (
@@ -106,6 +113,19 @@ export function StudentProfileView({ student, onBack }) {
             setDate={(d) => handleChange(field, d)}
             placeholder={placeholder || "Select date"}
           />
+        ) : type === "select" ? (
+          <Select value={profile[field] || ""} onValueChange={(v) => handleChange(field, v)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={placeholder || `Select ${label}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <Input
             type={type}
@@ -189,9 +209,30 @@ export function StudentProfileView({ student, onBack }) {
             {renderSectionHeader(<User className="h-5 w-5" />, "Personal Information")}
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {renderInput("Date of Birth", "dob", "date")}
-              {renderInput("Gender", "gender")}
-              {renderInput("Blood Group", "blood_group")}
-              {renderInput("Religion", "religion")}
+              {renderInput("Gender", "gender", "select", "Select gender", [
+                "Male",
+                "Female",
+                "Other",
+              ])}
+              {renderInput("Blood Group", "blood_group", "select", "Select blood group", [
+                "A+",
+                "A-",
+                "B+",
+                "B-",
+                "AB+",
+                "AB-",
+                "O+",
+                "O-",
+              ])}
+              {renderInput("Religion", "religion", "select", "Select religion", [
+                "Hinduism",
+                "Islam",
+                "Christianity",
+                "Sikhism",
+                "Buddhism",
+                "Jainism",
+                "Others",
+              ])}
               {renderInput("Community / Category", "category")}
               {renderInput("Nationality", "nationality")}
               {renderInput("Mother Tongue", "mother_tongue")}
