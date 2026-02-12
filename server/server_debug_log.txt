@@ -67,3 +67,21 @@
 [2026-02-08T10:32:42.063Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
 [2026-02-08T10:33:25.110Z] [AUTH] Incoming Request: GET /api/users?status=active
 [2026-02-08T10:33:32.758Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T11:58:48.968Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-12T11:58:50.011Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T11:58:50.736Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-12T11:58:51.663Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:00:32.080Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T12:00:33.058Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:00:57.041Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T12:00:57.581Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:02:07.717Z] [AUTH] Incoming Request: GET /api/finance/reports/financial-statements
+[2026-02-12T12:02:09.075Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:02:10.561Z] [AUTH] Incoming Request: GET /api/finance/fee-categories
+[2026-02-12T12:02:10.579Z] [AUTH] Incoming Request: GET /api/finance/structures
+[2026-02-12T12:02:10.592Z] [AUTH] Incoming Request: GET /api/finance/fee-heads
+[2026-02-12T12:02:11.060Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:02:11.085Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:02:11.534Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T12:02:11.791Z] [AUTH] Incoming Request: GET /api/finance/scholarships
+[2026-02-12T12:02:12.286Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
