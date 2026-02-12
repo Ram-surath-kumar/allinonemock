@@ -159,10 +159,86 @@ router.get('/list', async (req, res) => {
   }
 });
 
+// Bulk register/assign students to exam
+router.post('/assign-bulk', async (req, res) => {
+  try {
+    const { exam_id, student_ids, skip_fee } = req.body;
+
+    if (!exam_id || !student_ids || !Array.isArray(student_ids)) {
+      return sendValidationError(res, 'exam_id and student_ids (array) are required');
+    }
+
+    const { data: exam, error: examError } = await supabaseAdmin
+      .from('exams')
+      .select('*')
+      .eq('id', exam_id)
+      .single();
+
+    if (examError || !exam) {
+      return res.status(404).json({ data: null, error: 'Exam not found' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const student_id of student_ids) {
+      try {
+        // Check if already registered
+        const { data: existing } = await supabaseAdmin
+          .from('exam_attendance')
+          .select('id')
+          .eq('student_id', student_id)
+          .eq('exam_id', exam_id)
+          .single();
+
+        if (existing) {
+          results.push({ student_id, status: 'ALREADY_REGISTERED' });
+          continue;
+        }
+
+        // Create registration
+        const { data, error } = await supabaseAdmin
+          .from('exam_attendance')
+          .insert({
+            student_id,
+            exam_id,
+            status: 'REGISTERED',
+            date: new Date().toISOString().split('T')[0]
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Conditionally assign fees
+        if (!skip_fee) {
+          try {
+            const context = {
+              user: { id: 'system' },
+              reason: 'Bulk Exam Registration'
+            };
+            await feeService.assignExamFee(student_id, exam_id, context);
+          } catch (feeError) {
+            console.error(`Failed to assign exam fee for ${student_id}:`, feeError);
+          }
+        }
+
+        results.push({ student_id, status: 'SUCCESS', data });
+      } catch (err) {
+        errors.push({ student_id, error: err.message });
+      }
+    }
+
+    sendSuccess(res, { results, errors });
+  } catch (error) {
+    handleError(error, res, 'Failed to bulk assign exam');
+  }
+});
+
 // Register student for exam
 router.post('/register', async (req, res) => {
   try {
-    const { student_id, exam_id } = req.body;
+    const { student_id, exam_id, skip_fee } = req.body;
 
     if (!student_id || !exam_id) {
       return sendValidationError(res, 'student_id and exam_id are required');
@@ -208,14 +284,16 @@ router.post('/register', async (req, res) => {
     }
 
     // AUTO-EXAM FEE ASSIGNMENT
-    try {
-      const context = {
-        user: { id: 'system' },
-        reason: 'Exam Registration'
-      };
-      await feeService.assignExamFee(student_id, exam_id, context);
-    } catch (feeError) {
-      console.error('Failed to assign exam fee:', feeError);
+    if (!skip_fee) {
+      try {
+        const context = {
+          user: { id: 'system' },
+          reason: 'Exam Registration'
+        };
+        await feeService.assignExamFee(student_id, exam_id, context);
+      } catch (feeError) {
+        console.error('Failed to assign exam fee:', feeError);
+      }
     }
 
     sendSuccess(res, data);

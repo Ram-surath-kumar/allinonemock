@@ -926,6 +926,18 @@ class ApiClient {
     return this.request<any[]>(`/exam/list${query ? `?${query}` : ""}`, {}, false);
   }
 
+  async assignExamBulk(data: {
+    exam_id: string;
+    student_ids: string[];
+    skip_fee: boolean;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/exam/assign-bulk", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+
   // Transport Fees
   async getStudentTransportFees(studentId: string): Promise<ApiResponse<any>> {
     return this.request(`/transport/student/${studentId}`);

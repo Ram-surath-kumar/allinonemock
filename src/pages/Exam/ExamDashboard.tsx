@@ -22,6 +22,8 @@ import { SeatingArrangement } from "./SeatingArrangement";
 import { HallTicketGenerator } from "./HallTicketGenerator";
 import Grading from "./Grading";
 import Timetable from "./Timetable";
+import { AssignStudentsDialog } from "./AssignStudentsDialog";
+import { UserPlus } from "lucide-react";
 
 export default function ExamDashboard() {
   const { t } = useI18n();
@@ -31,6 +33,8 @@ export default function ExamDashboard() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("planning");
   const [timetableExamId, setTimetableExamId] = useState<string | undefined>(undefined);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<any>(null);
   const { currentUser } = useAuth();
 
   const isTeacher = currentUser?.role === "teacher";
@@ -292,6 +296,19 @@ export default function ExamDashboard() {
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-1 sm:flex-none"
+                              onClick={() => {
+                                setSelectedExam(exam);
+                                setAssignOpen(true);
+                              }}
+                            >
+                              <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                              Assign Students
+                            </Button>
+                            {/* @ts-expect-error - Button accepts children but TypeScript doesn't recognize it from JSX component */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-3 text-xs font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all flex-1 sm:flex-none"
                               onClick={() => handleNavigateToTimetable(exam.id)}
                             >
                               <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
@@ -400,6 +417,13 @@ export default function ExamDashboard() {
       </Tabs>
 
       <ScheduleExamDialog open={scheduleOpen} onOpenChange={setScheduleOpen} onSuccess={loadData} />
+      <AssignStudentsDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        examId={selectedExam?.id}
+        examName={selectedExam?.name}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

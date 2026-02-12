@@ -10,3 +10,54 @@
 [2026-02-12T11:36:25.726Z] [AUTH] Fail: Network Error. Error: fetch failed
 [2026-02-12T11:36:37.281Z] [AUTH] Incoming Request: GET /api/users?role=student
 [2026-02-12T11:36:38.176Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:02:16.382Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-12T14:02:17.536Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:02:19.402Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-12T14:02:19.933Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:02:39.531Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-12T14:02:40.413Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:05:01.232Z] [AUTH] Incoming Request: GET /api/users?email=1000120006%40loopverse.in
+[2026-02-12T14:05:02.182Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:06:14.957Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:06:16.168Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:06:34.959Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:06:35.629Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:06:54.969Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:06:55.899Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:07:14.953Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:07:15.561Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:07:34.949Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:07:35.738Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:07:54.965Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:07:55.809Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:07:58.906Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:07:59.402Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:08:18.922Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:08:19.472Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:08:38.915Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:08:40.043Z] [AUTH] Success: Authenticated as 1000120006@loopverse.in (Role: student)
+[2026-02-12T14:09:01.665Z] [AUTH] Incoming Request: GET /api/users?email=1000120002%40loopverse.in
+[2026-02-12T14:09:02.449Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:09:03.730Z] [AUTH] Incoming Request: GET /api/users
+[2026-02-12T14:09:05.012Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:09:30.560Z] [AUTH] Incoming Request: GET /api/users?role=student
+[2026-02-12T14:09:32.781Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:10:49.347Z] [AUTH] Incoming Request: GET /api/users?role=student&status=active
+[2026-02-12T14:10:50.116Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:22:28.384Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:22:31.134Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:22:49.169Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:22:50.236Z] [AUTH] Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-02-12T14:23:09.165Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:23:19.416Z] [AUTH] Warn: Operation failed (attempt 1/3). Retrying in 200ms... Error: fetch failed
+[2026-02-12T14:23:29.568Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:23:30.056Z] [AUTH] Warn: Operation failed (attempt 2/3). Retrying in 400ms... Error: fetch failed
+[2026-02-12T14:23:40.149Z] [AUTH] Warn: Operation failed (attempt 1/3). Retrying in 200ms... Error: fetch failed
+[2026-02-12T14:23:40.662Z] [AUTH] Fail: Network Error. Error: fetch failed
+[2026-02-12T14:23:49.138Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:23:50.763Z] [AUTH] Warn: Operation failed (attempt 2/3). Retrying in 400ms... Error: fetch failed
+[2026-02-12T14:23:59.401Z] [AUTH] Warn: Operation failed (attempt 1/3). Retrying in 200ms... Error: fetch failed
+[2026-02-12T14:24:01.417Z] [AUTH] Fail: Network Error. Error: fetch failed
+[2026-02-12T14:24:09.143Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-02-12T14:24:10.026Z] [AUTH] Warn: Operation failed (attempt 2/3). Retrying in 400ms... Error: fetch failed
+[2026-02-12T14:24:19.667Z] [AUTH] Warn: Operation failed (attempt 1/3). Retrying in 200ms... Error: fetch failed
