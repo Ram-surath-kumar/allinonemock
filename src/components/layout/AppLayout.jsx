@@ -25,9 +25,10 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
     <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden md:flex h-screen flex-col text-sidebar-foreground transition-all duration-300",
+        "hidden md:flex h-screen flex-col text-sidebar-foreground transition-all duration-300 shrink-0",
+        "relative z-50",
         sidebarCollapsed ? "w-16" : "w-64"
-      )}>
+      )} style={{ isolation: 'isolate' }}>
         <Sidebar currentPath={currentPath} onNavigate={onNavigate} collapsed={sidebarCollapsed} />
       </aside>
 
@@ -46,7 +47,7 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
         </Sheet>
       )}
 
-      <div className="flex flex-1 flex-col overflow-hidden w-full min-w-0">
+      <div className="flex flex-1 flex-col overflow-hidden w-full min-w-0 relative z-0">
         <Header
           title={title}
           subtitle={subtitle}

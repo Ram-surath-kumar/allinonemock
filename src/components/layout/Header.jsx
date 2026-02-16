@@ -158,7 +158,7 @@ export function Header({ title, subtitle, onMenuClick, onNavigate }) {
 
   return (
     <header
-      className="flex h-[64px] items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-50 glass-modern"
+      className="flex h-[64px] items-center justify-between border-b border-border/30 bg-card/70 backdrop-blur-xl px-4 md:px-6 shadow-depth-1 sticky top-0 z-20 glass-modern"
       role="banner"
     >
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 h-full">
