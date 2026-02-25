@@ -13,6 +13,7 @@ interface User {
     name: string;
     avatar?: string;
     email?: string;
+    role?: string;
 }
 
 interface AddMembersDialogProps {
@@ -68,7 +69,8 @@ export function AddMembersDialog({
                     id: u.id,
                     name: u.name,
                     avatar: u.profile_picture || u.avatar,
-                    email: u.email
+                    email: u.email,
+                    role: u.role
                 })));
             }
         } catch (error) {
@@ -81,7 +83,8 @@ export function AddMembersDialog({
                         id: u.id,
                         name: u.name,
                         avatar: u.profile_picture || u.avatar,
-                        email: u.email
+                        email: u.email,
+                        role: u.role
                     })));
                 }
             } catch (e) { }
@@ -168,7 +171,10 @@ export function AddMembersDialog({
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{user.name}</p>
+                                                    <p className="text-sm font-medium truncate">
+                                                        {user.name}
+                                                        {user.role && <span className="text-xs text-muted-foreground ml-1 capitalize">({user.role.replace('_', ' ')})</span>}
+                                                    </p>
                                                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                                 </div>
                                             </div>

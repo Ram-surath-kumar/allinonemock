@@ -47,7 +47,8 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
                                 id: gm.user_id,
                                 name: gm.users?.name || 'Unknown',
                                 avatar: gm.users?.avatar,
-                                email: gm.users?.email || ''
+                                email: gm.users?.email || '',
+                                role: gm.users?.role
                             }));
                         setMembers(mappedMembers);
                     } else if (res.data.members) {
@@ -266,6 +267,7 @@ export function GroupInfoSidebar({ groupId, onClose, currentUserId, onAddMember,
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium truncate">
                                                     {member.id === currentUserId ? "You" : member.name}
+                                                    {member.role && <span className="text-xs text-muted-foreground ml-1 capitalize">({member.role.replace('_', ' ')})</span>}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-muted-foreground truncate">{member.email || "No status"}</p>

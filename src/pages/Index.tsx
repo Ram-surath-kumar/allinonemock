@@ -329,7 +329,7 @@ function AppContent() {
       return "/chat";
     }
 
-    // If we have a tab parameter, use it
+    // If we have a tab parameter from /:orgName/:userId/:tab route, use it
     if (tab) {
       // Check if it's a chat with userId pattern (chat/userId)
       if (tab.startsWith('chat/')) {
@@ -346,7 +346,24 @@ function AppContent() {
       }
     }
 
-    // Fallback: try to extract from location pathname
+    // Check if location.pathname directly matches a known route
+    // This handles navigation to simple paths like /users, /students, /chat
+    // when currentUser.organization is unavailable
+    if (pathToTab[location.pathname]) {
+      return location.pathname;
+    }
+
+    // Handle governance paths
+    if (location.pathname.startsWith("/governance/")) {
+      return location.pathname;
+    }
+
+    // Handle student portal paths
+    if (location.pathname.startsWith("/student/")) {
+      return location.pathname;
+    }
+
+    // Fallback: try to extract tab from /:orgName/:userId/:tab URL pattern
     const pathParts = location.pathname.split("/").filter(Boolean);
     if (pathParts.length >= 3) {
       const lastPart = pathParts[pathParts.length - 1];
@@ -359,11 +376,6 @@ function AppContent() {
       if (pathToTab[standardPath]) {
         return standardPath;
       }
-    }
-
-    // Final fallback
-    if (location.pathname.startsWith("/student/")) {
-      return location.pathname;
     }
 
     return "/";

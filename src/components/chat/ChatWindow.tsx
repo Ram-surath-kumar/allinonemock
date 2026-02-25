@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Paperclip, Phone, Send, Video, Sparkles, X, FileText, Image as ImageIcon, Pin as PinIcon } from "lucide-react";
 import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +19,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { api } from "@/services/api";
 import { supabase } from "@/lib/supabase";
+import { chatSocketService } from "@/services/chatSocket";
 
 interface Message {
     id: string;
@@ -39,12 +41,15 @@ interface Message {
     is_edited?: boolean;
     edited_at?: string;
     edit_count?: number;
+    delivered_by?: string[];
 }
 
 interface ChatTab {
     id: string;
     userId?: string;
+    userId?: string;
     userName: string;
+    userRole?: string; // Added userRole
     userAvatar?: string;
     type?: 'direct' | 'group';
     muted?: boolean;
@@ -77,6 +82,7 @@ interface ChatWindowProps {
     onLeaveGroup?: () => void;
     users?: Array<{ id: string; name: string; }>;
     onEditMessage?: (id: string, content: string) => void;
+    typingUsers?: Record<string, boolean>;
 }
 
 import { GroupInfoSidebar } from "./GroupInfoSidebar";
@@ -101,7 +107,8 @@ export function ChatWindow({
     onRefreshMessages,
     onLeaveGroup,
     users = [],
-    onEditMessage
+    onEditMessage,
+    typingUsers = {}
 }: ChatWindowProps) {
     const [inputValue, setInputValue] = useState("");
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -275,9 +282,12 @@ export function ChatWindow({
 
     const isGroup = activeChat.type === 'group' || (activeChat.id && activeChat.id.startsWith('group-'));
     const status = activeChat.userId ? statusMap[activeChat.userId] : null;
+    const isTyping = !isGroup && activeChat.userId ? typingUsers[activeChat.userId] : false; // Simple support for 1:1 typing
 
     const pinnedMessages = messages.filter(m => m.pinned);
     const latestPinned = pinnedMessages[pinnedMessages.length - 1];
+
+
 
     const scrollToMessage = (messageId: string) => {
         const element = document.getElementById(`msg-${messageId}`);
@@ -323,13 +333,21 @@ export function ChatWindow({
                         </Avatar>
 
                         <div className="min-w-0">
-                            <h4 className="font-medium text-sm truncate group-hover/header:text-primary transition-colors">{activeChat.userName}</h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-sm truncate group-hover/header:text-primary transition-colors">{activeChat.userName}</h4>
+                                {activeChat.userRole && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal capitalize bg-background/50">
+                                        {activeChat.userRole.replace('_', ' ')}
+                                    </Badge>
+                                )}
+                            </div>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
                                 <span className="truncate">
                                     {isGroup ? "View group info" : (
-                                        !status ? "Offline" :
-                                            status.isOnline ? "Online" :
-                                                status.lastSeen ? `Last seen ${formatDistanceToNow(new Date(status.lastSeen), { addSuffix: true })}` : "Offline"
+                                        isTyping ? <span className="text-primary animate-pulse font-medium">typing...</span> :
+                                            !status ? "Offline" :
+                                                status.isOnline ? "Online" :
+                                                    status.lastSeen ? `Last seen ${formatDistanceToNow(new Date(status.lastSeen), { addSuffix: true })}` : "Offline"
                                     )}
                                 </span>
                             </div>
@@ -458,9 +476,8 @@ export function ChatWindow({
                                             currentUserId={currentUser.id}
                                             deliveryStatus={
                                                 msg.read ? 'read' :
-                                                    (activeChat.type !== 'group' &&
-                                                        activeChat.userId &&
-                                                        statusMap[activeChat.userId]?.isOnline) ? 'delivered' : 'sent'
+                                                    (msg.delivered_by && msg.delivered_by.length > 0) ? 'delivered' : 'sent'
+
                                             }
                                             senderName={
                                                 msg.sender_id === currentUser.id ? 'You' :
@@ -603,7 +620,32 @@ export function ChatWindow({
                                     className="flex-1 border-none bg-transparent shadow-none focus-visible:ring-0 min-h-[24px] max-h-[120px] py-1 px-1 resize-none overflow-hidden placeholder:text-muted-foreground/70"
                                     placeholder="Type a message"
                                     value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onChange={(e) => {
+                                        setInputValue(e.target.value);
+                                        // Emit typing event
+                                        if (activeChat.userId || activeChat.id) {
+                                            const roomId = activeChat.type === 'group' ? activeChat.id.replace('group-', '') : `user_${activeChat.userId}`;
+                                            // Actually server expects 'user_ID' for 1:1 room listening?
+                                            // socket.js: socket.on("typing", ({ roomId ... }) => socket.to(roomId).emit...)
+                                            // For 1:1, we should probably emit to the OTHER user's personal room?
+                                            // No, usually in 1:1 we join a common room or emit to user specific room.
+                                            // socket.js says: `socket.to(roomId).emit`
+                                            // If I send to `user_OTHER_ID`, they will receive it.
+                                            // So roomId should be `user_${otherUserId}`.
+                                            const targetRoom = activeChat.type === 'group'
+                                                ? activeChat.id
+                                                : `user_${activeChat.userId}`; // Use activeChat.userId (UUID) logic from socket.js join
+
+                                            chatSocketService.emitTyping(targetRoom, true);
+                                            // Debounce stop typing?
+                                            // For now just emit true, server/client can handle timeout or we add debounce here.
+                                            // Adding simple debounce:
+                                            const timeoutId = setTimeout(() => {
+                                                chatSocketService.emitTyping(targetRoom, false);
+                                            }, 3000);
+                                            return () => clearTimeout(timeoutId);
+                                        }
+                                    }}
                                     onKeyDown={handleKeyDown}
                                     autoComplete="off"
                                 />
