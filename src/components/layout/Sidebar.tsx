@@ -147,8 +147,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
     '/exam': 'exam',
     '/tools': 'tools',
     '/settings': 'settings',
-    '/student/examinations': 'exam',
-    '/student/fee-payment': 'finance',
+    '/student/examinations': 'student_exams',
+    '/student/fee-payment': 'fee_payment',
     '/admin-console': 'admin_console'
   };
 

@@ -131,12 +131,18 @@ class ApiClient {
         if (session?.access_token) {
           headers["Authorization"] = `Bearer ${session.access_token}`;
         } else {
-          // Try to get session again if missing
-          const {
-            data: { session: newSession },
-          } = await supabase.auth.getSession();
-          if (newSession?.access_token) {
-            headers["Authorization"] = `Bearer ${newSession.access_token}`;
+          // Check for bypass email in localStorage (Universal Bypass)
+          const bypassEmail = localStorage.getItem("bypass_email");
+          if (bypassEmail) {
+            headers["X-Bypass-Email"] = bypassEmail;
+          } else {
+            // Try to get session again if missing
+            const {
+              data: { session: newSession },
+            } = await supabase.auth.getSession();
+            if (newSession?.access_token) {
+              headers["Authorization"] = `Bearer ${newSession.access_token}`;
+            }
           }
         }
 

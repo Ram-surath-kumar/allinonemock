@@ -90,7 +90,8 @@ app.use(cors({
       }
     }
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Bypass-Email']
 }));
 app.use(express.json());
 

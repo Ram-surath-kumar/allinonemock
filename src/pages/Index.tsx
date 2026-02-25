@@ -140,15 +140,15 @@ function AppContent() {
     facilities: "/facilities",
     settings: "/settings",
     tools: "/tools",
-    "academic-governance": "/governance/academic",
-    "mis-submission": "/governance/mis",
-    "personal-details": "/student/personal-details",
-    "grades-marks": "/student/grades-marks",
-    "student-attendance": "/student/attendance",
+    academic_gov: "/governance/academic",
+    mis_reports: "/governance/mis",
+    personal_details: "/student/personal-details",
+    grades_marks: "/student/grades-marks",
+    student_attendance: "/student/attendance",
     timetable: "/student/timetable",
-    examinations: "/student/examinations",
-    "fee-payment": "/student/fee-payment",
-    "admin-console": "/admin-console",
+    student_exams: "/student/examinations",
+    fee_payment: "/student/fee-payment",
+    admin_console: "/admin-console",
   };
 
   const pathToTab = {
@@ -168,15 +168,15 @@ function AppContent() {
     "/facilities": "facilities",
     "/settings": "settings",
     "/tools": "tools",
-    "/governance/academic": "academic-governance",
-    "/governance/mis": "mis-submission",
-    "/student/personal-details": "personal-details",
-    "/student/grades-marks": "grades-marks",
-    "/student/attendance": "student-attendance",
+    "/governance/academic": "academic_gov",
+    "/governance/mis": "mis_reports",
+    "/student/personal-details": "personal_details",
+    "/student/grades-marks": "grades_marks",
+    "/student/attendance": "student_attendance",
     "/student/timetable": "timetable",
-    "/student/examinations": "examinations",
-    "/student/fee-payment": "fee-payment",
-    "/admin-console": "admin-console",
+    "/student/examinations": "student_exams",
+    "/student/fee-payment": "fee_payment",
+    "/admin-console": "admin_console",
   };
 
   // Initialize from URL on mount (only if user is already logged in)
@@ -238,7 +238,8 @@ function AppContent() {
     const isOnUserPath = location.pathname.startsWith(
       `/${currentUser.organization.org_name}/${currentUser.user_id}/`
     );
-    const pathMatches = location.pathname === expectedPath;
+    const normalizedPathname = decodeURIComponent(location.pathname);
+    const pathMatches = normalizedPathname === expectedPath;
     const isChatWithUserId = location.pathname.match(/\/chat\/[^/]+$/);
 
     if (!pathMatches && !isOnUserPath && !isChatWithUserId) {
@@ -300,20 +301,11 @@ function AppContent() {
     }
 
     // Regular navigation
-    if (path.startsWith("/student/")) {
-      const tabName = pathToTab[path] || path.replace("/student/", "").replace(/-/g, "-");
-      if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
-      } else {
-        navigate(path);
-      }
+    const tabName = pathToTab[path as keyof typeof pathToTab] || path.split("/").filter(Boolean).pop() || "dashboard";
+    if (currentUser?.organization && currentUser.user_id) {
+      navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
     } else {
-      const tabName = pathToTab[path] || "dashboard";
-      if (currentUser?.organization && currentUser.user_id) {
-        navigate(`/${currentUser.organization.org_name}/${currentUser.user_id}/${tabName}`);
-      } else {
-        navigate(path);
-      }
+      navigate(path);
     }
   };
 
