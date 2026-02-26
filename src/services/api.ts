@@ -1380,6 +1380,17 @@ class ApiClient {
 
 
   // E2EE
+  async getHostelDashboard(): Promise<ApiResponse<any>> {
+    return this.request("/hostel/dashboard");
+  }
+
+  async createHostel(data: any): Promise<ApiResponse<any>> {
+    return this.request("/hostel", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   async getPublicKey(userId: string): Promise<ApiResponse<string>> {
     return this.request(`/users/${userId}/public-key`);
   }
