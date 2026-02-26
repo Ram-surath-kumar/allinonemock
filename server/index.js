@@ -316,8 +316,20 @@ app.get('/api/growth', async (req, res) => {
         });
       }
     } else if (metric === 'fees') {
-      currentValue = 0;
-      previousValue = 0;
+      const { data: currentFees } = await supabaseAdmin
+        .from('student_fee_assignments')
+        .select('paid_amount')
+        .gte('created_at', currentPeriodStart.toISOString())
+        .lte('created_at', today.toISOString());
+
+      const { data: previousFees } = await supabaseAdmin
+        .from('student_fee_assignments')
+        .select('paid_amount')
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', currentPeriodStart.toISOString());
+
+      currentValue = currentFees ? currentFees.reduce((sum, f) => sum + parseFloat(f.paid_amount || 0), 0) : 0;
+      previousValue = previousFees ? previousFees.reduce((sum, f) => sum + parseFloat(f.paid_amount || 0), 0) : 0;
     }
 
     const change = currentValue - previousValue;
@@ -471,42 +483,30 @@ app.get('/api/finance', async (req, res) => {
     let totalIncome = 0.0;
     try {
       const { data: feesData, error: feesError } = await supabaseAdmin
-        .from('fees')
-        .select('amount, status');
+        .from('student_fee_assignments')
+        .select('paid_amount, status');
 
       if (!feesError && feesData) {
         feesData.forEach(fee => {
-          if (fee.status === 'paid' || fee.status === 'completed') {
-            totalIncome += parseFloat(fee.amount || 0);
+          if (['paid', 'partial'].includes(fee.status)) {
+            totalIncome += parseFloat(fee.paid_amount || 0);
           }
         });
       }
     } catch (error) {
-      try {
-        const { data: paymentsData, error: paymentsError } = await supabaseAdmin
-          .from('payments')
-          .select('amount');
-
-        if (!paymentsError && paymentsData) {
-          paymentsData.forEach(payment => {
-            totalIncome += parseFloat(payment.amount || 0);
-          });
-        }
-      } catch (e) {
-        // Both tables might not exist
-      }
+      // Handle error
     }
 
     let totalSalaryPaid = 0.0;
     try {
       const { data: salariesData, error: salariesError } = await supabaseAdmin
         .from('salaries')
-        .select('amount, status');
+        .select('net_salary, status');
 
       if (!salariesError && salariesData) {
         salariesData.forEach(salary => {
-          if (salary.status === 'paid' || salary.status === 'completed') {
-            totalSalaryPaid += parseFloat(salary.amount || 0);
+          if (salary.status === 'active' || salary.status === 'paid') {
+            totalSalaryPaid += parseFloat(salary.net_salary || 0);
           }
         });
       }
@@ -528,7 +528,7 @@ app.get('/api/finance', async (req, res) => {
           try {
             const { data: salaryData } = await supabaseAdmin
               .from('salaries')
-              .select('amount')
+              .select('net_salary')
               .eq('user_id', user.id)
               .eq('status', 'active')
               .order('created_at', { ascending: false })
@@ -536,7 +536,7 @@ app.get('/api/finance', async (req, res) => {
               .single();
 
             if (salaryData) {
-              currentSalary = parseFloat(salaryData.amount || 0);
+              currentSalary = parseFloat(salaryData.net_salary || 0);
             }
           } catch (e) {
             // Salary might not exist
@@ -609,7 +609,7 @@ app.get('/api/finance', async (req, res) => {
       const { data: hikesData, error: hikesError } = await supabaseAdmin
         .from('salary_hikes')
         .select('*')
-        .order('hike_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (!hikesError && hikesData && hikesData.length > 0) {
         let totalHikePercent = 0.0;

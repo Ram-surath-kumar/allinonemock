@@ -227,16 +227,16 @@ router.get('/', async (req, res) => {
     // 5. Fee Collection (Unified with Finance Module Logic)
     let totalFeeCollection = 0.0;
 
-    // Part A: From fees table
+    // Part A: From student_fee_assignments table
     try {
       const { data: feesData, error: feesError } = await supabaseAdmin
-        .from('fees')
-        .select('amount, status');
+        .from('student_fee_assignments')
+        .select('paid_amount, status');
 
       if (!feesError && feesData) {
         feesData.forEach(fee => {
-          if (['paid', 'completed'].includes(fee.status)) {
-            totalFeeCollection += parseFloat(fee.amount || 0);
+          if (['paid', 'partial'].includes(fee.status)) {
+            totalFeeCollection += parseFloat(fee.paid_amount || 0);
           }
         });
       }
@@ -324,30 +324,24 @@ router.get('/', async (req, res) => {
 
     // Process fees data
     const { data: allFees } = await supabaseAdmin
-      .from('fees')
-      .select('amount, status, due_date, paid_date, created_at');
+      .from('student_fee_assignments')
+      .select('net_amount, paid_amount, status, created_at, updated_at');
 
     charts.fees = last6Months.map(date => {
       const monthName = date.toLocaleString('default', { month: 'short' });
       const monthIdx = date.getMonth();
       const year = date.getFullYear();
 
-      // Find fees relevant to this month
-      // Collected: paid_date is in this month
-      // Pending: due_date is in this month AND status is pending/overdue
-
       const monthFees = allFees?.filter(fee => {
-        const feeDate = fee.paid_date ? new Date(fee.paid_date) : (fee.due_date ? new Date(fee.due_date) : new Date(fee.created_at));
+        const feeDate = new Date(fee.created_at);
         return feeDate.getMonth() === monthIdx && feeDate.getFullYear() === year;
       }) || [];
 
       const collected = monthFees
-        .filter(f => ['paid', 'completed'].includes(f.status))
-        .reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
+        .reduce((sum, f) => sum + parseFloat(f.paid_amount || 0), 0);
 
       const pending = monthFees
-        .filter(f => !['paid', 'completed'].includes(f.status))
-        .reduce((sum, f) => sum + parseFloat(f.amount || 0), 0);
+        .reduce((sum, f) => sum + parseFloat(f.net_amount - (f.paid_amount || 0)), 0);
 
       return {
         month: monthName,
