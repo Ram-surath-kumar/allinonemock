@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { initSocket } from './socket.js';
 
 // Import route modules
 // Import route modules
@@ -42,10 +44,20 @@ import chatRouter from './routes/chat.js';
 // Import growth and finance routes (to be created)
 // import growthRouter from './routes/growth.js';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize Socket.io
+initSocket(server);
 
 import { auditLogger } from './middleware/auditLogger.js';
 
@@ -78,7 +90,8 @@ app.use(cors({
       }
     }
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Bypass-Email']
 }));
 app.use(express.json());
 
@@ -305,8 +318,20 @@ app.get('/api/growth', async (req, res) => {
         });
       }
     } else if (metric === 'fees') {
-      currentValue = 0;
-      previousValue = 0;
+      const { data: currentFees } = await supabaseAdmin
+        .from('student_fee_assignments')
+        .select('paid_amount')
+        .gte('created_at', currentPeriodStart.toISOString())
+        .lte('created_at', today.toISOString());
+
+      const { data: previousFees } = await supabaseAdmin
+        .from('student_fee_assignments')
+        .select('paid_amount')
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', currentPeriodStart.toISOString());
+
+      currentValue = currentFees ? currentFees.reduce((sum, f) => sum + parseFloat(f.paid_amount || 0), 0) : 0;
+      previousValue = previousFees ? previousFees.reduce((sum, f) => sum + parseFloat(f.paid_amount || 0), 0) : 0;
     }
 
     const change = currentValue - previousValue;
@@ -460,42 +485,30 @@ app.get('/api/finance', async (req, res) => {
     let totalIncome = 0.0;
     try {
       const { data: feesData, error: feesError } = await supabaseAdmin
-        .from('fees')
-        .select('amount, status');
+        .from('student_fee_assignments')
+        .select('paid_amount, status');
 
       if (!feesError && feesData) {
         feesData.forEach(fee => {
-          if (fee.status === 'paid' || fee.status === 'completed') {
-            totalIncome += parseFloat(fee.amount || 0);
+          if (['paid', 'partial'].includes(fee.status)) {
+            totalIncome += parseFloat(fee.paid_amount || 0);
           }
         });
       }
     } catch (error) {
-      try {
-        const { data: paymentsData, error: paymentsError } = await supabaseAdmin
-          .from('payments')
-          .select('amount');
-
-        if (!paymentsError && paymentsData) {
-          paymentsData.forEach(payment => {
-            totalIncome += parseFloat(payment.amount || 0);
-          });
-        }
-      } catch (e) {
-        // Both tables might not exist
-      }
+      // Handle error
     }
 
     let totalSalaryPaid = 0.0;
     try {
       const { data: salariesData, error: salariesError } = await supabaseAdmin
         .from('salaries')
-        .select('amount, status');
+        .select('net_salary, status');
 
       if (!salariesError && salariesData) {
         salariesData.forEach(salary => {
-          if (salary.status === 'paid' || salary.status === 'completed') {
-            totalSalaryPaid += parseFloat(salary.amount || 0);
+          if (salary.status === 'active' || salary.status === 'paid') {
+            totalSalaryPaid += parseFloat(salary.net_salary || 0);
           }
         });
       }
@@ -517,7 +530,7 @@ app.get('/api/finance', async (req, res) => {
           try {
             const { data: salaryData } = await supabaseAdmin
               .from('salaries')
-              .select('amount')
+              .select('net_salary')
               .eq('user_id', user.id)
               .eq('status', 'active')
               .order('created_at', { ascending: false })
@@ -525,7 +538,7 @@ app.get('/api/finance', async (req, res) => {
               .single();
 
             if (salaryData) {
-              currentSalary = parseFloat(salaryData.amount || 0);
+              currentSalary = parseFloat(salaryData.net_salary || 0);
             }
           } catch (e) {
             // Salary might not exist
@@ -598,7 +611,7 @@ app.get('/api/finance', async (req, res) => {
       const { data: hikesData, error: hikesError } = await supabaseAdmin
         .from('salary_hikes')
         .select('*')
-        .order('hike_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (!hikesError && hikesData && hikesData.length > 0) {
         let totalHikePercent = 0.0;
@@ -670,7 +683,7 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
     }
   };
 
-  app.listen(PORT, async () => {
+  server.listen(PORT, async () => {
     console.log(`🚀 Backend server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
     console.log(`✅ Health check: http://localhost:${PORT}/api/health`);

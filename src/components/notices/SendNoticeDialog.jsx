@@ -73,7 +73,7 @@ export function SendNoticeDialog({ open, onOpenChange }) {
       loadUsers();
       form.reset();
     }
-  }, [open, form]);
+  }, [open]);
 
   const loadUsers = async () => {
     try {

@@ -40,6 +40,7 @@ interface MessageContextMenuProps {
     onPin: (message: Message) => void;
     onStar: (message: Message) => void;
     onDelete: (message: Message, deleteForEveryone: boolean) => void;
+    onEdit?: (message: Message) => void;
     onInfo: (message: Message) => void;
     children: React.ReactNode;
 }
@@ -54,6 +55,7 @@ export function MessageContextMenu({
     onPin,
     onStar,
     onDelete,
+    onEdit,
     onInfo,
     children,
 }: MessageContextMenuProps) {
@@ -84,6 +86,16 @@ export function MessageContextMenu({
                     <Reply className="h-4 w-4" />
                     <span>Reply</span>
                 </DropdownMenuItem>
+
+                {isMe && onEdit && (
+                    <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(message);
+                    }} className="gap-2 cursor-pointer">
+                        <span className="h-4 w-4 flex items-center justify-center font-serif font-bold">E</span>
+                        <span>Edit</span>
+                    </DropdownMenuItem>
+                )}
 
                 <DropdownMenuItem onClick={handleCopy} className="gap-2 cursor-pointer">
                     <Copy className="h-4 w-4" />

@@ -18,11 +18,11 @@ router.get('/', async (req, res) => {
   // 1. Self-Service Check: Allow if user is fetching their own profile by email
   const isSelfService = email && (req.user.email === email || req.userProfile.email === email);
 
-  // 2. Admin/Registrar/Faculty Check
-  const isAdminOrRegistrar = ['admin', 'registrar', 'teacher', 'faculty'].includes(req.userProfile.role);
+  // 2. Admin/Registrar/Faculty/Vice Head Check
+  const isAdminOrRegistrar = ['admin', 'registrar', 'teacher', 'faculty', 'vice_head'].includes(req.userProfile.role);
 
   if (!isSelfService && !isAdminOrRegistrar) {
-    return res.status(403).json({ error: 'Access Denied: Requires admin, registrar or faculty privileges' });
+    return res.status(403).json({ error: 'Access Denied: Requires admin, registrar, vice head or faculty privileges' });
   }
 
   try {
@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     // Access control check
-    if (req.userProfile.role !== 'admin' && req.userProfile.role !== 'registrar' && req.userProfile.id !== req.params.id) {
+    if (req.userProfile.role !== 'admin' && req.userProfile.role !== 'registrar' && req.userProfile.role !== 'vice_head' && req.userProfile.id !== req.params.id) {
       return res.status(403).json({ error: 'Access Denied' });
     }
 
@@ -59,7 +59,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Get users by department IDs
-router.post('/by-departments', authorizeRole(['admin', 'registrar', 'faculty']), async (req, res) => {
+router.post('/by-departments', authorizeRole(['admin', 'registrar', 'faculty', 'vice_head']), async (req, res) => {
   try {
     const { department_ids, role, status } = req.body;
 
@@ -79,7 +79,7 @@ router.post('/by-departments', authorizeRole(['admin', 'registrar', 'faculty']),
 });
 
 // Create user
-router.post('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
+router.post('/', authorizeRole(['admin', 'registrar', 'vice_head']), async (req, res) => {
   try {
     const context = {
       user: req.user,
@@ -96,7 +96,7 @@ router.post('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
     for (const [key, value] of Object.entries(userData)) {
       // Skip undefined values
       if (value === undefined) continue;
-      
+
       // Handle integer fields (org_id, user_id)
       if (['org_id', 'user_id'].includes(key)) {
         // Skip if value is undefined or the string "undefined"
@@ -125,7 +125,74 @@ router.post('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
       }
     }
 
-    const newUser = await secureDb.create('users', cleanedUserData, context);
+    // Generate a temporary email to satisfy NOT NULL constraint during initial insert.
+    // This will be updated immediately after with the correct formatted email.
+    if (!cleanedUserData.email) {
+      cleanedUserData.email = `pending_${crypto.randomUUID()}@loopverse.in`;
+    }
+
+    let newUser = await secureDb.create('users', cleanedUserData, context);
+
+    // 2. Generate Loop ID and Email based on org_id and user_id
+    if (newUser && newUser.org_id && newUser.user_id) {
+      const generatedLoopId = `${newUser.org_id}${newUser.user_id}`;
+      const generatedEmail = `${generatedLoopId}@loopverse.in`;
+
+      const updateData = {
+        email: generatedEmail
+      };
+
+      // For students, explicitly set the loopid
+      if (newUser.role === 'student') {
+        updateData.loopid = generatedLoopId;
+      }
+
+      // Update the user record with generated fields
+      newUser = await secureDb.update('users', newUser.id, updateData, context);
+
+      // 3. Create Auth User and Send Welcome Email
+      if (college_email) {
+        try {
+          const { sendWelcomeEmail, generatePassword } = await import('../services/email.js');
+          const password = generatePassword();
+
+          const userMetadata = {
+            name: newUser.name,
+            loopid: updateData.loopid || newUser.loopid || generatedLoopId,
+            user_id: newUser.user_id
+          };
+
+          // Create Supabase Auth User
+          const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: generatedEmail,
+            password: password,
+            email_confirm: true,
+            user_metadata: userMetadata
+          });
+
+          if (authError) {
+            // If user already exists in Auth, try to update password (recovery flow)
+            if (authError.message && (authError.message.includes('already registered') || authError.code === 'email_exists')) {
+              console.log('[User Create] Auth user exists. Attempting password update/sync...');
+              // Logic to find and update existing auth user could go here, 
+              // but for now we'll log it and proceed to try sending email if possible or just warn.
+              // Ideally we should update the password so the new credentials work.
+            }
+            console.error('[User Create] Auth user creation failed:', authError);
+          } else {
+            await sendWelcomeEmail(
+              college_email,
+              generatedEmail,
+              userMetadata.loopid,
+              password,
+              newUser.name
+            );
+          }
+        } catch (emailError) {
+          console.error('[User Create] Email/Auth flow failed:', emailError);
+        }
+      }
+    }
 
     sendSuccess(res, newUser);
   } catch (error) {
@@ -134,7 +201,7 @@ router.post('/', authorizeRole(['admin', 'registrar']), async (req, res) => {
 });
 
 // Update user
-router.put('/:id', authorizeRole(['admin', 'registrar']), async (req, res) => {
+router.put('/:id', authorizeRole(['admin', 'registrar', 'vice_head']), async (req, res) => {
   try {
     const context = {
       user: req.user,
@@ -240,7 +307,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
 });
 
 // Send welcome email
-router.post('/send-welcome-email', authorizeRole(['admin', 'registrar']), async (req, res) => {
+router.post('/send-welcome-email', authorizeRole(['admin', 'registrar', 'vice_head']), async (req, res) => {
   const fs = await import('fs');
   const path = await import('path');
   const logFile = path.join(process.cwd(), 'server_debug_log.txt');

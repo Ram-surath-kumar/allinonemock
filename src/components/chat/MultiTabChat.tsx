@@ -6,11 +6,15 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatWindow } from "./ChatWindow";
+import { chatSocketService } from "@/services/chatSocket";
+import { encryptionService } from "@/services/encryptionService";
+import { CallOverlay } from "./CallOverlay";
 
 interface ChatTab {
   id: string; // "recent-userID" or "group-ID"
   userId?: string;
   userName: string;
+  userRole?: string;
   userAvatar?: string;
   type?: 'direct' | 'group';
   unreadCount: number;
@@ -37,6 +41,16 @@ interface Message {
   file_name?: string;
   file_type?: string;
   file_size?: number;
+  // E2EE fields
+  encrypted_content?: string;
+  iv?: string;
+  sender_key_encrypted?: string;
+  recipient_key_encrypted?: string;
+  delivered_by?: string[];
+  // Edit tracking fields
+  is_edited?: boolean;
+  edited_at?: string;
+  edit_count?: number;
 }
 
 interface UserStatus {
@@ -56,10 +70,229 @@ export function MultiTabChat() {
   const [activeChat, setActiveChat] = useState<ChatTab | null>(null);
   const activeChatRef = useRef<ChatTab | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [users, setUsers] = useState<Array<{ id: string; user_id?: string | number; loopid?: string; name: string; email?: string; avatar?: string; last_login?: string }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; user_id?: string | number; loopid?: string; name: string; email?: string; avatar?: string; role?: string; last_login?: string }>>([]);
   const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
   const [lastMessageSentTime, setLastMessageSentTime] = useState<number>(0);
   const [pendingTempMessages, setPendingTempMessages] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
+  const [keyPair, setKeyPair] = useState<CryptoKeyPair | null>(null);
+  const [activeCall, setActiveCall] = useState<any>(null);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+
+  // E2EE: Initialize Keys
+  useEffect(() => {
+    if (currentUser) {
+      const initKeys = async () => {
+        let keys = await encryptionService.loadKeyPair();
+        if (!keys) {
+          keys = await encryptionService.generateKeyPair();
+          const pubKey = await encryptionService.exportPublicKey(keys.publicKey);
+          await api.uploadPublicKey(currentUser.id, pubKey);
+        }
+        setKeyPair(keys);
+      };
+      initKeys();
+    }
+  }, [currentUser]);
+
+  // Socket Connection
+  useEffect(() => {
+    if (currentUser) {
+      chatSocketService.connect(currentUser.id);
+      toast.success("Real-time Chat Service Initialized");
+
+      chatSocketService.onNewMessage((message: Message) => {
+        handleNewSocketMessage(message);
+      });
+
+      chatSocketService.onMessageRead((data: any) => {
+        handleSocketMessageRead(data);
+      });
+
+      chatSocketService.onTyping((data: { roomId: string, userId: string, isTyping: boolean }) => {
+        if (data.userId !== currentUser.id) {
+          setTypingUsers(prev => ({
+            ...prev,
+            [data.userId]: data.isTyping
+          }));
+        }
+      });
+
+      chatSocketService.onUserStatus((data: { userId: string, isOnline: boolean }) => {
+        setStatusMap(prev => ({
+          ...prev,
+          [data.userId]: { ...prev[data.userId], userId: data.userId, isOnline: data.isOnline }
+        }));
+      });
+
+      chatSocketService.onMessageDelivered((data: any) => {
+        handleSocketMessageDelivered(data);
+      });
+    }
+
+    return () => {
+      chatSocketService.disconnect();
+    };
+  }, [currentUser]);
+
+  const handleNewSocketMessage = async (message: Message) => {
+    console.log('[Chat] Received new socket message:', message);
+
+    // E2EE: Decrypt if needed
+    let decryptedContent = message.content;
+    if (message.encrypted_content && message.recipient_key_encrypted && keyPair && currentUser) {
+      // Incoming message: use my private key to decrypt the session key (recipient_key_encrypted)
+      const sessionKeyEnc = message.recipient_key_encrypted;
+      decryptedContent = await encryptionService.decryptMessage(
+        message.encrypted_content,
+        message.iv!,
+        sessionKeyEnc,
+        keyPair.privateKey
+      );
+    } else if (message.encrypted_content && message.sender_key_encrypted && keyPair && currentUser && message.sender_id === currentUser.id) {
+      // My own message (synced): use my private key to decrypt the session key (sender_key_encrypted)
+      const sessionKeyEnc = message.sender_key_encrypted;
+      decryptedContent = await encryptionService.decryptMessage(
+        message.encrypted_content,
+        message.iv!,
+        sessionKeyEnc,
+        keyPair.privateKey
+      );
+    }
+
+    const decryptedMessage = { ...message, content: decryptedContent };
+
+    // 1. Update Chats List (Bump to top, update last message)
+    setChats(prevChats => {
+      let chatIndex = -1;
+
+      chatIndex = prevChats.findIndex(c =>
+        (c.type === 'direct' && c.userId === message.sender_id) ||
+        (activeChatRef.current?.id === c.id && c.id === message.sender_id)
+      );
+
+      let updatedChats = [...prevChats];
+      if (chatIndex >= 0) {
+        const chat = updatedChats[chatIndex];
+        updatedChats.splice(chatIndex, 1);
+        updatedChats.unshift({
+          ...chat,
+          lastMessage: message.content,
+          lastMessageTime: message.created_at,
+          unreadCount: (activeChatRef.current?.id === chat.id) ? 0 : (chat.unreadCount + 1)
+        });
+      } else {
+        loadChats(true);
+        return prevChats;
+      }
+
+      return updatedChats;
+    });
+
+    // 2. If valid for active chat, append to messages
+    const active = activeChatRef.current;
+    if (active) {
+      const isForCurrentChat =
+        (active.type === 'direct' && (active.userId === message.sender_id || message.sender_id === currentUser?.id));
+
+      if (isForCurrentChat) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === decryptedMessage.id)) return prev;
+          return [...prev, decryptedMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
+
+        if (decryptedMessage.sender_id !== currentUser?.id && currentUser?.id && active.userId) {
+          api.markMessagesAsRead(currentUser.id, active.userId);
+        }
+      } else {
+        if (active.type === 'group') {
+          loadMessages(active, true);
+        }
+      }
+    }
+  };
+
+  const handleSocketMessageRead = (data: any) => {
+    if (activeChatRef.current) {
+      setMessages(prev => prev.map(m => {
+        if (m.sender_id === currentUser?.id && !m.read) {
+          return { ...m, read: true };
+        }
+        return m;
+      }));
+    }
+  };
+
+  const handleSocketMessageDelivered = (data: any) => {
+    setMessages(prev => {
+      const updated = prev.map(m => {
+        if (m.id === data.messageId) {
+          const existing = m.delivered_by || [];
+          if (!existing.includes(data.userId)) {
+            return { ...m, delivered_by: [...existing, data.userId] };
+          }
+        }
+        return m;
+      });
+      return updated;
+    });
+  };
+
+  // Call handling functions
+  const checkIncomingCalls = async () => {
+    if (!currentUser || activeCall) return;
+
+    try {
+      const res = await api.getIncomingCall(currentUser.id);
+      if (res.data && res.data.status === 'initiated') {
+        setActiveCall(res.data);
+        setIsIncomingCall(true);
+      }
+    } catch (error) {
+      console.error("Failed to check incoming calls:", error);
+    }
+  };
+
+  const handleCall = async (type: 'audio' | 'video') => {
+    if (!activeChat || !activeChat.userId || !currentUser) return;
+
+    try {
+      const res = await api.initiateCall({
+        caller_id: currentUser.id,
+        receiver_id: activeChat.userId,
+        type: type
+      });
+
+      if (res.data) {
+        setActiveCall(res.data);
+        setIsIncomingCall(false);
+      } else {
+        toast.error("Failed to initiate call");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate call");
+    }
+  };
+
+  const handleAcceptCall = () => {
+    setIsIncomingCall(false);
+  };
+
+  const handleRejectCall = async () => {
+    if (activeCall) {
+      await api.endCall(activeCall.id);
+      setActiveCall(null);
+      setIsIncomingCall(false);
+    }
+  };
+
+  const handleEndCall = async () => {
+    if (activeCall) {
+      await api.endCall(activeCall.id);
+      setActiveCall(null);
+      setIsIncomingCall(false);
+    }
+  };
 
   // Initial Data Loading - Load users first if we have a chatUserId in URL
   useEffect(() => {
@@ -98,6 +331,7 @@ export function MultiTabChat() {
               ...activeChat,
               userId: user.id, // Ensure UUID
               userName: user.name,
+              userRole: user.role, // Update role
               userAvatar: user.avatar
             });
           }
@@ -117,6 +351,7 @@ export function MultiTabChat() {
                   ...chat,
                   userId: user.id,
                   userName: user.name,
+                  userRole: user.role, // Update role
                   userAvatar: user.avatar
                 };
               }
@@ -144,6 +379,8 @@ export function MultiTabChat() {
             loadMessages(activeChat, true); // silent update
           }
         }
+        // Poll for incoming calls
+        checkIncomingCalls();
       }, 5000);
 
       // Refresh user list periodically (every 20 seconds) to catch new users
@@ -308,6 +545,7 @@ export function MultiTabChat() {
             name: u.name,
             email: u.email,
             avatar: u.avatar,
+            role: u.role,
             last_login: u.last_login
           }));
         setUsers(filteredUsers);
@@ -360,6 +598,7 @@ export function MultiTabChat() {
           // If direct, find user info
           let name = c.name;
           let avatar = c.avatar;
+          let role = c.userRole; // Initialize role
           let userId = c.userId; // Preserve original userId
 
           if (!c.type || c.type === 'direct') {
@@ -383,6 +622,7 @@ export function MultiTabChat() {
             if (user) {
               name = user.name;
               avatar = user.avatar;
+              role = user.role; // Capture role
             } else if (users.length === 0) {
               // Users not loaded yet - keep existing name from previous load or mark as loading
               name = c.userName || name || 'Loading...';
@@ -406,11 +646,22 @@ export function MultiTabChat() {
             type: c.type || 'direct', // Default to direct if missing
             userName: name || 'Unknown',
             userAvatar: avatar,
+            userRole: role, // Include role in return
             userId: userId, // Use resolved UUID
             unreadCount: (activeChatRef.current && (activeChatRef.current.id === c.id || activeChatRef.current.userId === userId)) ? 0 : c.unreadCount
           };
         });
-        setChats(mappedChats);
+
+        setChats(prevChats => {
+          // Identify optimistic chats (start with 'recent-' or 'temp-') from previous state
+          // that are NOT present in the new backend data (matched by userId for DMs)
+          const optimisticChats = prevChats.filter(prev =>
+            (prev.id.startsWith('recent-') || prev.id.startsWith('temp-')) &&
+            !mappedChats.some((newChat: any) => newChat.userId === prev.userId)
+          );
+
+          return [...optimisticChats, ...mappedChats];
+        });
       }
     } catch (error) {
       if (!silent) console.error("Failed to load chats", error);
@@ -441,7 +692,8 @@ export function MultiTabChat() {
             id: activeChat.id.startsWith('temp-chat-') ? `recent-${user.id}` : activeChat.id,
             userId: user.id, // Update to UUID
             userName: user.name,
-            userAvatar: user.avatar
+            userAvatar: user.avatar,
+            userRole: user.role // Update role in activeChat fix
           };
 
           setActiveChat(updatedChat);
@@ -457,7 +709,8 @@ export function MultiTabChat() {
         setActiveChat({
           ...activeChat,
           userName: user.name,
-          userAvatar: user.avatar
+          userAvatar: user.avatar,
+          userRole: user.role // Update role here too
         });
         activeChatRef.current = {
           ...activeChat,
@@ -499,7 +752,7 @@ export function MultiTabChat() {
       const query = new URLSearchParams(params).toString();
       const msgRes = await api.get<Message[]>(`/chat/messages?${query}`, undefined, false);
 
-      // Mark messages as read if this is an active chat load (not silent background update OR silent update but it's the active chat)
+      // Mark messages as read if this is an active chat load
       if (!silent || (activeChat && activeChat.id === chat.id)) {
         if (params.other_user_id) {
           api.put('/chat/messages/read', {
@@ -512,16 +765,59 @@ export function MultiTabChat() {
             group_id: params.group_id
           }).catch(console.error);
         }
-
-        // Optimistically clear unread count in UI
-        setChats(prev => prev.map(c =>
-          c.id === chat.id ? { ...c, unreadCount: 0 } : c
-        ));
       }
 
+      // Mark un-delivered messages as delivered
+      if (msgRes.data && msgRes.data.length > 0) {
+        const undeliveredIds = msgRes.data
+          .filter(m => m.sender_id !== currentUser.id && (!m.delivered_by || !m.delivered_by.includes(currentUser.id)))
+          .map(m => m.id);
+
+        if (undeliveredIds.length > 0) {
+          api.markMessagesAsDelivered(currentUser.id, undeliveredIds).catch(console.error);
+        }
+      }
+
+      // Optimistically clear unread count in UI
+      setChats(prev => prev.map(c =>
+        c.id === chat.id ? { ...c, unreadCount: 0 } : c
+      ));
+
       if (msgRes.data && Array.isArray(msgRes.data)) {
+        // E2EE: Decrypt messages
+        const decryptedMessages = await Promise.all(msgRes.data.map(async (m) => {
+          if (m.encrypted_content && keyPair) {
+            try {
+              // Determine which encrypted key to use
+              // If I am receiver, use recipient_key_encrypted
+              // If I am sender, use sender_key_encrypted
+              let sessionKeyEnc = m.recipient_key_encrypted;
+              if (m.sender_id === currentUser.id) {
+                sessionKeyEnc = m.sender_key_encrypted;
+              }
+
+              // If message was sent to me (or by me), I should be able to decrypt if I have the corresponding key
+              // Note: If I am sender, I need 'sender_key_encrypted' which creates a dependency on correct column usage
+
+              if (sessionKeyEnc && m.iv) {
+                const content = await encryptionService.decryptMessage(
+                  m.encrypted_content,
+                  m.iv,
+                  sessionKeyEnc,
+                  keyPair.privateKey
+                );
+                return { ...m, content };
+              }
+            } catch (e) {
+              console.error('Failed to decrypt message', m.id, e);
+              return { ...m, content: '🔒 Decryption Failed' };
+            }
+          }
+          return m;
+        }));
+
         // Sort messages by created_at to ensure correct order
-        const sortedMessages = [...msgRes.data].sort((a, b) =>
+        const sortedMessages = [...decryptedMessages].sort((a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
 
@@ -607,13 +903,41 @@ export function MultiTabChat() {
               const existingMsg = existingMap.get(serverMsg.id);
               if (existingMsg && existingMsg.reactions && existingMsg.reactions.length > 0) {
                 // If server has reactions, use them; otherwise keep existing
-                return {
+                const mergedMsg = {
                   ...serverMsg,
+                  // Preserve reactions
                   reactions: serverMsg.reactions && serverMsg.reactions.length > 0
                     ? serverMsg.reactions
                     : existingMsg.reactions
                 };
+
+                // Preserving local edit state:
+                // If existing message is locally marked as edited (has content change + is_edited true)
+                // and server message says is_edited false OR server edited_at is older/missing
+                // then keep the existing content and edit status.
+                // This handles the race condition where polling happens before the edit persists/propagates.
+                if (existingMsg.is_edited && (!serverMsg.is_edited ||
+                  (existingMsg.edited_at && serverMsg.edited_at && new Date(existingMsg.edited_at) > new Date(serverMsg.edited_at)))) {
+                  mergedMsg.content = existingMsg.content;
+                  mergedMsg.is_edited = true;
+                  mergedMsg.edited_at = existingMsg.edited_at;
+                  mergedMsg.edit_count = existingMsg.edit_count;
+                }
+
+                return mergedMsg;
               }
+
+              // Also check for local edits even if no reactions exist
+              if (existingMsg && existingMsg.is_edited && (!serverMsg.is_edited ||
+                (existingMsg.edited_at && serverMsg.edited_at && new Date(existingMsg.edited_at) > new Date(serverMsg.edited_at)))) {
+                const mergedMsg = { ...serverMsg };
+                mergedMsg.content = existingMsg.content;
+                mergedMsg.is_edited = true;
+                mergedMsg.edited_at = existingMsg.edited_at;
+                mergedMsg.edit_count = existingMsg.edit_count;
+                return mergedMsg;
+              }
+
               return serverMsg;
             });
           }
@@ -722,7 +1046,39 @@ export function MultiTabChat() {
         payload.receiver_id = activeChat.userId?.replace('recent-', '');
       }
 
-      const response = await api.sendChatMessage(payload);
+      const response = await (async () => {
+        // E2EE: Encrypt if Direct Chat
+        if (activeChat.type === 'direct' && payload.receiver_id && keyPair) {
+          try {
+            // Fetch recipient public key
+            const pubKeyRes = await api.getPublicKey(payload.receiver_id);
+            if (pubKeyRes.data) {
+              const recipientKey = await encryptionService.importPublicKey(pubKeyRes.data);
+
+              const encrypted = await encryptionService.encryptMessage(
+                content,
+                recipientKey,
+                keyPair.publicKey
+              );
+
+              // Modify payload
+              // We send 'content' as fallback (or placeholder) - ideally empty string or "Encrypted Message"
+              // But to support non-E2EE clients or fallbacks, maybe we keep it? 
+              // Strict E2EE: content should be ignored or generic.
+              payload.content = "🔒 Encrypted Message";
+              payload.encrypted_content = encrypted.encryptedContent;
+              payload.iv = encrypted.iv;
+              payload.recipient_key_encrypted = encrypted.recipientKeyEncrypted;
+              payload.sender_key_encrypted = encrypted.senderKeyEncrypted;
+            } else {
+              console.warn('No public key for recipient, sending plain text');
+            }
+          } catch (e) {
+            console.error('Encryption failed, sending plain text', e);
+          }
+        }
+        return api.sendChatMessage(payload);
+      })();
 
       // Replace temp message with real message from server response
       if (response.data) {
@@ -786,6 +1142,53 @@ export function MultiTabChat() {
         updated.delete(tempMsgId);
         return updated;
       });
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, content: string) => {
+    if (!currentUser || !activeChat) return;
+
+    // Optimistic update
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, content, is_edited: true, edited_at: new Date().toISOString(), edit_count: (msg.edit_count || 0) + 1 }
+        : msg
+    ));
+
+    // Update sidebar if it was the last message
+    setChats(prev => prev.map(c => {
+      if (c.id === activeChat.id) {
+        // Only update preview if this was the last message
+        // We can't easily know if it was the last message without checking, 
+        // but for now we'll assume if it matches the last message content we update it
+        // Or better, just update it if the time matches significantly
+        // For simplicity, we won't update sidebar preview for edits right now to avoid complexity
+        return c;
+      }
+      return c;
+    }));
+
+    try {
+      const response = await api.editChatMessage(messageId, currentUser.id, content);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (response.data) {
+        // Update with server data
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, ...response.data }
+            : msg
+        ));
+      }
+    } catch (error: any) {
+      console.error("Edit message error:", error);
+      toast.error(error.message || "Failed to edit message");
+      // Revert optimistic update is hard without keeping previous state history
+      // Ideally we should reload messages or keep previous content
+      loadMessages(activeChat, true);
     }
   };
 
@@ -954,6 +1357,7 @@ export function MultiTabChat() {
     }
   };
 
+
   return (
     <div className="flex h-full min-h-0 bg-background overflow-hidden">
       {/* Sidebar - Hidden on mobile if chat active */}
@@ -996,7 +1400,7 @@ export function MultiTabChat() {
               onClear={() => activeChat && handleClear(activeChat.id)}
               onDelete={() => activeChat && handleDelete(activeChat.id)}
               onArchive={handleArchiveChat}
-              onCall={(type) => toast.info(`${type} calling not implemented yet`)}
+              onCall={handleCall}
               chats={chats}
               onAddReaction={handleAddReaction}
               onRemoveReaction={handleRemoveReaction}
@@ -1004,7 +1408,9 @@ export function MultiTabChat() {
                 if (activeChat) loadMessages(activeChat, true);
               }}
               onLeaveGroup={handleLeaveGroup}
+              onEditMessage={handleEditMessage}
               users={users}
+              typingUsers={typingUsers}
             />
           ) : (
             <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-muted/5 select-none animate-in fade-in duration-500">
@@ -1043,6 +1449,22 @@ export function MultiTabChat() {
           )}
         </div>
       )}
+
+      {activeCall && (
+        <CallOverlay
+          call={activeCall}
+          currentUser={{ id: currentUser?.id || '', name: currentUser?.name || '', avatar: currentUser?.avatar || '' }}
+          otherUser={
+            users.find(u => u.id === (isIncomingCall ? activeCall.caller_id : activeCall.receiver_id)) ||
+            { id: '', name: 'Unknown User' }
+          }
+          isIncoming={isIncomingCall}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+          onEnd={handleEndCall}
+        />
+      )}
     </div>
   );
 }
+

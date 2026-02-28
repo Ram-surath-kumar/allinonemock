@@ -124,7 +124,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
         facility_id: "",
       });
     }
-  }, [open, form]);
+  }, [open]);
 
   const loadDepartments = async () => {
     try {
@@ -147,6 +147,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
       setFacilities(data || []);
     } catch (error) {
       console.error("Error loading facilities:", error);
+      toast.error("Failed to load facilities. Check backend connection.");
     }
   };
 
@@ -419,28 +420,25 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                   control={form.control}
                   name="location"
                   render={({ field }) => {
-                    // Determine select value based on current field value
-                    const isCustom =
-                      field.value && !facilities.some((f) => f.fullName === field.value);
-                    const selectValue = isCustom ? "custom" : field.value || undefined;
+                    const isCustom = field.value && !facilities.some((f) => f.fullName === field.value);
+                    const currentVal = (isCustom ? "custom" : field.value) || "";
+
+                    const selectedFacility = facilities.find((f) => f.fullName === field.value);
+                    const amenities = selectedFacility?.equipment;
 
                     return (
                       <FormItem>
                         <FormLabel>Location *</FormLabel>
                         <Select
-                          value={selectValue}
+                          value={currentVal}
                           onValueChange={(val) => {
                             if (val === "custom") {
-                              field.onChange(""); // Clear for typing
+                              field.onChange(""); // Reset to empty for custom typing
                               form.setValue("facility_id", null);
                             } else {
                               field.onChange(val);
-                              const facility = facilities.find((f) => f.fullName === val);
-                              if (facility) {
-                                form.setValue("facility_id", facility.id);
-                              } else {
-                                form.setValue("facility_id", null);
-                              }
+                              const f = facilities.find((fac) => fac.fullName === val);
+                              form.setValue("facility_id", f?.id || null);
                             }
                           }}
                         >
@@ -450,22 +448,51 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {facilities.map((fac) => (
-                              <SelectItem key={fac.id} value={fac.fullName}>
-                                {fac.fullName}
-                              </SelectItem>
-                            ))}
+                            {facilities.length > 0 ? (
+                              facilities.map((fac) => (
+                                <SelectItem key={fac.id} value={fac.fullName}>
+                                  <span className="flex flex-col py-0.5">
+                                    <span className="font-medium">{fac.fullName}</span>
+                                    {fac.equipment && (
+                                      <span className="text-[10px] text-muted-foreground opacity-70">
+                                        Amenities available
+                                      </span>
+                                    )}
+                                  </span>
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="p-2 text-xs text-muted-foreground text-center">
+                                No facilities found
+                              </div>
+                            )}
                             <SelectItem value="custom">Other (Enter manually)</SelectItem>
                           </SelectContent>
                         </Select>
 
-                        {selectValue === "custom" && (
-                          <div className="mt-2 animate-fade-in-up" aria-live="polite">
+                        {amenities && (
+                          <div className="mt-2 flex flex-wrap gap-1.5 animate-fade-in">
+                            <span className="text-xs text-muted-foreground w-full mb-0.5">Available Amenities:</span>
+                            {(typeof amenities === 'string'
+                              ? amenities.split(',').map(s => s.trim())
+                              : Array.isArray(amenities)
+                                ? amenities
+                                : Object.keys(amenities)
+                            ).map((eq, i) => (
+                              <Badge key={i} variant="outline" className="text-[10px] py-0 px-2 bg-primary/5 border-primary/20">
+                                {eq}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {currentVal === "custom" && (
+                          <div className="mt-2 animate-fade-in-up">
                             <Input
-                              placeholder="Enter custom location..."
-                              aria-label="Custom location"
+                              placeholder="Enter custom location name..."
                               value={field.value}
                               onChange={field.onChange}
+                              autoFocus
                             />
                           </div>
                         )}

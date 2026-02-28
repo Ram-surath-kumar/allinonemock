@@ -1,33 +1,27 @@
 import express from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, handleError, sendSuccess } from '../common.js';
 
 const router = express.Router();
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Helper for error handling
-const handleError = (res, error, message = 'An error occurred') => {
-    console.error(message, error);
-    res.status(500).json({ error: message, details: error.message });
-};
+// Helper for error handling removed - using common.handleError
 
 // GET / - List all facilities (rooms flattened)
 router.get('/', async (req, res) => {
     try {
-        const { data: rooms, error: roomError } = await supabase
+        const { data: rooms, error: roomError } = await supabaseAdmin
             .from('facilities_rooms')
-            .select('id, room_name, room_number, building_id')
+            .select('id, room_name, room_number, building_id, equipment')
             .order('room_name');
 
         if (roomError) throw roomError;
+        console.log(`[GET /facilities] Found ${rooms?.length || 0} rooms`);
 
-        const { data: buildings, error: bldError } = await supabase
+        const { data: buildings, error: bldError } = await supabaseAdmin
             .from('facilities_buildings')
             .select('id, name');
 
         if (bldError) throw bldError;
+        console.log(`[GET /facilities] Found ${buildings?.length || 0} buildings`);
 
         // Map building names
         const buildingMap = new Map((buildings || []).map(b => [b.id, b.name]));
@@ -36,12 +30,13 @@ router.get('/', async (req, res) => {
             id: room.id,
             name: room.room_name || `Room ${room.room_number}`,
             building: buildingMap.get(room.building_id) || 'Unknown Building',
-            fullName: `${room.room_name || `Room ${room.room_number}`} (${buildingMap.get(room.building_id) || 'Unknown Building'})`
+            fullName: `${room.room_name || `Room ${room.room_number}`} (${buildingMap.get(room.building_id) || 'Unknown Building'})`,
+            equipment: room.equipment // This might be a string, array or JSON
         }));
 
-        res.json({ data: facilities });
+        sendSuccess(res, facilities);
     } catch (error) {
-        handleError(res, error, 'Failed to fetch all facilities');
+        handleError(error, res, 'Failed to fetch all facilities');
     }
 });
 
@@ -50,7 +45,7 @@ router.get('/', async (req, res) => {
 router.get('/hierarchy', async (req, res) => {
     try {
         // Fetch all buildings
-        const { data: buildings, error: bldError } = await supabase
+        const { data: buildings, error: bldError } = await supabaseAdmin
             .from('facilities_buildings')
             .select('*')
             .order('name');
@@ -58,7 +53,7 @@ router.get('/hierarchy', async (req, res) => {
         if (bldError) throw bldError;
 
         // Fetch all rooms
-        const { data: rooms, error: roomError } = await supabase
+        const { data: rooms, error: roomError } = await supabaseAdmin
             .from('facilities_rooms')
             .select('id, building_id, room_number, room_name, floor_number, room_type, status')
             .order('room_number');
@@ -120,7 +115,7 @@ router.get('/hierarchy', async (req, res) => {
 router.post('/buildings', async (req, res) => {
     try {
         const { name, code, floors, campus_location } = req.body;
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_buildings')
             .insert([{ name, code, floors, campus_location }])
             .select()
@@ -138,7 +133,7 @@ router.post('/buildings', async (req, res) => {
 router.get('/rooms/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const { data: room, error: roomError } = await supabase
+        const { data: room, error: roomError } = await supabaseAdmin
             .from('facilities_rooms')
             .select('*')
             .eq('id', id)
@@ -149,7 +144,7 @@ router.get('/rooms/:id', async (req, res) => {
         // Manually fetch building details to avoid schema/foreign key issues
         let building = null;
         if (room.building_id) {
-            const { data: buildingData, error: bldError } = await supabase
+            const { data: buildingData, error: bldError } = await supabaseAdmin
                 .from('facilities_buildings')
                 .select('name, code, campus_location')
                 .eq('id', room.building_id)
@@ -161,7 +156,7 @@ router.get('/rooms/:id', async (req, res) => {
         }
 
         // Fetch equipment
-        const { data: equipmentList, error: eqError } = await supabase
+        const { data: equipmentList, error: eqError } = await supabaseAdmin
             .from('facilities_equipment')
             .select('*')
             .eq('room_id', id);
@@ -191,7 +186,7 @@ router.post('/rooms', async (req, res) => {
     const roomData = req.body;
     console.log("Saving Room Data:", JSON.stringify(roomData, null, 2));
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_rooms')
             .upsert(roomData)
             .select()
@@ -217,7 +212,7 @@ router.post('/rooms', async (req, res) => {
 router.post('/equipment', async (req, res) => {
     const eqData = req.body;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_equipment')
             .upsert(eqData)
             .select()
@@ -234,7 +229,7 @@ router.post('/equipment', async (req, res) => {
 router.delete('/equipment/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('facilities_equipment')
             .delete()
             .eq('id', id);
@@ -250,7 +245,7 @@ router.delete('/equipment/:id', async (req, res) => {
 router.get('/bookings/:roomId', async (req, res) => {
     const { roomId } = req.params;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_bookings')
             .select('*')
             .eq('room_id', roomId)
@@ -269,7 +264,7 @@ router.post('/bookings', async (req, res) => {
         const booking = req.body;
         // Basic Overlap Check (Optional but good)
         // For MVP just insert
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_bookings')
             .insert(booking)
             .select()
@@ -286,7 +281,7 @@ router.post('/bookings', async (req, res) => {
 router.delete('/bookings/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('facilities_bookings')
             .delete()
             .eq('id', id);
@@ -302,7 +297,7 @@ router.delete('/bookings/:id', async (req, res) => {
 router.get('/documents/:roomId', async (req, res) => {
     const { roomId } = req.params;
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_documents')
             .select('*')
             .eq('room_id', roomId)
@@ -319,7 +314,7 @@ router.get('/documents/:roomId', async (req, res) => {
 router.post('/documents', async (req, res) => {
     try {
         const doc = req.body;
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('facilities_documents')
             .insert(doc)
             .select()
@@ -336,7 +331,7 @@ router.post('/documents', async (req, res) => {
 router.delete('/documents/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('facilities_documents')
             .delete()
             .eq('id', id);

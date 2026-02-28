@@ -73,7 +73,7 @@ export function AssignTaskDialog({ open, onOpenChange }) {
         due_date: "",
       });
     }
-  }, [open, form]);
+  }, [open]);
 
   const loadUsers = async () => {
     try {

@@ -28,6 +28,7 @@ interface ChatTab {
     userId?: string; // For 1:1
     type?: 'direct' | 'group';
     userName: string;
+    userRole?: string; // Added
     userAvatar?: string; // Or group icon
     unreadCount: number;
     lastMessage?: string;
@@ -232,7 +233,10 @@ export function ChatSidebar({
 
                                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                                             <div className="flex items-center justify-between">
-                                                <h4 className="font-medium text-sm truncate text-foreground">{chat.userName}</h4>
+                                                <h4 className="font-medium text-sm truncate text-foreground">
+                                                    {chat.userName}
+                                                    {chat.userRole && <span className="text-[10px] text-muted-foreground font-normal ml-1 capitalize">({chat.userRole.replace('_', ' ')})</span>}
+                                                </h4>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -293,7 +297,10 @@ export function ChatSidebar({
 
                         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                             <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-sm truncate text-foreground">{chat.userName}</h4>
+                                <h4 className="font-medium text-sm truncate text-foreground">
+                                    {chat.userName}
+                                    {chat.userRole && <span className="text-[10px] text-muted-foreground font-normal ml-1 capitalize">({chat.userRole.replace('_', ' ')})</span>}
+                                </h4>
                                 {chat.lastMessageTime && (
                                     <span className={cn(
                                         "text-[10px] shrink-0",

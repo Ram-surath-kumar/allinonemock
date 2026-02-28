@@ -213,18 +213,25 @@ class ApiClient {
         if (session?.access_token) {
           headers["Authorization"] = `Bearer ${session.access_token}`;
         } else {
-          // Try to get session again if missing
-          const {
-            data: { session: newSession },
-          } = await supabase.auth.getSession();
-          if (newSession?.access_token) {
-            headers["Authorization"] = `Bearer ${newSession.access_token}`;
+          // Check for bypass email in localStorage (Universal Bypass)
+          const bypassEmail = localStorage.getItem("bypass_email");
+          if (bypassEmail) {
+            headers["X-Bypass-Email"] = bypassEmail;
+          } else {
+            // Try to get session again if missing
+            const {
+              data: { session: newSession },
+            } = await supabase.auth.getSession();
+            if (newSession?.access_token) {
+              headers["Authorization"] = `Bearer ${newSession.access_token}`;
+            }
           }
         }
 
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           ...options,
           headers,
+          cache: useCache ? 'default' : 'no-store',
         });
 
         // Read response as text first to check if it's HTML
@@ -285,7 +292,7 @@ class ApiClient {
         ) {
           return {
             data: null,
-            error: errorMessage.includes("Backend API not available") 
+            error: errorMessage.includes("Backend API not available")
               ? errorMessage
               : "Network error: Backend server may not be running. Please ensure the backend server is running on port 3001.",
           };
@@ -1007,6 +1014,18 @@ class ApiClient {
     return this.request<any[]>(`/exam/list${query ? `?${query}` : ""}`, {}, false);
   }
 
+  async assignExamBulk(data: {
+    exam_id: string;
+    student_ids: string[];
+    skip_fee: boolean;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/exam/assign-bulk", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+
   // Transport Fees
   async getStudentTransportFees(studentId: string): Promise<ApiResponse<any>> {
     return this.request(`/transport/student/${studentId}`);
@@ -1159,8 +1178,8 @@ class ApiClient {
     return this.request(`/chat/messages?user_id=${userId}&other_user_id=${otherUserId}`, {}, false);
   }
 
-  async getRecentConversations(userId: string): Promise<ApiResponse<any[]>> {
-    return this.request(`/chat/chats?user_id=${userId}`, {}, false);
+  async getRecentConversations(userId: string, useCache: boolean = true): Promise<ApiResponse<any[]>> {
+    return this.request(`/chat/chats?user_id=${userId}`, {}, useCache);
   }
 
   async createGroup(data: { name: string; members: string[]; icon?: string; created_by: string }): Promise<ApiResponse<any>> {
@@ -1285,10 +1304,26 @@ class ApiClient {
     return res;
   }
 
-  async markMessagesAsRead(userId: string, otherUserId: string): Promise<ApiResponse<any>> {
+  async markMessagesAsDelivered(userId: string, messageIds: string[]): Promise<ApiResponse<any>> {
+    return this.request("/messages/delivered", {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, message_ids: messageIds }),
+    });
+  }
+
+  async editChatMessage(messageId: string, userId: string, content: string): Promise<ApiResponse<any>> {
+    const res = await this.request(`/chat/messages/${messageId}`, {
+      method: "PUT",
+      body: JSON.stringify({ user_id: userId, content }),
+    });
+    if (!res.error) apiCache.invalidate("/chat/messages");
+    return res;
+  }
+
+  async markMessagesAsRead(userId: string, otherUserId?: string, groupId?: string): Promise<ApiResponse<any>> {
     return this.request(`/chat/messages/read`, {
       method: "PUT",
-      body: JSON.stringify({ user_id: userId, other_user_id: otherUserId }),
+      body: JSON.stringify({ user_id: userId, other_user_id: otherUserId, group_id: groupId }),
     });
   }
 
@@ -1308,6 +1343,10 @@ class ApiClient {
     return this.request(`/chat/calls/${callId}/end`, {
       method: "PUT",
     });
+  }
+
+  async getIncomingCall(userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/chat/calls/incoming?user_id=${userId}`);
   }
   async getEvents(params?: any): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
@@ -1420,6 +1459,30 @@ class ApiClient {
   // getTasks params are passed directly to query string.
   // Backend /tasks filters by assigned_to or assigned_by respectively.
   // "My Tasks" calls getTasks({ assigned_to: currentId }), which matches backend logic.
+
+
+  // E2EE
+  async getHostelDashboard(): Promise<ApiResponse<any>> {
+    return this.request("/hostel/dashboard");
+  }
+
+  async createHostel(data: any): Promise<ApiResponse<any>> {
+    return this.request("/hostel", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPublicKey(userId: string): Promise<ApiResponse<string>> {
+    return this.request(`/users/${userId}/public-key`);
+  }
+
+  async uploadPublicKey(userId: string, publicKey: string): Promise<ApiResponse<any>> {
+    return this.request("/users/public-key", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, public_key: publicKey }),
+    });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

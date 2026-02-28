@@ -6,6 +6,7 @@
       "maxDuration": 60
     }
   },
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -17,4 +18,3 @@
     }
   ]
 }
-
