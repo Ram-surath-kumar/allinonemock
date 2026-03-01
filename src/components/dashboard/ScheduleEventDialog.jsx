@@ -63,6 +63,7 @@ const formSchema = z.object({
   recipient_roles: z.array(z.string()).refine((value) => value.length > 0, {
     message: "You must select at least one recipient role.",
   }),
+  assigned_to_ids: z.array(z.string()).optional().default([]),
   facility_id: z.string().optional(),
 });
 
@@ -80,8 +81,10 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
   const [departments, setDepartments] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [events, setEvents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
+  const [studentOpen, setStudentOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -95,6 +98,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
       location: "",
       description: "",
       recipient_roles: [],
+      assigned_to_ids: [],
       facility_id: "",
     },
   });
@@ -111,6 +115,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
       loadDepartments();
       loadFacilities();
       loadEvents();
+      loadStudents();
       form.reset({
         title: "",
         type: "information",
@@ -121,6 +126,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
         location: "",
         description: "",
         recipient_roles: [],
+        assigned_to_ids: [],
         facility_id: "",
       });
     }
@@ -165,6 +171,16 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
     }
   };
 
+  const loadStudents = async () => {
+    try {
+      const { data, error } = await api.getUsers({ role: 'student' });
+      if (error) throw new Error(error);
+      setStudents(data || []);
+    } catch (error) {
+      console.error("Error loading students:", error);
+    }
+  };
+
   const onSubmit = async (values) => {
     try {
       // Check if trying to schedule in the past
@@ -178,6 +194,7 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
         department_id: showDepartment ? values.department_id : null,
         userId: currentUser?.id,
         facility_id: values.facility_id,
+        assigned_to_ids: values.assigned_to_ids,
       };
 
       const { error } = await api.createEvent(finalValues);
@@ -187,8 +204,6 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
       toast.success("Event scheduled successfully");
       form.reset();
       loadEvents(); // Reload list
-      // Don't close immediately if user wants to see it added, or maybe close.
-      // onOpenChange(false);
     } catch (error) {
       console.error("Error scheduling event:", error);
       toast.error(error.message || "Failed to schedule event");
@@ -386,7 +401,86 @@ export function ScheduleEventDialog({ open, onOpenChange }) {
                   />
                 )}
 
+                <FormField
+                  control={form.control}
+                  name="assigned_to_ids"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Specific Students (Optional)</FormLabel>
+                      <Popover open={studentOpen} onOpenChange={setStudentOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={studentOpen}
+                              className="w-full justify-between"
+                            >
+                              {field.value && field.value.length > 0
+                                ? `${field.value.length} students selected`
+                                : "Select specific students..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-[--radix-popover-trigger-width] p-0"
+                          align="start"
+                        >
+                          <Command className="w-full">
+                            <CommandInput placeholder="Search students..." />
+                            <CommandList>
+                              <CommandEmpty>No student found.</CommandEmpty>
+                              <CommandGroup>
+                                {students.map((student) => (
+                                  <CommandItem
+                                    key={student.id}
+                                    value={student.name}
+                                    onSelect={() => {
+                                      const current = field.value || [];
+                                      const isSelected = current.includes(student.id);
+                                      const updated = isSelected
+                                        ? current.filter((value) => value !== student.id)
+                                        : [...current, student.id];
+                                      field.onChange(updated);
+                                    }}
+                                  >
+                                    <div
+                                      className={cn(
+                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                        field.value?.includes(student.id)
+                                          ? "bg-primary text-primary-foreground"
+                                          : "opacity-50 [&_svg]:invisible"
+                                      )}
+                                    >
+                                      <Check className={cn("h-4 w-4")} />
+                                    </div>
+                                    {student.name} ({student.user_id})
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value?.map((studentId) => {
+                          const student = students.find((s) => s.id === studentId);
+                          return student ? (
+                            <Badge key={studentId} variant="outline" className="text-xs">
+                              {student.name}
+                            </Badge>
+                          ) : null;
+                        })}
+                      </div>
+                      <FormDescription>If selected, only these students will see the event in addition to role-based recipients.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-2 gap-4">
+
                   <FormField
                     control={form.control}
                     name="date"

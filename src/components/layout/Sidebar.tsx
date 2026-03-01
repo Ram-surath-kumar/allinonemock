@@ -49,8 +49,8 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       return [
         { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
         { icon: MessageSquare, label: "Chat", href: "/chat" },
-        { icon: FileText, label: "Examination and Results", href: "/student/examinations", roles: ["student"] },
-        { icon: CreditCard, label: "Fee Payment", href: "/student/fee-payment", roles: ["student"] },
+        { icon: FileText, label: "Exams & Evaluations", href: "/student/examinations", roles: ["student"] },
+        { icon: CreditCard, label: "Fees", href: "/student/fee-payment", roles: ["student"] },
         { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
       ];
     }
@@ -162,7 +162,12 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
         // Check organization allowed_tabs
         const allowedTabs = currentUser?.organization?.allowed_tabs;
         if (allowedTabs && allowedTabs.length > 0) {
-          const tabId = hrefToTabMap[item.href];
+          let tabId = hrefToTabMap[item.href];
+
+          // Map student-specific tabs to their overall module for organization permission checks
+          if (tabId === 'student_exams') tabId = 'exam';
+          if (tabId === 'fee_payment') tabId = 'finance';
+
           if (tabId && !allowedTabs.includes(tabId)) {
             return false;
           }

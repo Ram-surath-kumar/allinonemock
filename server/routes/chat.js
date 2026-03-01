@@ -1017,38 +1017,7 @@ router.put('/calls/:id/end', async (req, res) => {
     }
 });
 
-// E2EE Public Keys
-router.get('/users/:id/public-key', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const { data, error } = await supabaseAdmin
-            .from('user_public_keys')
-            .select('public_key')
-            .eq('user_id', id)
-            .maybeSingle();
-
-        if (error) throw error;
-        sendSuccess(res, data ? data.public_key : null);
-    } catch (error) {
-        handleError(error, res, 'Failed to fetch public key');
-    }
-});
-
-router.post('/users/public-key', async (req, res) => {
-    const { user_id, public_key } = req.body;
-    if (!user_id || !public_key) return res.status(400).json({ error: 'Missing Data' });
-
-    try {
-        const { error } = await supabaseAdmin
-            .from('user_public_keys')
-            .upsert({ user_id, public_key });
-
-        if (error) throw error;
-        sendSuccess(res, { success: true });
-    } catch (error) {
-        handleError(error, res, 'Failed to upload public key');
-    }
-});
+// E2EE Public Keys moved to users.js
 
 export default router;
 
