@@ -98,11 +98,13 @@ app.use(express.json());
 // Apply Audit Logger
 app.use(auditLogger);
 
-// Debug Logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} | ${req.method} ${req.path}`);
-  next();
-});
+// Debug Logging (only in development to reduce overhead)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} | ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -53,19 +53,40 @@ router.get('/', async (req, res) => {
       departments.push(...deptsData);
     }
 
-    // Get all active users first (for stats calculation)
-    const { data: allActiveUsers, error: allActiveUsersError } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('status', 'active');
-
-    // Calculate total students and staff from all active users
-    let totalStudentsCount = 0;
-    let totalStaffCount = 0;
-    if (!allActiveUsersError && allActiveUsers) {
-      totalStudentsCount = allActiveUsers.filter(u => u.role === 'student').length;
-      totalStaffCount = allActiveUsers.filter(u => u.role !== 'student').length;
+    // Get counts by role for stats (more efficient than fetching all)
+    const [studentsCountResult, staffCountResult] = await Promise.all([
+      supabaseAdmin
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .eq('role', 'student'),
+      supabaseAdmin
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .neq('role', 'student')
+    ]);
+    
+    const studentsCount = studentsCountResult.count || 0;
+    const staffCount = staffCountResult.count || 0;
+    
+    // Only fetch actual user data if needed (for admin/vice_head view)
+    // Limit to prevent timeout on large datasets
+    let allActiveUsers = [];
+    let allActiveUsersError = null;
+    if (role === 'admin' || role === 'vice_head') {
+      const result = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('status', 'active')
+        .limit(500); // Limit to prevent timeout
+      allActiveUsers = result.data || [];
+      allActiveUsersError = result.error;
     }
+
+    // Use the counts we already fetched
+    const totalStudentsCount = studentsCount || 0;
+    const totalStaffCount = staffCount || 0;
 
     // Get filtered users (for admin/vice_head) or filtered users (for teachers)
     if (role === 'teacher' && userId) {

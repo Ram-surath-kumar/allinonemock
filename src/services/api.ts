@@ -2,7 +2,43 @@ import { apiCache, getCacheKey } from "./cache";
 
 import { supabase } from "@/lib/supabase";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+// Determine API base URL
+// In production (Vercel), if VITE_API_URL is not set, use empty string to trigger Supabase fallback
+// In development, default to localhost
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl.trim() !== '') {
+    // Ensure it's a full URL (not relative)
+    const trimmed = envUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    // If it's a relative URL, treat it as invalid in production
+    console.warn('VITE_API_URL is set but is not a full URL. Ignoring in production.');
+  }
+  
+  // In production (Vercel), don't default to localhost
+  const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
+  if (isProduction) {
+    // Return empty string to indicate no backend API available
+    // This will trigger Supabase fallback in AuthContext
+    return '';
+  }
+  
+  // Development: use localhost
+  return "http://localhost:3001/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Log API configuration in production for debugging
+if (import.meta.env.PROD) {
+  console.log('[API Config]', {
+    baseUrl: API_BASE_URL || '(empty - using Supabase fallback)',
+    hasBackend: API_BASE_URL !== '',
+    hostname: window.location.hostname,
+  });
+}
 
 // Consolidated API endpoints - use these instead of multiple separate calls
 interface DashboardData {
@@ -78,10 +114,48 @@ interface AttendanceRecord {
 
 class ApiClient {
   private baseUrl: string;
+  private useBackend: boolean;
   private pendingRequests: Map<string, Promise<ApiResponse<unknown>>> = new Map();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    // Only use backend if:
+    // 1. baseUrl is not empty
+    // 2. baseUrl is a full URL (starts with http:// or https://)
+    // If VITE_API_URL is explicitly set, trust it and use it (even if same-origin)
+    if (!baseUrl || baseUrl.trim() === '') {
+      this.useBackend = false;
+      return;
+    }
+    
+    const trimmed = baseUrl.trim();
+    const isFullUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    
+    if (!isFullUrl) {
+      // Relative URL or invalid - don't use backend
+      this.useBackend = false;
+      return;
+    }
+    
+    // If it's a full URL and VITE_API_URL is explicitly set, use it
+    // This allows same-origin APIs (like Vercel serverless functions)
+    const hasExplicitApiUrl = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== '';
+    if (hasExplicitApiUrl) {
+      // User explicitly configured API URL - trust it
+      this.useBackend = true;
+      return;
+    }
+    
+    // If no explicit config, only use backend if different origin (to avoid hitting frontend)
+    try {
+      const baseUrlOrigin = new URL(trimmed).origin;
+      const currentOrigin = window.location.origin;
+      // Use backend only if it's a different origin, or if we're on localhost (dev)
+      this.useBackend = baseUrlOrigin !== currentOrigin || window.location.hostname === 'localhost';
+    } catch (e) {
+      // Invalid URL - don't use backend
+      this.useBackend = false;
+    }
   }
 
   private async request<T>(
@@ -119,6 +193,14 @@ class ApiClient {
     // Make the request
     const requestPromise = (async () => {
       try {
+        // If backend API is not configured, return error immediately
+        if (!this.useBackend) {
+          return {
+            data: null,
+            error: "Backend API not available. The server is not configured. Please configure VITE_API_URL environment variable or the app will use Supabase directly.",
+          };
+        }
+
         // Get the current session to extract the access token
         const {
           data: { session },
