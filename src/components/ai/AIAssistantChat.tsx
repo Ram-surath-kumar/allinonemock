@@ -863,10 +863,13 @@ export function AIAssistantChat({ onNavigate, isChatConversation, isChatPage }) 
                 };
 
                 const action = await callGeminiAPI(userPrompt, context);
+                console.log("AI Action:", action);
+                console.log("AI Confidence:", action.confidence);
 
                 if (action.confidence >= 0.7) {
                     await executeAction(action);
                 } else {
+                    console.warn("AI confidence too low:", action.confidence);
                     addMessage("assistant", t("aiAssistant.couldNotUnderstand"));
                 }
             }

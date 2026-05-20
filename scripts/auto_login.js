@@ -25,7 +25,7 @@ const checkServer = () => {
 
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
-        headless: false, // Make it visible
+        headless: true, // Make it visible
         defaultViewport: null, // Full width/height
         args: ['--start-maximized'] // Start maximized
     });

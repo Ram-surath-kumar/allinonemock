@@ -1,16 +1,16 @@
-const GEMINI_API_KEY = 'AIzaSyAx4QnaJy9_QearhV_irwB-Fy4KmkAux8E';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const FALLBACK_API_KEY = 'AIzaSyAx4QnaJy9_QearhV_irwB-Fy4KmkAux8E';
 
 // List of models to try in order (fallback mechanism)
 const MODEL_OPTIONS = [
-  'gemini-2.5-flash',  // Newest, fastest
-  'gemini-2.5-pro',    // Newest, more capable
-  'gemini-1.5-flash',  // Older but might still work
-  'gemini-1.5-pro',    // Older but might still work
-  'gemini-pro',        // Legacy model
+  'gemini-1.5-flash',  // Most reliable fallback
+  'gemini-2.0-flash',  // Fast
+  'gemini-2.5-flash',  // Newest
+  'gemini-pro',        // Legacy
 ];
 
-const getModelUrl = (model, version = 'v1beta') => {
-  return `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent`;
+const getModelUrl = (model, version = 'v1beta', key) => {
+  return `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`;
 };
 
 
@@ -87,42 +87,49 @@ INVALID (DO NOT DO THIS):
 
 Now extract the student data and return ONLY the JSON array:`;
 
-    // Try different models
-    for (const model of MODEL_OPTIONS) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    // Try different models and keys
+    const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: systemPrompt,
-                  },
-                  {
-                    inline_data: {
-                      mime_type: mimeType,
-                      data: base64,
+    for (const key of keysToTry) {
+      for (const model of MODEL_OPTIONS) {
+        try {
+          const url = getModelUrl(model, 'v1beta', key);
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: systemPrompt,
                     },
-                  },
-                ],
-              },
-            ],
-          }),
-        });
+                    {
+                      inline_data: {
+                        mime_type: mimeType,
+                        data: base64,
+                      },
+                    },
+                  ],
+                },
+              ],
+            }),
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          if (errorData.error?.message?.includes('not supported') || errorData.error?.message?.includes('not found')) {
-            continue; // Try next model
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.error?.message?.includes('not supported') || 
+                errorData.error?.message?.includes('not found') ||
+                errorData.error?.message?.includes('blocked') ||
+                errorData.error?.message?.includes('disabled') ||
+                errorData.error?.message?.includes('key')) {
+              continue; // Try next model/key
+            }
+            throw new Error(errorData.error?.message || response.statusText);
           }
-          throw new Error(errorData.error?.message || response.statusText);
-        }
 
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -235,14 +242,15 @@ Now extract the student data and return ONLY the JSON array:`;
       } catch (error) {
         // If it's a JSON parse error or model-specific error, try next model
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('JSON') || errorMessage.includes('not supported')) {
+        if (errorMessage.includes('JSON') || errorMessage.includes('not supported') || errorMessage.includes('blocked') || errorMessage.includes('disabled') || errorMessage.includes('key')) {
           continue;
         }
         throw error;
       }
     }
+  }
 
-    throw new Error('Failed to extract student data. Please try a different file or model.');
+  throw new Error('Failed to extract student data. Please try a different file or model.');
   } catch (error) {
     console.error('Error extracting student data:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to extract student data from file';
@@ -322,42 +330,49 @@ INVALID (DO NOT DO THIS):
 
 Now analyze the book cover and return ONLY the JSON object:`;
 
-    // Try different models
-    for (const model of MODEL_OPTIONS) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    // Try different models and keys
+    const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: systemPrompt,
-                  },
-                  {
-                    inline_data: {
-                      mime_type: mimeType,
-                      data: base64,
+    for (const key of keysToTry) {
+      for (const model of MODEL_OPTIONS) {
+        try {
+          const url = getModelUrl(model, 'v1beta', key);
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: systemPrompt,
                     },
-                  },
-                ],
-              },
-            ],
-          }),
-        });
+                    {
+                      inline_data: {
+                        mime_type: mimeType,
+                        data: base64,
+                      },
+                    },
+                  ],
+                },
+              ],
+            }),
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          if (errorData.error?.message?.includes('not supported') || errorData.error?.message?.includes('not found')) {
-            continue; // Try next model
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData.error?.message?.includes('not supported') || 
+                errorData.error?.message?.includes('not found') ||
+                errorData.error?.message?.includes('blocked') ||
+                errorData.error?.message?.includes('disabled') ||
+                errorData.error?.message?.includes('key')) {
+              continue; // Try next model/key
+            }
+            throw new Error(errorData.error?.message || response.statusText);
           }
-          throw new Error(errorData.error?.message || response.statusText);
-        }
 
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -416,14 +431,15 @@ Now analyze the book cover and return ONLY the JSON object:`;
       } catch (error) {
         // If it's a JSON parse error or model-specific error, try next model
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('JSON') || errorMessage.includes('not supported')) {
+        if (errorMessage.includes('JSON') || errorMessage.includes('not supported') || errorMessage.includes('blocked') || errorMessage.includes('disabled') || errorMessage.includes('key')) {
           continue;
         }
         throw error;
       }
     }
+  }
 
-    throw new Error('Failed to analyze book cover. Please try a different image or enter manually.');
+  throw new Error('Failed to analyze book cover. Please try a different image or enter manually.');
   } catch (error) {
     console.error('Error analyzing book cover:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to analyze book cover';
@@ -434,9 +450,10 @@ Now analyze the book cover and return ONLY the JSON object:`;
 async function tryGeminiModel(
   model,
   systemPrompt,
-  apiVersion = 'v1beta'
+  apiVersion = 'v1beta',
+  key = GEMINI_API_KEY
 ) {
-  const url = `${getModelUrl(model, apiVersion)}?key=${GEMINI_API_KEY}`;
+  const url = `${getModelUrl(model, apiVersion, key)}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -512,39 +529,54 @@ Output{"action":"mark_attendance","student_name":"John","status":"present","conf
 
 Now parse: ${prompt}`;
 
-  // Try models in order until one works
+  // Try models and keys in order until one works
+  const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
   let lastError = null;
 
-  for (const model of MODEL_OPTIONS) {
-    try {
-      // Try v1beta first
-      const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  for (const key of keysToTry) {
+    const isFallback = key === FALLBACK_API_KEY;
+    for (const model of MODEL_OPTIONS) {
+      try {
+        console.log(`AI: Trying ${model} with ${isFallback ? 'fallback' : 'primary'} key...`);
+        // Try v1beta first
+        const data = await tryGeminiModel(model, systemPrompt, 'v1beta', key);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-      if (text) {
-        // Success! Parse the response
-        return parseAIResponse(text, context);
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      // If model not found, try next one
-      if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
+        if (text) {
+          console.log(`AI: Success with ${model} (${isFallback ? 'fallback' : 'primary'} key)`);
+          // Success! Parse the response
+          return parseAIResponse(text, context);
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`AI: ${model} failed with ${isFallback ? 'fallback' : 'primary'} key:`, lastError.message);
+        
+        // If it's a permission/key/model issue, try next one
+        if (lastError.message.toLowerCase().includes('not found') || 
+            lastError.message.toLowerCase().includes('not supported') ||
+            lastError.message.toLowerCase().includes('blocked') ||
+            lastError.message.toLowerCase().includes('disabled') ||
+            lastError.message.toLowerCase().includes('permission') ||
+            lastError.message.toLowerCase().includes('key')) {
+          continue;
+        }
+        // For other fatal errors, still try next model/key
         continue;
       }
-      // For other errors, break and return error
-      break;
     }
   }
 
-  // If all models failed, try v1 API with gemini-pro
-  try {
-    const data = await tryGeminiModel('gemini-pro', systemPrompt, 'v1');
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (text) {
-      return parseAIResponse(text, context);
+  // If all models failed, try v1 API with gemini-pro and all keys
+  for (const key of keysToTry) {
+    try {
+      const data = await tryGeminiModel('gemini-pro', systemPrompt, 'v1', key);
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (text) {
+        return parseAIResponse(text, context);
+      }
+    } catch (error) {
+      // Ignore and use last error
     }
-  } catch (error) {
-    // Ignore and use last error
   }
 
   // All attempts failed
@@ -587,76 +619,86 @@ Now parse: ${prompt}`;
 
   let lastError = null;
 
-  for (const model of MODEL_OPTIONS) {
-    try {
-      const data = await tryGeminiModel(model, systemPrompt, 'v1beta');
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
 
-      if (text) {
-        let jsonText = text.trim();
+  for (const key of keysToTry) {
+    for (const model of MODEL_OPTIONS) {
+      try {
+        const data = await tryGeminiModel(model, systemPrompt, 'v1beta', key);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-        // Extract JSON
-        if (jsonText.includes('```')) {
-          const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-          if (jsonMatch) jsonText = jsonMatch[1];
-        } else {
-          const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
-          if (jsonObjectMatch) jsonText = jsonObjectMatch[0];
-        }
+        if (text) {
+          let jsonText = text.trim();
 
-        const parsed = JSON.parse(jsonText);
-
-        // Find student by name if provided
-        if (parsed.student_name) {
-          const matchingStudents = students.filter(
-            s => s.name.toLowerCase().includes(parsed.student_name.toLowerCase())
-          );
-          if (matchingStudents.length === 1) {
-            parsed.student_id = matchingStudents[0].id;
-            parsed.student_name = matchingStudents[0].name;
+          // Extract JSON
+          if (jsonText.includes('```')) {
+            const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if (jsonMatch) jsonText = jsonMatch[1];
+          } else {
+            const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (jsonObjectMatch) jsonText = jsonObjectMatch[0];
           }
-        }
 
-        return {
-          queryType: parsed.queryType || 'general',
-          student_name: parsed.student_name,
-          department: parsed.department,
-          date: parsed.date || currentDate,
-          status: parsed.status,
-          confidence: parsed.confidence || 0.5,
-        };
+          const parsed = JSON.parse(jsonText);
+
+          // Find student by name if provided
+          if (parsed.student_name) {
+            const matchingStudents = students.filter(
+              s => s.name.toLowerCase().includes(parsed.student_name.toLowerCase())
+            );
+            if (matchingStudents.length === 1) {
+              parsed.student_id = matchingStudents[0].id;
+              parsed.student_name = matchingStudents[0].name;
+            }
+          }
+
+          return {
+            queryType: parsed.queryType || 'general',
+            student_name: parsed.student_name,
+            department: parsed.department,
+            date: parsed.date || currentDate,
+            status: parsed.status,
+            confidence: parsed.confidence || 0.5,
+          };
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (lastError.message.includes('not found') || 
+            lastError.message.includes('not supported') ||
+            lastError.message.includes('blocked') ||
+            lastError.message.includes('disabled') ||
+            lastError.message.includes('key')) {
+          continue;
+        }
+        break;
       }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
-        continue;
-      }
-      break;
     }
   }
 
   // Fallback
-  try {
-    const data = await tryGeminiModel('gemini-pro', systemPrompt, 'v1');
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (text) {
-      let jsonText = text.trim();
-      const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
-      if (jsonObjectMatch) {
-        jsonText = jsonObjectMatch[0];
-        const parsed = JSON.parse(jsonText);
-        return {
-          queryType: parsed.queryType || 'general',
-          student_name: parsed.student_name,
-          department: parsed.department,
-          date: parsed.date || currentDate,
-          status: parsed.status,
-          confidence: parsed.confidence || 0.5,
-        };
+  for (const key of keysToTry) {
+    try {
+      const data = await tryGeminiModel('gemini-pro', systemPrompt, 'v1', key);
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (text) {
+        let jsonText = text.trim();
+        const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonText = jsonObjectMatch[0];
+          const parsed = JSON.parse(jsonText);
+          return {
+            queryType: parsed.queryType || 'general',
+            student_name: parsed.student_name,
+            department: parsed.department,
+            date: parsed.date || currentDate,
+            status: parsed.status,
+            confidence: parsed.confidence || 0.5,
+          };
+        }
       }
+    } catch (error) {
+      // Ignore
     }
-  } catch (error) {
-    // Ignore
   }
 
   throw lastError || new Error('Failed to parse query intent');
@@ -686,20 +728,28 @@ Keep the response under 200 words and be specific with numbers.`;
 
   let lastError = null;
 
-  for (const model of MODEL_OPTIONS) {
-    try {
-      const response = await tryGeminiModel(model, systemPrompt, 'v1beta');
-      const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
 
-      if (text) {
-        return text.trim();
+  for (const key of keysToTry) {
+    for (const model of MODEL_OPTIONS) {
+      try {
+        const response = await tryGeminiModel(model, systemPrompt, 'v1beta', key);
+        const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        if (text) {
+          return text.trim();
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (lastError.message.includes('not found') || 
+            lastError.message.includes('not supported') ||
+            lastError.message.includes('blocked') ||
+            lastError.message.includes('disabled') ||
+            lastError.message.includes('key')) {
+          continue; // Try next model/key
+        }
+        throw lastError;
       }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      if (lastError.message.includes('not found') || lastError.message.includes('not supported')) {
-        continue; // Try next model
-      }
-      throw lastError;
     }
   }
 
