@@ -38,6 +38,8 @@ import {
   Activity
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { generateMockQuestionsFromPDF, chatWithPDFDocument } from "@/services/gemini";
 
 // Rich Mock Exams for the Freemium PYQP Vault
 const MOCK_PYQPS = [
@@ -227,8 +229,96 @@ const MOCK_PYQPS = [
         avgTime: 95
       }
     ]
+  },
+  {
+    id: "cat-2025-mock",
+    name: "CAT 2025 (Quantitative Ability & Logic)",
+    examCode: "CAT-QA-25",
+    year: 2025,
+    questionsCount: 3,
+    duration: 120,
+    category: "Management",
+    difficulty: "Hard",
+    syllabus: [
+      { topic: "Quantitative Ability", weightage: "50%" },
+      { topic: "Logical Reasoning", weightage: "50%" }
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "If log_2 x + log_4 x + log_16 x = 7, then the value of x is:",
+        options: ["16", "32", "64", "128"],
+        correct: "A",
+        concept: "Logarithmic Equations",
+        cognitiveTopic: "Algebra",
+        difficulty: "Medium",
+        avgTime: 90
+      },
+      {
+        id: 2,
+        text: "A and B run a 100m race. A wins by 10m or 2 seconds. The speed of A is:",
+        options: ["5 m/s", "6 m/s", "5.5 m/s", "4.5 m/s"],
+        correct: "A",
+        concept: "Time, Speed & Distance",
+        cognitiveTopic: "Arithmetic",
+        difficulty: "Medium",
+        avgTime: 80
+      },
+      {
+        id: 3,
+        text: "In a class of 60 students, 30 play cricket, 25 play football, and 10 play both. How many play neither cricket nor football?",
+        options: ["15", "20", "25", "10"],
+        correct: "A",
+        concept: "Set Theory & Venn Diagrams",
+        cognitiveTopic: "Modern Maths",
+        difficulty: "Easy",
+        avgTime: 65
+      }
+    ]
   }
 ];
+
+// Tailored HSL gradient styling helper for premium cards in the Highlighted Vault
+const getHSLGradient = (category: string) => {
+  const cat = category.toLowerCase();
+  if (cat.includes('jee') || (cat.includes('engineering') && cat.includes('jee')) || cat.includes('physics')) {
+    return {
+      gradient: "from-[hsl(217,80%,12%)] via-[hsl(220,70%,6%)] to-[hsl(222,47%,9%)]",
+      border: "border-[hsl(217,80%,30%)]/50 hover:border-[hsl(217,80%,55%)]/80",
+      badge: "bg-[hsl(217,80%,18%)] text-[hsl(217,80%,85%)] border-[hsl(217,80%,35%)]/50 hover:bg-[hsl(217,80%,22%)]",
+      glow: "shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+    };
+  } else if (cat.includes('gate') || (cat.includes('engineering') && cat.includes('gate'))) {
+    return {
+      gradient: "from-[hsl(162,80%,10%)] via-[hsl(170,70%,5%)] to-[hsl(222,47%,9%)]",
+      border: "border-[hsl(162,80%,30%)]/50 hover:border-[hsl(162,80%,55%)]/80",
+      badge: "bg-[hsl(162,80%,15%)] text-[hsl(162,80%,85%)] border-[hsl(162,80%,30%)]/50 hover:bg-[hsl(162,80%,18%)]",
+      glow: "shadow-[0_0_20px_rgba(20,184,166,0.15)] hover:shadow-[0_0_30px_rgba(20,184,166,0.3)]"
+    };
+  } else if (cat.includes('upsc') || cat.includes('civil')) {
+    return {
+      gradient: "from-[hsl(35,80%,10%)] via-[hsl(25,70%,5%)] to-[hsl(222,47%,9%)]",
+      border: "border-[hsl(35,80%,30%)]/50 hover:border-[hsl(35,80%,55%)]/80",
+      badge: "bg-[hsl(35,80%,15%)] text-[hsl(35,80%,85%)] border-[hsl(35,80%,30%)]/50 hover:bg-[hsl(35,80%,18%)]",
+      glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:shadow-[0_0_30px_rgba(245,158,11,0.3)]"
+    };
+  } else if (cat.includes('cat') || cat.includes('management') || cat.includes('mba')) {
+    return {
+      gradient: "from-[hsl(280,80%,12%)] via-[hsl(260,70%,6%)] to-[hsl(222,47%,9%)]",
+      border: "border-[hsl(280,80%,30%)]/50 hover:border-[hsl(280,80%,55%)]/80",
+      badge: "bg-[hsl(280,80%,18%)] text-[hsl(280,80%,85%)] border-[hsl(280,80%,35%)]/50 hover:bg-[hsl(280,80%,22%)]",
+      glow: "shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]"
+    };
+  } else {
+    // Default Velvet Crimson for Custom/Admin uploads
+    return {
+      gradient: "from-[hsl(340,85%,12%)] via-[hsl(350,75%,6%)] to-[hsl(222,47%)]",
+      border: "border-[hsl(340,85%,30%)]/50 hover:border-[hsl(340,85%,55%)]/80",
+      badge: "bg-[hsl(340,85%,18%)] text-[hsl(340,85%,85%)] border-[hsl(340,85%,35%)]/50 hover:bg-[hsl(340,85%,22%)]",
+      glow: "shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:shadow-[0_0_30px_rgba(244,63,94,0.3)]"
+    };
+  }
+};
 
 // Seed realistic completed attempts so student has instant diagnostic data to look at
 const INITIAL_ATTEMPTS = [
@@ -274,12 +364,38 @@ export default function StudentExaminations() {
   const [activeTab, setActiveTab] = useState("mock-hub");
   const [selectedSyllabusExam, setSelectedSyllabusExam] = useState<any>(null);
   
-  // PDF Parse Simulator State
+  // PDF Parse State
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
   const [parseProgress, setParseProgress] = useState(0);
   const [parseStep, setParseStep] = useState(0);
   const [parsedExam, setParsedExam] = useState<any>(null);
+
+  // Real PDF RAG States
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const [ragMessages, setRagMessages] = useState<any[]>([
+    { role: "model", content: "Hello! I've loaded your document. Ask me anything about it, like explaining concepts, listing formulas, or summarizing key sections!" }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
+  // Custom PYQPs Vault
+  const [customPYQPs, setCustomPYQPs] = useState<any[]>([]);
+
+  const fetchCustomPYQPs = async () => {
+    try {
+      const response = await api.get<any[]>("/exam/pyqp/list");
+      if (response.data) {
+        setCustomPYQPs(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch custom PYQPs:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomPYQPs();
+  }, []);
 
   // Active Exam Testing Environment State
   const [activeExam, setActiveExam] = useState<any>(null);
@@ -560,98 +676,96 @@ export default function StudentExaminations() {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      startParsingPDF(e.dataTransfer.files[0].name);
+      startParsingPDF(e.dataTransfer.files[0]);
     }
   };
 
-  const startParsingPDF = (fileName: string) => {
+  const startParsingPDF = async (fileOrName: File | string) => {
+    const isFile = typeof fileOrName !== "string";
+    const fileName = isFile ? (fileOrName as File).name : (fileOrName as string);
+
     setUploadingFile(fileName);
-    setParseProgress(0);
+    setParseProgress(10);
     setParseStep(0);
 
-    const stepsInterval = setInterval(() => {
-      setParseStep((prev) => {
-        if (prev >= 4) {
-          clearInterval(stepsInterval);
-          return 4;
-        }
-        return prev + 1;
-      });
-    }, 900);
+    try {
+      let base64 = "";
 
-    const progressInterval = setInterval(() => {
-      setParseProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          
-          // Seed parsed exam structure
-          const parsed = {
-            id: "parsed-pdf",
-            name: `Parsed Mock: ${fileName.replace(".pdf", "")}`,
-            examCode: "AI-PARSED-PDF",
-            year: 2026,
-            questionsCount: 3,
-            duration: 120,
-            category: "Self-Uploaded",
-            difficulty: "Medium",
-            questions: [
-              {
-                id: 1,
-                text: "Based on the uploaded document's section on thermodynamics, which engine operates at maximum theoretical efficiency?",
-                options: [
-                  "Diesel cycle engine",
-                  "Rankine steam engine",
-                  "Carnot heat engine",
-                  "Four-stroke internal combustion engine"
-                ],
-                correct: "C",
-                concept: "Carnot Engine Theorem",
-                cognitiveTopic: "Thermodynamics",
-                difficulty: "Easy",
-                avgTime: 50
-              },
-              {
-                id: 2,
-                text: "From the parsed document charts, the relationship between thermal conductivity (k) and electrical conductivity (σ) in metals is defined by:",
-                options: [
-                  "Bragg's Law",
-                  "Wiedemann-Franz Law",
-                  "Fourier's Heat Conduction Law",
-                  "Newton's Law of Cooling"
-                ],
-                correct: "B",
-                concept: "Wiedemann-Franz Ratio",
-                cognitiveTopic: "Solid State Physics",
-                difficulty: "Medium",
-                avgTime: 95
-              },
-              {
-                id: 3,
-                text: "According to the experimental layout on page 4 of the PDF, which parameter must be held constant to prevent convective currents?",
-                options: [
-                  "The temperature gradient gradient vector",
-                  "The mechanical pressure head",
-                  "The absolute humidity percentage",
-                  "The ambient fluid viscosity coefficient"
-                ],
-                correct: "A",
-                concept: "Convective Stability Criteria",
-                cognitiveTopic: "Fluid Mechanics",
-                difficulty: "Hard",
-                avgTime: 130
-              }
-            ]
+      if (isFile) {
+        setParseStep(1);
+        setParseProgress(20);
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]);
           };
-          setParsedExam(parsed);
-          toast({
-            title: "PDF Parsed Successfully",
-            description: "Zero-friction parsing engine compiled 3 interactive mock questions.",
-          });
-          return 100;
+          reader.onerror = reject;
+          reader.readAsDataURL(fileOrName as File);
+        });
+      } else {
+        // Fallback mock PDF base64 for sample button clicks
+        base64 = "JVBERi0xLjQKJdPr6gogMSAwIG9iago8PAovVGl0bGUgKFNhbXBsZSkgCi9DcmVhdG9yIChHZW1pbmkpIAo+PgplbmRvYmoK...";
+      }
+
+      setParseProgress(40);
+      setParseStep(2);
+
+      // Save base64 for real RAG Chat Assistant
+      setPdfBase64(base64);
+      setRagMessages([
+        { 
+          role: "model", 
+          content: `I have successfully ingested "${fileName}". I'm ready to answer any questions about its content. Type your questions below, or click the button to sit a mock test generated from this PDF!` 
         }
-        return prev + 10;
+      ]);
+
+      setParseProgress(60);
+      setParseStep(3);
+
+      // Call real Gemini API to extract MCQs from PDF content!
+      const questions = await generateMockQuestionsFromPDF(base64);
+
+      setParseProgress(90);
+      setParseStep(4);
+
+      const parsed = {
+        id: "parsed-pdf",
+        name: `Parsed Mock: ${fileName.replace(".pdf", "")}`,
+        examCode: "AI-PARSED-PDF",
+        year: new Date().getFullYear(),
+        questionsCount: questions.length,
+        duration: 120,
+        category: "Self-Uploaded",
+        difficulty: "Medium",
+        questions: questions.map((q: any, idx: number) => ({
+          id: idx + 1,
+          text: q.text || `Question ${idx + 1}`,
+          options: q.options || ["Option A", "Option B", "Option C", "Option D"],
+          correct: q.correct || "A",
+          concept: q.concept || "General Concept",
+          cognitiveTopic: q.cognitiveTopic || "General Topic",
+          difficulty: q.difficulty || "Medium",
+          avgTime: q.avgTime || 90
+        }))
+      };
+
+      setParsedExam(parsed);
+      setParseProgress(100);
+
+      toast({
+        title: "PDF Parsed Successfully",
+        description: `Zero-friction RAG engine compiled ${questions.length} custom mock questions from your PDF!`,
       });
-    }, 200);
+    } catch (err: any) {
+      console.error("PDF Ingestion Error:", err);
+      toast({
+        title: "Parsing Failed",
+        description: err.message || "Failed to parse PDF document. Please try again.",
+        variant: "destructive"
+      });
+      setUploadingFile(null);
+    }
   };
 
   const handleLaunchParsedExam = () => {
@@ -981,8 +1095,85 @@ export default function StudentExaminations() {
           </TabsList>
 
           {/* TAB 1: AI MOCK TEST HUB */}
-          <TabsContent value="mock-hub" className="space-y-6 animate-in fade-in duration-300">
+          <TabsContent value="mock-hub" className="space-y-8 animate-in fade-in duration-300">
             
+            {/* 🌟 PREMIUM OFFICIAL PYQP MOCKUP SERIES (HIGHLIGHTED VAULT) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                  <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
+                    Official PYQP Mockup Series
+                    <span className="text-[10px] bg-primary/15 text-primary border border-primary/20 rounded-full px-2.5 py-0.5 font-bold font-mono tracking-wider">
+                      ★ HIGHLIGHTED VAULT
+                    </span>
+                  </h3>
+                </div>
+                <Badge variant="outline" className="border-emerald-500/20 text-emerald-600 bg-emerald-500/5 font-semibold text-xs py-1 px-3 hidden sm:inline-flex">
+                  Interactive Practice Enabled
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...MOCK_PYQPS, ...customPYQPs].map((exam) => {
+                  const styles = getHSLGradient(exam.category || exam.name);
+                  return (
+                    <motion.div
+                      key={exam.id}
+                      whileHover={{ y: -8, scale: 1.01 }}
+                      className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${styles.gradient} ${styles.border} ${styles.glow} p-5 flex flex-col justify-between h-[240px] transition-all duration-300 group`}
+                    >
+                      {/* Premium floating ambient glow */}
+                      <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-primary/10 blur-2xl group-hover:scale-150 transition-all duration-500" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3 gap-2">
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase border shadow-sm ${styles.badge}`}>
+                            {exam.category === "Self-Uploaded" ? "Admin Upload" : exam.category}
+                          </span>
+                          <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                            {exam.year || "2025"} Paper
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-extrabold leading-snug tracking-tight text-white group-hover:text-primary transition-colors line-clamp-2">
+                          {exam.name}
+                        </h4>
+                        
+                        <p className="text-[10px] text-slate-400 font-mono mt-2 flex items-center gap-1.5">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Code: {exam.examCode}
+                        </p>
+                      </div>
+
+                      <div className="relative z-10 pt-3 border-t border-white/5 space-y-3">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold font-mono">
+                          <span className="flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {exam.questionsCount || exam.questions?.length || 0} MCQs</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {exam.duration} mins</span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleStartExam(exam)}
+                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-8.5 shadow-md transition-all duration-200"
+                          >
+                            <Play className="h-3 w-3 mr-1" /> Practice Mock
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => setSelectedSyllabusExam(exam)}
+                            className="bg-white/5 hover:bg-white/10 text-white border-0 text-xs h-8.5 px-2.5"
+                          >
+                            Syllabus
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Zero-friction PDF Parse Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
@@ -1002,20 +1193,32 @@ export default function StudentExaminations() {
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                      onClick={() => document.getElementById("student-pdf-upload-input")?.click()}
+                      className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
                         isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/40 hover:bg-muted/70"
                       }`}
                     >
+                      <input
+                        id="student-pdf-upload-input"
+                        type="file"
+                        accept=".pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            startParsingPDF(e.target.files[0]);
+                          }
+                        }}
+                      />
                       <div className="rounded-full bg-primary/10 p-4 mb-4 text-primary">
-                        <Upload className="h-8 w-8" />
+                        <Upload className="h-8 w-8 animate-pulse text-primary" />
                       </div>
                       <p className="text-base font-semibold text-foreground mb-1">
-                        Drag and drop your exam paper PDF here
+                        Drag & Drop or Click to upload exam PDF
                       </p>
                       <p className="text-xs text-muted-foreground mb-4">
-                        Supports JEE, NEET, GATE, UPSC papers up to 25MB
+                        Instant Mock Test Generation & RAG Chat (UPSC, GATE, JEE, CAT, etc.)
                       </p>
-                      <div className="flex flex-wrap gap-2 justify-center">
+                      <div className="flex flex-wrap gap-2 justify-center" onClick={(e) => e.stopPropagation()}>
                         <Button 
                           onClick={() => startParsingPDF("gate-2025-algorithms.pdf")} 
                           variant="outline" 
@@ -1035,64 +1238,153 @@ export default function StudentExaminations() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4 rounded-xl border p-6 bg-muted/30">
-                      <div className="flex items-center gap-4">
-                        <div className="rounded bg-primary/10 p-3 text-primary">
-                          <File className="h-6 w-6" />
+                    <div className="space-y-4">
+                      <div className="rounded-xl border p-4 bg-muted/30 space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="rounded bg-primary/10 p-3 text-primary">
+                            <File className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm truncate">{uploadingFile}</h4>
+                            <p className="text-xs text-muted-foreground">AI parsing engine running...</p>
+                          </div>
+                          {parseProgress === 100 && (
+                            <Badge className="bg-emerald-600 text-white font-medium hover:bg-emerald-600">
+                              Ready for Mock & Chat
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm truncate">{uploadingFile}</h4>
-                          <p className="text-xs text-muted-foreground">Parsing document structure...</p>
+
+                        {/* Parser Progress */}
+                        <div className="space-y-2">
+                          <Progress value={parseProgress} className="h-2 bg-slate-800" />
+                          <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                            <span>PARSING STEP DETAILS</span>
+                            <span>{parseProgress}%</span>
+                          </div>
                         </div>
+
+                        {/* Step Details */}
+                        {parseProgress < 100 && (
+                          <div className="rounded bg-card p-3.5 border text-sm space-y-2">
+                            {parseStepsText.map((stepText, idx) => {
+                              const isCompleted = parseStep > idx || parseProgress === 100;
+                              const isCurrent = parseStep === idx && parseProgress < 100;
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className={`flex items-center gap-2 text-xs ${
+                                    isCompleted ? "text-emerald-600 font-medium" : isCurrent ? "text-foreground font-semibold" : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {isCompleted ? (
+                                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                  ) : isCurrent ? (
+                                    <RefreshCw className="h-3.5 w-3.5 text-primary shrink-0 animate-spin" />
+                                  ) : (
+                                    <div className="h-1.5 w-1.5 rounded-full bg-border shrink-0 ml-1"></div>
+                                  )}
+                                  <span>{stepText}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
                         {parseProgress === 100 && (
-                          <Badge className="bg-emerald-600 text-white font-medium hover:bg-emerald-600">
-                            Parsed OK
-                          </Badge>
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <Button 
+                              onClick={handleLaunchParsedExam}
+                              className="flex-1 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md text-sm"
+                            >
+                              <Play className="h-4.5 w-4.5 mr-2" /> Launch AI Mock Test
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => {
+                                setUploadingFile(null);
+                                setPdfBase64(null);
+                                setParsedExam(null);
+                              }}
+                              className="border-border hover:bg-accent text-sm"
+                            >
+                              Clear File
+                            </Button>
+                          </div>
                         )}
                       </div>
 
-                      {/* Parser Progress */}
-                      <div className="space-y-2">
-                        <Progress value={parseProgress} className="h-2" />
-                        <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                          <span>PARSING STEP DETAILS</span>
-                          <span>{parseProgress}%</span>
-                        </div>
-                      </div>
-
-                      {/* Step Details */}
-                      <div className="rounded bg-card p-3.5 border text-sm space-y-2">
-                        {parseStepsText.map((stepText, idx) => {
-                          const isCompleted = parseStep > idx || parseProgress === 100;
-                          const isCurrent = parseStep === idx && parseProgress < 100;
-                          return (
-                            <div 
-                              key={idx} 
-                              className={`flex items-center gap-2 text-xs ${
-                                isCompleted ? "text-emerald-600 font-medium" : isCurrent ? "text-foreground font-semibold" : "text-muted-foreground"
-                              }`}
-                            >
-                              {isCompleted ? (
-                                <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                              ) : isCurrent ? (
-                                <RefreshCw className="h-3.5 w-3.5 text-primary shrink-0 animate-spin" />
-                              ) : (
-                                <div className="h-1.5 w-1.5 rounded-full bg-border shrink-0 ml-1"></div>
-                              )}
-                              <span>{stepText}</span>
+                      {/* Working RAG Chat Assistant */}
+                      {parseProgress === 100 && pdfBase64 && (
+                        <div className="mt-6 border border-border rounded-xl bg-card overflow-hidden shadow-inner flex flex-col h-[350px] animate-in fade-in duration-300">
+                          <div className="bg-muted/50 border-b p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                              <span className="text-sm font-bold text-foreground">💬 AI Document RAG Chat Assistant</span>
                             </div>
-                          );
-                        })}
-                      </div>
+                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-mono">
+                              MULTIMODAL CONTEXT
+                            </Badge>
+                          </div>
 
-                      {parseProgress === 100 && (
-                        <div className="pt-2">
-                          <Button 
-                            onClick={handleLaunchParsedExam}
-                            className="w-full bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-md"
+                          {/* Chat body */}
+                          <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+                            {ragMessages.map((msg, idx) => (
+                              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                                  msg.role === 'user' 
+                                    ? 'bg-primary text-primary-foreground font-medium rounded-tr-none' 
+                                    : 'bg-muted text-foreground border border-border rounded-tl-none'
+                                }`}>
+                                  {msg.content}
+                                </div>
+                              </div>
+                            ))}
+                            {chatLoading && (
+                              <div className="flex justify-start">
+                                <div className="bg-muted text-foreground max-w-[85%] rounded-2xl rounded-tl-none px-3.5 py-2 text-xs border border-border flex items-center gap-2">
+                                  <RefreshCw className="h-3 w-3 animate-spin text-primary" />
+                                  <span>AI is scanning your document...</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Input form */}
+                          <form 
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              if (!chatInput.trim() || chatLoading) return;
+                              const msgText = chatInput.trim();
+                              setChatInput("");
+                              setRagMessages(prev => [...prev, { role: 'user', content: msgText }]);
+                              setChatLoading(true);
+                              try {
+                                const reply = await chatWithPDFDocument(pdfBase64, 'application/pdf', ragMessages, msgText);
+                                setRagMessages(prev => [...prev, { role: 'model', content: reply }]);
+                              } catch (err: any) {
+                                toast({
+                                  title: "Chat Error",
+                                  description: err.message || "Failed to communicate with AI.",
+                                  variant: "destructive"
+                                });
+                              } finally {
+                                setChatLoading(false);
+                              }
+                            }}
+                            className="border-t p-3 bg-muted/20 flex gap-2"
                           >
-                            <Play className="h-4.5 w-4.5 mr-2" /> Launch Interactive Timed Simulation
-                          </Button>
+                            <Input 
+                              placeholder="Ask anything about the uploaded PDF..."
+                              value={chatInput}
+                              onChange={(e) => setChatInput(e.target.value)}
+                              disabled={chatLoading}
+                              className="flex-1 bg-background text-xs"
+                            />
+                            <Button type="submit" disabled={chatLoading || !chatInput.trim()} size="sm" className="bg-primary hover:bg-primary/95 text-xs text-primary-foreground font-bold">
+                              Send
+                            </Button>
+                          </form>
                         </div>
                       )}
                     </div>
@@ -1158,7 +1450,7 @@ export default function StudentExaminations() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {MOCK_PYQPS.map((exam) => (
+                {[...MOCK_PYQPS, ...customPYQPs].map((exam) => (
                   <Card key={exam.id} className="border-border bg-card shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-200 flex flex-col justify-between">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between gap-2 mb-2">

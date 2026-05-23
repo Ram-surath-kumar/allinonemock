@@ -2,9 +2,44 @@ import express from 'express';
 import { supabaseAdmin } from '../common.js';
 import { handleError, sendSuccess, sendValidationError } from '../common.js';
 import { feeService } from '../services/feeService.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
 console.log('📝 Exam router loaded');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DATA_FILE = path.join(__dirname, '../data/pyqps.json');
+
+// Helper to read data
+const readPYQPData = () => {
+    try {
+        if (!fs.existsSync(DATA_FILE)) {
+            const dir = path.dirname(DATA_FILE);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(DATA_FILE, '[]');
+            return [];
+        }
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading pyqps:', error);
+        return [];
+    }
+};
+
+// Helper to write data
+const writePYQPData = (data) => {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error('Error writing pyqps:', error);
+        return false;
+    }
+};
 
 // Get exam dashboard data
 router.get('/dashboard', async (req, res) => {
@@ -660,6 +695,111 @@ router.get('/marks/student/:studentId', async (req, res) => {
     sendSuccess(res, data || []);
   } catch (error) {
     handleError(error, res, 'Failed to fetch student marks');
+  }
+});
+
+// ==========================================
+// PYQP (PREVIOUS YEAR QUESTION PAPERS) ENDPOINTS
+// ==========================================
+
+// Get list of uploaded PYQPs
+router.get('/pyqp/list', async (req, res) => {
+  try {
+    const data = readPYQPData();
+    sendSuccess(res, data || []);
+  } catch (error) {
+    handleError(error, res, 'Failed to fetch PYQPs');
+  }
+});
+
+// Upload new PYQP
+router.post('/pyqp/upload', async (req, res) => {
+  try {
+    const { title, examCode, year, questionsCount, duration, category, difficulty, questions, pdf_url } = req.body;
+
+    if (!title || !examCode || !questions || !Array.isArray(questions)) {
+      return sendValidationError(res, 'Title, exam code, and questions array are required');
+    }
+
+    const newPYQP = {
+      id: `pyqp-${Date.now()}`,
+      title,
+      name: title, // for compatibility
+      examCode,
+      year: year || new Date().getFullYear(),
+      questionsCount: questionsCount || questions.length,
+      duration: duration || 120,
+      category: category || 'General',
+      difficulty: difficulty || 'Medium',
+      questions,
+      pdf_url: pdf_url || '',
+      created_at: new Date().toISOString()
+    };
+
+    const pyqps = readPYQPData();
+    pyqps.push(newPYQP);
+    writePYQPData(pyqps);
+
+    // Also attempt Supabase insert in mock_tests as fallback/sync
+    try {
+      const dbRecord = {
+        id: newPYQP.id,
+        title: newPYQP.title,
+        exam_type: newPYQP.category,
+        price: 0.00,
+        is_free_pyqp: true,
+        pdf_source_url: newPYQP.pdf_url || 'https://schoolsphere-assets.s3.amazonaws.com/mocks/default.pdf',
+        configuration: {
+          totalDurationMinutes: newPYQP.duration,
+          markingScheme: { correct: 4.0, incorrect: -1.0 },
+          sections: [
+            {
+              sectionName: "General Aptitude",
+              allowedTimeMinutes: newPYQP.duration,
+              questionRange: { start: 1, end: newPYQP.questions.length }
+            }
+          ]
+        },
+        answer_key: newPYQP.questions.map((q, idx) => ({
+          questionNumber: idx + 1,
+          correctOption: q.correct || 'A',
+          cognitiveTag: q.concept || 'General Concept'
+        }))
+      };
+      await supabaseAdmin.from('mock_tests').insert([dbRecord]);
+    } catch (dbErr) {
+      console.warn('Supabase mock_tests sync bypassed/failed:', dbErr.message);
+    }
+
+    sendSuccess(res, newPYQP);
+  } catch (error) {
+    handleError(error, res, 'Failed to upload PYQP');
+  }
+});
+
+// Delete a PYQP
+router.delete('/pyqp/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pyqps = readPYQPData();
+    const filtered = pyqps.filter(p => p.id !== id);
+
+    if (pyqps.length === filtered.length) {
+      return res.status(404).json({ data: null, error: 'PYQP not found' });
+    }
+
+    writePYQPData(filtered);
+
+    // Also attempt Supabase delete as fallback/sync
+    try {
+      await supabaseAdmin.from('mock_tests').delete().eq('id', id);
+    } catch (dbErr) {
+      console.warn('Supabase mock_tests delete sync bypassed/failed:', dbErr.message);
+    }
+
+    sendSuccess(res, { success: true });
+  } catch (error) {
+    handleError(error, res, 'Failed to delete PYQP');
   }
 });
 

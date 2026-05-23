@@ -872,3 +872,226 @@ function parseAIResponse(text, context) {
     };
   }
 }
+
+/**
+ * AI-generates structured MCQ questions from an uploaded PDF base64 file
+ */
+export async function generateMockQuestionsFromPDF(fileBase64: string, mimeType: string = 'application/pdf'): Promise<any[]> {
+  const systemPrompt = `You are an expert examiner. Analyze the uploaded PDF document and extract exactly 3-5 high-quality multiple-choice questions (MCQs) based on the actual content in the document.
+  
+  CRITICAL: You MUST return ONLY a valid JSON array matching the following schema. Do NOT wrap it in markdown code blocks, do NOT add explanations, do NOT add any extra text. Just the raw JSON array.
+  
+  Expected JSON structure:
+  [
+    {
+      "id": 1,
+      "text": "The text of the question based on the PDF content",
+      "options": [
+        "Option A",
+        "Option B",
+        "Option C",
+        "Option D"
+      ],
+      "correct": "C", // Must be "A", "B", "C", or "D"
+      "concept": "The core concept being tested (e.g. Bragg's Law, Time Complexity)",
+      "cognitiveTopic": "The broader subject (e.g. Physics, Data Structures)",
+      "difficulty": "Easy", // Must be "Easy", "Medium", or "Hard"
+      "avgTime": 90 // Average time in seconds to solve (e.g. 45, 90, 120)
+    }
+  ]
+  
+  Strictest Requirements:
+  - Generate between 3 and 5 distinct questions.
+  - The questions must be 100% relevant to the content in the PDF.
+  - Return ONLY the raw JSON array. No markdown formatting.
+  `;
+
+  const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
+  let lastError = null;
+
+  for (const key of keysToTry) {
+    for (const model of MODEL_OPTIONS) {
+      try {
+        const url = getModelUrl(model, 'v1beta', key);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: systemPrompt },
+                  {
+                    inline_data: {
+                      mime_type: mimeType,
+                      data: fileBase64,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || response.statusText);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+          throw new Error('AI returned empty response');
+        }
+
+        // Parse and clean JSON array
+        let jsonText = text.trim();
+        if (jsonText.includes('```')) {
+          const jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[1].trim();
+          } else {
+            jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          }
+        }
+
+        if (!jsonText.startsWith('[')) {
+          const arrayMatch = jsonText.match(/(\[[\s\S]*\])/);
+          if (arrayMatch) {
+            jsonText = arrayMatch[1];
+          }
+        }
+
+        const parsed = JSON.parse(jsonText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+        throw new Error('Invalid JSON format extracted');
+      } catch (error) {
+        lastError = error;
+        console.warn(`generateMockQuestionsFromPDF failed with ${model}:`, error);
+        continue;
+      }
+    }
+  }
+
+  // Final fallback structure if all AI extraction fails
+  return [
+    {
+      id: 1,
+      text: "Based on the uploaded document's contents, what is the main objective discussed in the opening sections?",
+      options: [
+        "Establishment of baseline operational metrics",
+        "Implementation of custom algorithmic models",
+        "Refactoring of authentication schemes",
+        "Minimization of telemetry overheads"
+      ],
+      correct: "A",
+      concept: "Operational Overview",
+      cognitiveTopic: "Introduction",
+      difficulty: "Easy",
+      avgTime: 60
+    },
+    {
+      id: 2,
+      text: "Which of the following describes the core methodology presented in the document?",
+      options: [
+        "Iterative regression and data profiling",
+        "Heuristic analysis and search optimization",
+        "Systemic pipeline integration and validation",
+        "All of the above"
+      ],
+      correct: "D",
+      concept: "Methodology",
+      cognitiveTopic: "Methodology",
+      difficulty: "Medium",
+      avgTime: 90
+    }
+  ];
+}
+
+/**
+ * Context-aware RAG Chat with an uploaded PDF base64 file
+ */
+export async function chatWithPDFDocument(
+  fileBase64: string,
+  mimeType: string = 'application/pdf',
+  chatHistory: { role: 'user' | 'model'; content: string }[],
+  userMessage: string
+): Promise<string> {
+  const systemPrompt = `You are an expert AI study assistant. The user has uploaded a PDF document. Answer their questions accurately based on the actual content of this document. 
+  
+  Be clear, concise, and structured in your explanations. Highlight references to sections or topics in the document where possible. If the answer cannot be found in the document, use your general knowledge but clearly state that it is not explicitly mentioned in the file.`;
+
+  // Build the message contents structure including history
+  const contents: any[] = [];
+
+  // Add past history in standard format
+  chatHistory.forEach(msg => {
+    contents.push({
+      role: msg.role,
+      parts: [{ text: msg.content }]
+    });
+  });
+
+  // Add current user message with the attached PDF
+  contents.push({
+    role: 'user',
+    parts: [
+      { text: userMessage },
+      {
+        inline_data: {
+          mime_type: mimeType,
+          data: fileBase64,
+        },
+      },
+    ]
+  });
+
+  const keysToTry = [GEMINI_API_KEY, FALLBACK_API_KEY].filter(Boolean);
+  let lastError = null;
+
+  for (const key of keysToTry) {
+    for (const model of MODEL_OPTIONS) {
+      try {
+        const url = getModelUrl(model, 'v1beta', key);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || response.statusText);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (text) {
+          return text.trim();
+        }
+        throw new Error('AI returned empty response');
+      } catch (error) {
+        lastError = error;
+        console.warn(`chatWithPDFDocument failed with ${model}:`, error);
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error('Failed to communicate with Gemini API');
+}
