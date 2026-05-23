@@ -1419,7 +1419,7 @@ export function MultiTabChat() {
                   <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
                   <img
                     src="/logo.png"
-                    alt="Loopverse"
+                    alt="All in One Mock"
                     className="h-24 w-24 relative dark:invert-0 opacity-80"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -1429,7 +1429,7 @@ export function MultiTabChat() {
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-light text-foreground">Welcome to Loopverse Chat</h2>
+                  <h2 className="text-2xl font-light text-foreground">Welcome to All in One Mock Chat</h2>
                   <p className="text-sm text-muted-foreground">
                     Send and receive messages to teachers, students, and staff. <br />
                     Select a chat from the sidebar to start messaging.
@@ -1443,7 +1443,7 @@ export function MultiTabChat() {
               </div>
 
               <div className="absolute bottom-6 text-xs text-muted-foreground/50">
-                Loopverse Chat v1.0
+                All in One Mock Chat v1.0
               </div>
             </div>
           )}

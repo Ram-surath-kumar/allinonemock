@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 import { AdminDashboard } from "@/components/views/AdminDashboard";
 import { TeacherDashboard } from "@/components/views/TeacherDashboard";
-import { StudentDashboard } from "@/components/views/StudentDashboard";
+import StudentExaminations from "@/pages/student/StudentExaminations";
 
 import { RippleLoader } from "@/components/ui/RippleLoader";
 
@@ -25,6 +25,11 @@ function DashboardContent({ onAddUser, onNavigate }: DashboardProps) {
     );
   }
 
+  // Fast bypass for students: render AI Mock Test Hub directly without waiting for Loop ERP dashboard stats API
+  if (currentUser.role === "student") {
+    return <StudentExaminations />;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -44,7 +49,7 @@ function DashboardContent({ onAddUser, onNavigate }: DashboardProps) {
     case "accountant":
       return <TeacherDashboard />;
     case "student":
-      return <StudentDashboard />;
+      return <StudentExaminations />;
     case "housekeeping":
       return (
         <div className="space-y-6">

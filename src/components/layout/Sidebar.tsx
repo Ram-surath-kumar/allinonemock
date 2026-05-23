@@ -47,11 +47,9 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
   const navItems: NavItem[] = useMemo(() => {
     if (currentUser?.role === 'student') {
       return [
-        { icon: LayoutDashboard, label: t("sidebar.dashboard") || "Dashboard", href: "/" },
-        { icon: MessageSquare, label: "Chat", href: "/chat" },
-        { icon: FileText, label: "Exams & Evaluations", href: "/student/examinations", roles: ["student"] },
-        { icon: CreditCard, label: "Fees", href: "/student/fee-payment", roles: ["student"] },
-        { icon: Settings, label: t("sidebar.settings") || "Settings", href: "/settings" },
+        { icon: BookOpen, label: "AI Mock Test Hub", href: "/" },
+        { icon: MessageSquare, label: "AI Assistant", href: "/chat" },
+        { icon: Settings, label: "Settings", href: "/settings" },
       ];
     }
 
@@ -200,7 +198,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
       >
         <div
           className={cn(
-            "flex items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 shadow-md shrink-0 transition-transform duration-300 hover:scale-105 hover:shadow-glow overflow-hidden",
+            "flex items-center justify-center rounded-xl bg-sidebar-primary shadow-sm shrink-0 transition-transform duration-300 hover:scale-105 overflow-hidden",
             collapsed ? "h-9 w-9" : "h-10 w-10"
           )}
           aria-hidden="true"
@@ -228,7 +226,7 @@ export function Sidebar({ currentPath, onNavigate, collapsed = false }: SidebarP
             <h1 className="text-xs font-bold tracking-tight text-sidebar-foreground uppercase leading-tight">
               {currentUser?.organization?.org_name || "College Name"}
             </h1>
-            <p className="text-[9px] text-sidebar-muted font-bold uppercase tracking-widest mt-0.5 opacity-60 leading-tight">powered by loopverse</p>
+            <p className="text-[9px] text-sidebar-muted font-bold uppercase tracking-widest mt-0.5 opacity-60 leading-tight">powered by allinonemock</p>
           </div>
         </div>
       </div>

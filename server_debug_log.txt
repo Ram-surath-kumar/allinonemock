@@ -781,3 +781,23 @@
 [2026-03-01T11:44:19.197Z] [AUTH] Incoming Request: GET /api/finance/bank-accounts
 [2026-03-01T11:44:19.199Z] [AUTH] Bypass Request: Attempting authentication for 1000120002@loopverse.in
 [2026-03-01T11:44:19.298Z] [AUTH] Bypass Success: Authenticated as 1000120002@loopverse.in (Role: admin)
+[2026-05-21T08:34:16.417Z] [AUTH] Incoming Request: GET /api/users?email=c.subanesh%40gmail.com
+[2026-05-21T08:34:17.001Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:20.266Z] [AUTH] Incoming Request: GET /api/tasks?assigned_to=ad292d8d-ec7e-443a-bfa0-bd9b6ca8659c
+[2026-05-21T08:34:20.499Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:20.593Z] [AUTH] Incoming Request: GET /api/events?role=student
+[2026-05-21T08:34:20.811Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:22.035Z] [AUTH] Incoming Request: GET /api/tasks?assigned_to=ad292d8d-ec7e-443a-bfa0-bd9b6ca8659c
+[2026-05-21T08:34:22.172Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:24.881Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-05-21T08:34:25.025Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:25.223Z] [AUTH] Incoming Request: POST /api/users/public-key
+[2026-05-21T08:34:25.346Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:28.539Z] [AUTH] Incoming Request: GET /api/users?status=active
+[2026-05-21T08:34:28.637Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:34:29.749Z] [AUTH] Incoming Request: GET /api/tasks?assigned_to=ad292d8d-ec7e-443a-bfa0-bd9b6ca8659c
+[2026-05-21T08:34:29.918Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-21T08:35:35.395Z] [AUTH] Incoming Request: GET /api/tasks?assigned_to=ad292d8d-ec7e-443a-bfa0-bd9b6ca8659c
+[2026-05-21T08:35:35.724Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)
+[2026-05-23T09:59:40.150Z] [AUTH] Incoming Request: GET /api/users?email=c.subanesh%40gmail.com
+[2026-05-23T09:59:40.397Z] [AUTH] Success: Authenticated as c.subanesh@gmail.com (Role: student)

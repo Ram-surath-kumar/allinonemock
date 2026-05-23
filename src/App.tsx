@@ -11,6 +11,7 @@ import { Login } from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import AdmissionAdmin from "./pages/AdmissionAdmin";
 import AdminConsole from "./pages/AdminConsole";
+import LandingPage from "./pages/LandingPage";
 // AdmissionPortal is already imported or not needed here if imported elsewhere?
 import { AdmissionPortal } from "./components/students/Admission/AdmissionPortal";
 import Facilities from "./pages/Facilities";
@@ -44,7 +45,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/admin/admissions" element={<AdmissionAdmin />} />
       
       {/* Standalone Admin Console - No authentication wrapper */}

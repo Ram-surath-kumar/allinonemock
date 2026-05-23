@@ -22,7 +22,7 @@ export function AppLayout({ children, title, subtitle, currentPath, onNavigate, 
   }, [isChatPage]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className={cn(
         "hidden md:flex h-screen flex-col text-sidebar-foreground transition-all duration-300 shrink-0",

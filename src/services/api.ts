@@ -1462,9 +1462,6 @@ class ApiClient {
 
 
   // E2EE
-  async getHostelDashboard(): Promise<ApiResponse<any>> {
-    return this.request("/hostel/dashboard");
-  }
 
   async createHostel(data: any): Promise<ApiResponse<any>> {
     return this.request("/hostel", {
